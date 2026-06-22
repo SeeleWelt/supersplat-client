@@ -291,42 +291,6 @@ body:not(.workspace-welcome) #welcome-screen {
     line-height: 1.55;
 }
 
-#mode-switcher {
-    position: fixed;
-    top: 4px;
-    left: 50%;
-    z-index: 35;
-    height: 26px;
-    padding: 2px;
-    display: flex;
-    gap: 2px;
-    border: 1px solid rgba(215, 168, 90, 0.3);
-    border-radius: 6px;
-    background-color: rgba(16, 14, 21, 0.92);
-    transform: translateX(-50%);
-}
-
-.mode-switcher-button {
-    height: 20px;
-    min-width: 54px;
-    padding: 0 10px;
-    border: 0;
-    border-radius: 4px;
-    color: $text-secondary;
-    background-color: transparent;
-    font-weight: 700;
-
-    &:hover {
-        color: $text-primary;
-        background-color: rgba(215, 168, 90, 0.12);
-    }
-
-    &.active {
-        color: #fff;
-        background-color: var(--app-accent);
-    }
-}
-
 body.workspace-welcome {
     #bottom-toolbar,
     #right-toolbar,
@@ -336,7 +300,6 @@ body.workspace-welcome {
     #view-panel,
     #color-panel,
     #mode-toggle,
-    #mode-switcher,
     #status-bar,
     #cursor-label,
     #empty-state,
@@ -441,24 +404,6 @@ body.app-theme-light {
         }
     }
 
-    #mode-switcher {
-        border-color: #c8d3e3;
-        background-color: rgba(244, 246, 248, 0.96);
-    }
-
-    .mode-switcher-button {
-        color: #4b5562;
-
-        &:hover {
-            color: #1f2328;
-            background-color: #E8EFFC;
-        }
-
-        &.active {
-            color: #ffffff;
-            background-color: #1D48CE;
-        }
-    }
 }
 
 @media (max-width: 760px) {
@@ -471,9 +416,4 @@ body.app-theme-light {
         grid-row: auto;
     }
 
-    #mode-switcher {
-        left: auto;
-        right: calc(var(--desktop-window-controls-width) + 8px);
-        transform: none;
-    }
 }

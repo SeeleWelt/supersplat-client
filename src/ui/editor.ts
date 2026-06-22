@@ -13,7 +13,6 @@ import { ExportPopup } from './export-popup';
 import { ImageSettingsDialog } from './image-settings-dialog';
 import { localize, localizeInit } from './localization';
 import { Menu } from './menu';
-import { ModeSwitcher } from './mode-switcher';
 import { ModeToggle } from './mode-toggle';
 import { Popup, ShowOptions } from './popup';
 import { PreferencesDialog, applyPreferences, loadPreferences } from './preferences-dialog';
@@ -132,7 +131,6 @@ class EditorUI {
         const rightToolbar = new RightToolbar(events, tooltips);
         const modeToggle = new ModeToggle(events, tooltips);
         const menu = new Menu(events);
-        const modeSwitcher = new ModeSwitcher(events);
 
         let workspaceActive = false;
         let sceneEmpty = true;
@@ -195,7 +193,6 @@ class EditorUI {
         canvasContainer.append(rightToolbar);
         canvasContainer.append(modeToggle);
         canvasContainer.append(menu);
-        canvasContainer.append(modeSwitcher);
 
         // view axes container
         const viewCube = new ViewCube(events);
