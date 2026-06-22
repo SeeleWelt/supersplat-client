@@ -1,27 +1,130 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>SuperSplat</title>
+        <title>凝境</title>
         <meta charset="utf-8" />
         <base href="__BASE_HREF__">
         <link rel="manifest" href="./manifest.json">
-        <link rel="stylesheet" href="./index.css">
+        <link rel="stylesheet" href="./index.css?v=__ASSET_VERSION__">
         <link rel="shortcut icon" href="#">
-        <meta name="description" content="SuperSplat is an advanced browser-based editor for manipulating and optimizing 3D Gaussian Splats. It is open source and engine agnostic." />
+        <meta name="description" content="凝境是面向三维高斯场景数据的专业编辑与查看工具。" />
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
 
-        <!-- Service worker -->
+        <!-- Clear old service worker caches. Desktop/client builds do not need a service worker. -->
         <script>
             const sw = navigator.serviceWorker;
             if (sw) {
-                sw.register('./sw.js')
-                    .then(reg => console.log('service worker registered', reg))
-                    .catch(err => console.log('failed to register service worker', err));
+                sw.getRegistrations()
+                    .then(registrations => registrations.forEach(registration => registration.unregister()))
+                    .then(() => window.caches?.keys())
+                    .then(keys => keys?.forEach(key => window.caches.delete(key)))
+                    .catch(err => console.log('failed to clear service worker cache', err));
             }
         </script>
     </head>
 
     <body>
-        <script type="module" src="./index.js"></script>
+        <div id="desktop-titlebar">
+            <div id="desktop-titlebar-brand" data-tauri-drag-region>
+                <img id="desktop-titlebar-icon" src="./static/icons/opcmate-logo.png" alt="">
+                <div id="desktop-titlebar-title">凝境</div>
+            </div>
+            <div id="desktop-titlebar-drag" data-tauri-drag-region></div>
+            <div id="desktop-titlebar-window-controls">
+                <button id="desktop-titlebar-minimize" class="desktop-titlebar-window-button minimize" type="button" title="Minimize" aria-label="Minimize"></button>
+                <button id="desktop-titlebar-maximize" class="desktop-titlebar-window-button maximize" type="button" title="Maximize" aria-label="Maximize"></button>
+                <button id="desktop-titlebar-close" class="desktop-titlebar-window-button close" type="button" title="Close" aria-label="Close"></button>
+            </div>
+        </div>
+
+        <script>
+            (() => {
+                const invoke = (command) => {
+                    const tauriInvoke = window.__TAURI_INTERNALS__?.invoke;
+                    if (!tauriInvoke) {
+                        return Promise.resolve();
+                    }
+                    return tauriInvoke(command).catch((err) => console.error(`failed to invoke ${command}`, err));
+                };
+                const setMaximized = (maximized) => {
+                    document.body.classList.toggle('desktop-window-is-maximized', Boolean(maximized));
+                };
+                const toggleMaximize = () => invoke('window_toggle_maximize').then((maximized) => {
+                    if (typeof maximized === 'boolean') {
+                        setMaximized(maximized);
+                    }
+                });
+
+                document.getElementById('desktop-titlebar-minimize')
+                    ?.addEventListener('click', () => invoke('window_minimize'));
+                document.getElementById('desktop-titlebar-maximize')
+                    ?.addEventListener('click', toggleMaximize);
+                document.getElementById('desktop-titlebar-close')
+                    ?.addEventListener('click', () => invoke('window_close'));
+
+                let pendingDrag = null;
+                const clearPendingDrag = () => {
+                    pendingDrag = null;
+                };
+
+                document.addEventListener('pointerdown', (event) => {
+                    const target = event.target;
+                    if (!(target instanceof Element) || event.button !== 0 || event.detail > 1) {
+                        clearPendingDrag();
+                        return;
+                    }
+
+                    if (!target.closest('[data-tauri-drag-region]')) {
+                        clearPendingDrag();
+                        return;
+                    }
+
+                    pendingDrag = {
+                        pointerId: event.pointerId,
+                        x: event.clientX,
+                        y: event.clientY
+                    };
+                }, true);
+
+                document.addEventListener('pointermove', (event) => {
+                    if (!pendingDrag || pendingDrag.pointerId !== event.pointerId) {
+                        return;
+                    }
+
+                    const dx = event.clientX - pendingDrag.x;
+                    const dy = event.clientY - pendingDrag.y;
+                    if (Math.hypot(dx, dy) < 3) {
+                        return;
+                    }
+
+                    clearPendingDrag();
+                    invoke('window_start_drag');
+                }, true);
+
+                document.addEventListener('pointerup', clearPendingDrag, true);
+                document.addEventListener('pointercancel', clearPendingDrag, true);
+
+                document.addEventListener('dblclick', (event) => {
+                    const target = event.target;
+                    if (!(target instanceof Element)) {
+                        return;
+                    }
+
+                    const dragRegion = target.closest('[data-desktop-drag-region], [data-tauri-drag-region]');
+                    if (dragRegion) {
+                        event.preventDefault();
+                        toggleMaximize();
+                    }
+                }, true);
+
+                invoke('window_is_maximized').then((maximized) => {
+                    if (typeof maximized === 'boolean') {
+                        setMaximized(maximized);
+                    }
+                });
+            })();
+        </script>
+
+        <script type="module" src="./index.js?v=__ASSET_VERSION__"></script>
     </body>
 </html>

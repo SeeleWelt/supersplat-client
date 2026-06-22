@@ -1,4 +1,4 @@
-import { Container, Label, NumericInput } from '@playcanvas/pcui';
+import { Button, Container, Label, NumericInput } from '@playcanvas/pcui';
 import { Entity, Mat4, Quat, TranslateGizmo, Vec3 } from 'playcanvas';
 
 import { EntityTransformOp } from '../edit-ops';
@@ -6,6 +6,7 @@ import { Events } from '../events';
 import { Scene } from '../scene';
 import { Splat } from '../splat';
 import { Transform } from '../transform';
+import { elementSize, pointerToElement } from './pointer';
 import { localize } from '../ui/localization';
 
 const mat = new Mat4();
@@ -79,6 +80,10 @@ class MeasureTool {
             min: 0.0001,
             value: 0
         });
+        const resetButton = new Button({
+            text: localize('panel.colors.reset'),
+            class: ['select-toolbar-button', 'reset-action-button', 'select-toolbar-reset-button']
+        });
         let suppressUI = 0;
 
         const selectToolbar = new Container({
@@ -92,6 +97,7 @@ class MeasureTool {
 
         selectToolbar.append(lengthLabel);
         selectToolbar.append(lengthInput);
+        selectToolbar.append(resetButton);
         canvasContainer.append(selectToolbar);
 
         const gizmo = new TranslateGizmo(scene.camera.camera, scene.gizmoLayer);
@@ -109,8 +115,9 @@ class MeasureTool {
         const getPoint2d = (index: number, result: Vec3) => {
             getPoint(index, result);
             scene.camera.worldToScreen(result, result);
-            result.x *= canvasContainer.dom.clientWidth;
-            result.y *= canvasContainer.dom.clientHeight;
+            const { width, height } = elementSize(parent);
+            result.x *= width;
+            result.y *= height;
         };
 
         const updateVisuals = () => {
@@ -137,6 +144,16 @@ class MeasureTool {
                 lengthInput.enabled = false;
             }
         };
+
+        resetButton.dom.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            if (splat) {
+                splat.measurePoints.length = 0;
+                splat.measureSelection = -1;
+                updateVisuals();
+                scene.forceRender = true;
+            }
+        });
 
         gizmo.on('render:update', () => {
             scene.forceRender = true;
@@ -297,12 +314,13 @@ class MeasureTool {
                 clicked = false;
 
                 let closestIdx = -1;
+                const localPoint = pointerToElement(e, parent);
 
                 // check for intersection with existing point
                 for (let i = 0; i < splat.measurePoints.length; i++) {
                     getPoint2d(i, p);
 
-                    if (Math.abs(p.x - e.offsetX) < 8 && Math.abs(p.y - e.offsetY) < 8) {
+                    if (Math.abs(p.x - localPoint.x) < 8 && Math.abs(p.y - localPoint.y) < 8) {
                         closestIdx = i;
                         break;
                     }
@@ -315,7 +333,7 @@ class MeasureTool {
                 }
 
                 if (splat.measurePoints.length < 2) {
-                    const result = await scene.camera.intersect(e.offsetX / canvasContainer.dom.clientWidth, e.offsetY / canvasContainer.dom.clientHeight);
+                    const result = await scene.camera.intersect(localPoint.x / localPoint.width, localPoint.y / localPoint.height);
                     if (result) {
                         mat.invert(splat.worldTransform);
                         mat.transformPoint(result.position, p);
@@ -401,7 +419,7 @@ class MeasureTool {
             updateVisuals();
             canvasContainer.dom.removeEventListener('pointerdown', pointerdown);
             canvasContainer.dom.removeEventListener('pointermove', pointermove);
-            canvasContainer.dom.removeEventListener('pointerup', pointerup);
+            canvasContainer.dom.removeEventListener('pointerup', pointerup, true);
             selectToolbar.hidden = true;
             parent.style.display = 'none';
             parent.classList.remove('noevents');

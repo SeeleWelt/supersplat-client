@@ -1,0 +1,180 @@
+@use 'colors.scss' as *;
+
+#viewer-panel {
+    top: var(--desktop-titlebar-height);
+    right: 0;
+    bottom: 0;
+    width: var(--desktop-right-panel-width);
+    transform: none;
+    flex-direction: column;
+    z-index: 5;
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 0;
+    overflow-y: auto;
+
+    &:not(.pcui-hidden) {
+        display: flex;
+    }
+
+    .panel-header-icon {
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+            width: 24px;
+            height: 24px;
+            color: $clr-hilight;
+        }
+    }
+}
+
+.viewer-panel-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 10px 8px;
+    border-bottom: 1px solid $bcg-darker;
+}
+
+.viewer-panel-section-title {
+    height: 18px;
+    color: $text-secondary;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.viewer-panel-preset-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.viewer-panel-action-row,
+.viewer-panel-mode-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.viewer-panel-button,
+.viewer-panel-preset-button,
+.viewer-panel-mode-button {
+    height: 28px;
+    min-width: 0;
+    margin: 0;
+    padding: 0 8px;
+    border: 1px solid $bcg-light;
+    border-radius: 3px;
+    background-color: $bcg-dark;
+    color: $text-secondary;
+    font-weight: 600;
+    letter-spacing: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover {
+        border-color: $bcg-lighter;
+        background-color: $bcg-light;
+        color: $text-primary;
+        cursor: pointer;
+    }
+
+    &:active {
+        background-color: $bcg-darkest;
+        color: $clr-active;
+    }
+}
+
+.viewer-panel-mode-button.active {
+    border-color: $clr-hilight;
+    background-color: $clr-hilight;
+    color: $clr-active;
+}
+
+.viewer-panel-toggle-row {
+    display: flex;
+    min-height: 28px;
+    align-items: center;
+    gap: 8px;
+}
+
+.viewer-panel-toggle-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: $text-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.viewer-panel-toggle {
+    flex: 0 0 auto;
+    background-color: $bcg-dark;
+
+    &::after {
+        background-color: $clr-default;
+    }
+
+    &.pcui-boolean-input-ticked {
+        background-color: $clr-hilight;
+
+        &::after {
+            background-color: $clr-active;
+        }
+    }
+}
+
+.viewer-panel-advanced-row {
+    padding: 4px 6px;
+    border: 1px solid $bcg-light;
+    border-radius: 3px;
+    background-color: $bcg-darkest;
+}
+
+.viewer-panel-separator {
+    height: 1px;
+    margin: 0;
+    background-color: $bcg-darkest;
+}
+
+body.right-panel-collapsed #viewer-panel {
+    overflow: visible;
+    border: 0;
+
+    > :not(.panel-header) {
+        display: none;
+    }
+
+    > .panel-header {
+        display: block;
+        min-height: 0;
+        padding: 0;
+        border: 0;
+        background-color: transparent;
+
+        > .panel-header-icon,
+        > .panel-header-label {
+            display: none;
+        }
+
+        > .panel-collapse-button {
+            position: fixed;
+            top: calc(var(--desktop-titlebar-height) + 8px);
+            right: var(--desktop-right-rail-width);
+            z-index: 10;
+            width: 28px;
+            height: 28px;
+            border: 1px solid $bcg-light;
+            border-right: 0;
+            border-radius: 4px 0 0 4px;
+            background-color: $bcg-darkest;
+        }
+    }
+}

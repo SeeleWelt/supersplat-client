@@ -25,10 +25,18 @@ class Tooltips extends Container {
         const targets = new Map<Element, any>();
         const style = this.dom.style;
         let timer: number = 0;
+        let activeTarget: Element | null = null;
 
         this.register = (target: Element, textString: string, direction: Direction = 'bottom') => {
+            if (!target.dom.getAttribute('title')) {
+                target.dom.setAttribute('title', textString);
+            }
+            if (!target.dom.getAttribute('aria-label')) {
+                target.dom.setAttribute('aria-label', textString);
+            }
 
             const activate = () => {
+                activeTarget = target;
                 const rect = target.dom.getBoundingClientRect();
                 const midx = Math.floor((rect.left + rect.right) * 0.5);
                 const midy = Math.floor((rect.top + rect.bottom) * 0.5);
@@ -57,6 +65,7 @@ class Tooltips extends Container {
                 }
 
                 text.text = textString;
+                this.hidden = false;
                 // inline-block so max-width / wrapping in SCSS apply (inline
                 // would stay one long line).
                 style.display = 'inline-block';
@@ -100,12 +109,20 @@ class Tooltips extends Container {
                 if (style.display === 'inline-block') {
                     startTimer(() => {
                         style.display = 'none';
+                        this.hidden = true;
+                        if (activeTarget === target) {
+                            activeTarget = null;
+                        }
                     });
                 }
             };
 
             target.dom.addEventListener('pointerenter', enter);
             target.dom.addEventListener('pointerleave', leave);
+            target.dom.addEventListener('mouseenter', enter);
+            target.dom.addEventListener('mouseleave', leave);
+            target.dom.addEventListener('focus', enter);
+            target.dom.addEventListener('blur', leave);
 
             target.on('destroy', () => {
                 this.unregister(target);
@@ -119,7 +136,16 @@ class Tooltips extends Container {
             if (value) {
                 target.dom.removeEventListener('pointerenter', value.enter);
                 target.dom.removeEventListener('pointerleave', value.leave);
+                target.dom.removeEventListener('mouseenter', value.enter);
+                target.dom.removeEventListener('mouseleave', value.leave);
+                target.dom.removeEventListener('focus', value.enter);
+                target.dom.removeEventListener('blur', value.leave);
                 targets.delete(target);
+                if (activeTarget === target) {
+                    style.display = 'none';
+                    this.hidden = true;
+                    activeTarget = null;
+                }
             }
         };
 

@@ -2,18 +2,20 @@
 
 .panel {
     position: absolute;
-    border-radius: 8px;
+    border-radius: 0;
     overflow: hidden;
-
     background-color: $bcg-primary;
+    border: 1px solid $bcg-light;
+    box-shadow: none;
 
     & > .panel-header {
         display: flex;
         flex-direction: row;
         align-items: center;
-        padding: 2px;
-
-        background-color: $bcg-dark;
+        min-height: 28px;
+        padding: 2px 6px;
+        border-bottom: 1px solid $bcg-darker;
+        background-color: $bcg-darkest;
 
         & > .panel-header-icon {
             font-family: pc-icon;
@@ -27,6 +29,7 @@
             font-weight: bold;
             flex-grow: 1;
             text-transform: uppercase;
+            letter-spacing: 0;
         }
     }
 
@@ -57,9 +60,32 @@
         }
     }
 
+    .panel-collapse-button {
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 16px;
+        line-height: 1;
+    }
+
     .panel-header-spacer {
         flex-grow: 1;
         padding: 0px;
         margin: 0px;
+    }
+
+    .panel-reset-action {
+        height: 24px;
+        min-width: 60px;
+        margin-left: 8px;
+        margin-right: 6px;
+        padding: 0 10px;
+        font-size: 11px;
+        line-height: 1;
+
+        &:hover {
+            color: $clr-active;
+        }
     }
 }

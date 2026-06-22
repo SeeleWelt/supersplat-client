@@ -1,4 +1,4 @@
-import { BooleanInput, Container, Label } from '@playcanvas/pcui';
+import { BooleanInput, Button, Container, Label } from '@playcanvas/pcui';
 import { Mat4 } from 'playcanvas';
 
 import { Element } from '../element';
@@ -221,6 +221,11 @@ class DataPanel extends Container {
         onScreenOnly.append(onScreenOnlyLabel);
         onScreenOnly.append(onScreenOnlyValue);
 
+        const resetButton = new Button({
+            class: ['reset-action-button', 'data-panel-reset-button'],
+            text: localize('panel.colors.reset')
+        });
+
         const populateDataSelector = (splat: Splat) => {
             // default prop localizations - order defines display order. "red",
             // "green", "blue" and HSV here are the final on-screen color (DC
@@ -326,6 +331,7 @@ class DataPanel extends Container {
         controls.append(logScale);
         controls.append(showAll);
         controls.append(dataListBox);
+        controls.append(resetButton);
 
         // tooltips explain what each toggle actually does. registered on the
         // row containers so the entire row (label + toggle) shares one
@@ -520,6 +526,21 @@ class DataPanel extends Container {
             lastHash = h;
             scheduleUpdate();
         };
+
+        resetButton.on('click', () => {
+            selectedDataProp = 'x';
+            onScreenOnlyValue.value = false;
+            logScaleValue.value = false;
+            showAllValue.value = false;
+            inputs.onScreenOnly = false;
+            inputs.logScale = false;
+            inputs.mode = propModeFor(selectedDataProp) ?? 0;
+            if (splat) {
+                populateDataSelector(splat);
+                lastHash = '';
+                tick();
+            }
+        });
 
         events.on('splat.stateChanged', (splat_: Splat) => {
             // only react when the change is for the splat we're currently
@@ -740,7 +761,7 @@ class DataPanel extends Container {
         const rect = document.createElementNS(svg.namespaceURI, 'rect') as SVGRectElement;
         rect.setAttribute('id', 'highlight-rect');
         rect.setAttribute('fill', 'rgba(255, 102, 0, 0.2)');
-        rect.setAttribute('stroke', '#f60');
+        rect.setAttribute('stroke', '#1D48CE');
         rect.setAttribute('stroke-width', '1');
         rect.setAttribute('stroke-dasharray', '5, 5');
 

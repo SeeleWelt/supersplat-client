@@ -23,6 +23,7 @@ const BUILD_TYPE = process.env.BUILD_TYPE || 'release';
 const ENGINE_DIR = path.resolve(`node_modules/playcanvas/build/playcanvas${BUILD_TYPE === 'debug' ? '.dbg' : ''}/src/index.js`);
 const PCUI_DIR = path.resolve('node_modules/@playcanvas/pcui');
 const HREF = process.env.BASE_HREF || '';
+const ASSET_VERSION = process.env.ASSET_VERSION || Date.now().toString(36);
 
 const outputHeader = () => {
     const BLUE_OUT = '\x1b[34m';
@@ -31,7 +32,7 @@ const outputHeader = () => {
     const RESET_OUT = '\x1b[0m';
 
     const title = [
-        'Building SuperSplat',
+        'Building Ningjing',
         `type ${BOLD_OUT}${BUILD_TYPE}${REGULAR_OUT}`
     ].map(l => `${BLUE_OUT}${l}`).join('\n');
     console.log(`${BLUE_OUT}${title}${RESET_OUT}\n`);
@@ -52,7 +53,9 @@ const application = {
                 {
                     src: 'src/index.html',
                     transform: (contents, filename) => {
-                        return contents.toString().replace('__BASE_HREF__', HREF);
+                        return contents.toString()
+                        .replace('__BASE_HREF__', HREF)
+                        .replaceAll('__ASSET_VERSION__', ASSET_VERSION);
                     }
                 },
                 { src: 'src/manifest.json' },

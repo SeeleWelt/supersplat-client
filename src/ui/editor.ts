@@ -1,18 +1,19 @@
 import { Container, Label } from '@playcanvas/pcui';
 import { Mat4, path, Vec3 } from 'playcanvas';
 
-import { DataPanel } from './data-panel';
 import { Events } from '../events';
 import { AboutPopup } from './about-popup';
+import logo from './app-logo.png';
 import { BottomToolbar } from './bottom-toolbar';
 import { ColorPanel } from './color-panel';
+import { DataPanel } from './data-panel';
 import { ExportPopup } from './export-popup';
 import { ImageSettingsDialog } from './image-settings-dialog';
 import { localize, localizeInit } from './localization';
 import { Menu } from './menu';
 import { ModeToggle } from './mode-toggle';
-import logo from './playcanvas-logo.png';
 import { Popup, ShowOptions } from './popup';
+import { PreferencesDialog, applyPreferences, loadPreferences } from './preferences-dialog';
 import { Progress } from './progress';
 import { PublishSettingsDialog } from './publish-settings-dialog';
 import { RightToolbar } from './right-toolbar';
@@ -22,10 +23,11 @@ import { Spinner } from './spinner';
 import { StatusBar } from './status-bar';
 import { TimelinePanel } from './timeline-panel';
 import { Tooltips } from './tooltips';
+import { TransformPanel } from './transform-panel';
 import { VideoSettingsDialog } from './video-settings-dialog';
 import { ViewCube } from './view-cube';
 import { ViewPanel } from './view-panel';
-import { version } from '../../package.json';
+import { ViewerPanel } from './viewer-panel';
 
 // ts compiler and vscode find this type, but eslint does not
 type FilePickerAcceptType = unknown;
@@ -43,6 +45,9 @@ class EditorUI {
     popup: Popup;
 
     constructor(events: Events) {
+        const preferences = loadPreferences();
+        applyPreferences(preferences);
+
         // favicon
         const link = document.createElement('link');
         link.rel = 'icon';
@@ -76,7 +81,7 @@ class EditorUI {
         // app label
         const appLabel = new Label({
             id: 'app-label',
-            text: `SUPERSPLAT v${version}`
+            text: '凝境'
         });
 
         // cursor label
@@ -121,6 +126,8 @@ class EditorUI {
 
         // bottom toolbar
         const scenePanel = new ScenePanel(events, tooltips);
+        const transformPanel = new TransformPanel(events, tooltips);
+        const viewerPanel = new ViewerPanel(events, tooltips);
         const viewPanel = new ViewPanel(events, tooltips);
         const colorPanel = new ColorPanel(events, tooltips);
         const bottomToolbar = new BottomToolbar(events, tooltips);
@@ -133,6 +140,8 @@ class EditorUI {
         canvasContainer.append(cursorLabel);
         canvasContainer.append(toolsContainer);
         canvasContainer.append(scenePanel);
+        canvasContainer.append(transformPanel);
+        canvasContainer.append(viewerPanel);
         canvasContainer.append(viewPanel);
         canvasContainer.append(colorPanel);
         canvasContainer.append(bottomToolbar);
@@ -157,6 +166,7 @@ class EditorUI {
         const statusBar = new StatusBar(events, tooltips);
 
         timelinePanel.hidden = true;
+        events.fire('viewer.setAdvancedMode', preferences.startupMode === 'editor');
 
         mainContainer.append(canvasContainer);
         mainContainer.append(timelinePanel);
@@ -194,6 +204,9 @@ class EditorUI {
         // about popup
         const aboutPopup = new AboutPopup();
 
+        // preferences
+        const preferencesDialog = new PreferencesDialog(events);
+
         topContainer.append(popup);
         topContainer.append(exportPopup);
         topContainer.append(publishSettingsDialog);
@@ -201,6 +214,7 @@ class EditorUI {
         topContainer.append(videoSettingsDialog);
         topContainer.append(shortcutsPopup);
         topContainer.append(aboutPopup);
+        topContainer.append(preferencesDialog);
 
         appContainer.append(editorContainer);
         appContainer.append(topContainer);
@@ -300,14 +314,14 @@ class EditorUI {
                         }];
                     }
 
-                    const suggested = `${removeExtension(docName ?? 'supersplat')}${fileExtension}`;
+                    const suggested = `${removeExtension(docName ?? 'ningjing')}${fileExtension}`;
 
                     let writable;
                     let fileHandle: FileSystemFileHandle | undefined;
 
                     if (window.showSaveFilePicker) {
                         fileHandle = await window.showSaveFilePicker({
-                            id: 'SuperSplatVideoFileExport',
+                            id: 'NingjingVideoFileExport',
                             types: filePickerTypes,
                             suggestedName: suggested
                         });
@@ -338,6 +352,14 @@ class EditorUI {
 
         events.on('show.about', () => {
             aboutPopup.hidden = false;
+        });
+
+        events.on('show.preferences', () => {
+            preferencesDialog.hidden = false;
+        });
+
+        events.on('preferences.open', () => {
+            preferencesDialog.hidden = false;
         });
 
         events.function('showPopup', (options: ShowOptions) => {
@@ -396,8 +418,8 @@ class EditorUI {
 
         // initialize canvas to correct size before creating graphics device etc
         const pixelRatio = window.devicePixelRatio;
-        canvas.width = Math.ceil(canvasContainer.dom.offsetWidth * pixelRatio);
-        canvas.height = Math.ceil(canvasContainer.dom.offsetHeight * pixelRatio);
+        canvas.width = Math.ceil(canvas.clientWidth * pixelRatio);
+        canvas.height = Math.ceil(canvas.clientHeight * pixelRatio);
 
         ['contextmenu', 'gesturestart', 'gesturechange', 'gestureend'].forEach((event) => {
             document.addEventListener(event, (e) => {

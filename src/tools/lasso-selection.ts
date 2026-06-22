@@ -1,4 +1,5 @@
 import { Events } from '../events';
+import { pointerToElement, resizeCanvasToElement } from './pointer';
 
 type Point = { x: number, y: number };
 
@@ -32,13 +33,14 @@ class LassoSelection {
 
         const paint = () => {
             polygon.setAttribute('points', [...points, currentPoint].reduce((prev, current) => `${prev}${current.x}, ${current.y} `, ''));
-            polygon.setAttribute('stroke', isClosed() ? '#fa6' : '#f60');
+            polygon.setAttribute('stroke', isClosed() ? '#5076E5' : '#1D48CE');
         };
 
         let dragId: number | undefined;
 
         const update = (e: PointerEvent) => {
-            currentPoint = { x: e.offsetX, y: e.offsetY };
+            const point = pointerToElement(e, parent);
+            currentPoint = { x: point.x, y: point.y };
 
             const distance = points.length === 0 ? 0 : dist(currentPoint, points[points.length - 1]);
             const millis = Date.now() - lastPointTime;
@@ -56,16 +58,13 @@ class LassoSelection {
 
         const commitSelection = async (e: PointerEvent) => {
             // initialize canvas
-            if (canvas.width !== parent.clientWidth || canvas.height !== parent.clientHeight) {
-                canvas.width = parent.clientWidth;
-                canvas.height = parent.clientHeight;
-            }
+            resizeCanvasToElement(canvas, parent);
 
             // clear canvas
             context.clearRect(0, 0, canvas.width, canvas.height);
 
             context.beginPath();
-            context.fillStyle = '#f60';
+            context.fillStyle = '#1D48CE';
             context.beginPath();
             points.forEach((p, idx) => {
                 if (idx === 0) {

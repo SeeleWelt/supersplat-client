@@ -1,4 +1,5 @@
 import { Events } from '../events';
+import { pointerToElement, resizeCanvasToElement } from './pointer';
 
 type Point = { x: number, y: number };
 
@@ -33,21 +34,18 @@ class PolygonSelection {
 
         const paint = () => {
             polyline.setAttribute('points', [...points, currentPoint].filter(v => v).reduce((prev, current) => `${prev}${current.x}, ${current.y} `, ''));
-            polyline.setAttribute('stroke', isClosed() ? '#fa6' : '#f60');
+            polyline.setAttribute('stroke', isClosed() ? '#5076E5' : '#1D48CE');
         };
 
         const commitSelection = async (e: MouseEvent) => {
             // initialize canvas
-            if (canvas.width !== parent.clientWidth || canvas.height !== parent.clientHeight) {
-                canvas.width = parent.clientWidth;
-                canvas.height = parent.clientHeight;
-            }
+            resizeCanvasToElement(canvas, parent);
 
             // clear canvas
             context.clearRect(0, 0, canvas.width, canvas.height);
 
             context.beginPath();
-            context.fillStyle = '#f60';
+            context.fillStyle = '#1D48CE';
             context.beginPath();
             points.forEach((p, idx) => {
                 if (idx === 0) {
@@ -73,7 +71,8 @@ class PolygonSelection {
         };
 
         const pointermove = (e: PointerEvent) => {
-            currentPoint = { x: e.offsetX, y: e.offsetY };
+            const point = pointerToElement(e, parent);
+            currentPoint = { x: point.x, y: point.y };
 
             if (points.length > 0) {
                 paint();

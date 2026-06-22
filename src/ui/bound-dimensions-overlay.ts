@@ -71,8 +71,15 @@ class BoundDimensionsOverlay {
 
             svg.classList.remove('hidden');
 
-            const width = canvasContainer.dom.clientWidth;
-            const height = canvasContainer.dom.clientHeight;
+            const canvasRect = scene.canvas.getBoundingClientRect();
+            const containerRect = canvasContainer.dom.getBoundingClientRect();
+            const width = Math.max(1, canvasRect.width);
+            const height = Math.max(1, canvasRect.height);
+            svg.style.left = `${canvasRect.left - containerRect.left}px`;
+            svg.style.top = `${canvasRect.top - containerRect.top}px`;
+            svg.style.width = `${width}px`;
+            svg.style.height = `${height}px`;
+
             const camera = scene.camera;
             const transform = selection.entity.getWorldTransform();
             const bound = selection.localBound;

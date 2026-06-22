@@ -2,17 +2,19 @@
 
 .menu-panel {
     position: absolute;
+    z-index: 30;
 
     &::not(.pcui-hidden) {
         display: flex;
     }
     flex-direction: column;
 
-    border-radius: 8px;
+    border-radius: 0 0 4px 4px;
     overflow: hidden;
 
     background-color: $bcg-dark;
-    filter: drop-shadow(5px 5px 10px rgba(0, 0, 0, 0.8));
+    border: 1px solid $bcg-light;
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.55));
 
     // the following is needed to get drop-shadow working on safari
     will-change: transform;

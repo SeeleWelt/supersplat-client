@@ -252,6 +252,12 @@ class TimelinePanel extends Container {
             enabled: false
         });
 
+        const clearKeys = new Button({
+            class: ['button', 'timeline-clear-keys-button'],
+            text: localize('timeline.clear-keys.short'),
+            enabled: false
+        });
+
         const buttonControls = new Container({
             id: 'button-controls'
         });
@@ -260,6 +266,7 @@ class TimelinePanel extends Container {
         buttonControls.append(next);
         buttonControls.append(addKey);
         buttonControls.append(removeKey);
+        buttonControls.append(clearKeys);
 
         // settings
 
@@ -321,9 +328,15 @@ class TimelinePanel extends Container {
         const settingsControls = new Container({
             id: 'settings-controls'
         });
+        const reset = new Button({
+            id: 'timelineReset',
+            class: ['button', 'reset-action-button', 'timeline-reset-action'],
+            text: localize('panel.colors.reset')
+        });
         settingsControls.append(speed);
         settingsControls.append(frames);
         settingsControls.append(smoothness);
+        settingsControls.append(reset);
 
         // append control groups
 
@@ -389,16 +402,34 @@ class TimelinePanel extends Container {
             events.fire('track.removeKey', frame);
         });
 
+        clearKeys.on('click', () => {
+            events.fire('track.clearKeys');
+        });
+
+        reset.on('click', () => {
+            events.fire('timeline.setPlaying', false);
+            events.fire('timeline.setFrameRate', 30);
+            events.fire('timeline.setFrames', 180);
+            events.fire('timeline.setSmoothness', 1);
+            events.fire('timeline.setFrame', 0);
+        });
+
         // Helper to check if the current frame has a key
+        const currentKeys = () => {
+            return events.invoke('track.keys') as number[] ?? [];
+        };
+
         const canDeleteKey = () => {
-            const keys = events.invoke('track.keys') as number[] ?? [];
+            const keys = currentKeys();
             const frame = events.invoke('timeline.frame');
             return keys.includes(frame);
         };
 
         // Update key button states
         const updateKeyButtonStates = () => {
+            const keys = currentKeys();
             removeKey.enabled = canDeleteKey();
+            clearKeys.enabled = keys.length > 0;
         };
 
         // Update button states when frame changes
@@ -456,9 +487,11 @@ class TimelinePanel extends Container {
         tooltips.register(next, tooltip('tooltip.timeline.next-frame', 'timeline.nextFrame'), 'top');
         tooltips.register(addKey, tooltip('tooltip.timeline.add-key', 'track.addKey'), 'top');
         tooltips.register(removeKey, tooltip('tooltip.timeline.remove-key', 'track.removeKey'), 'top');
+        tooltips.register(clearKeys, localize('tooltip.timeline.clear-keys'), 'top');
         tooltips.register(speed, localize('tooltip.timeline.frame-rate'), 'top');
         tooltips.register(frames, localize('tooltip.timeline.total-frames'), 'top');
         tooltips.register(smoothness, localize('tooltip.timeline.smoothness'), 'top');
+        tooltips.register(reset, localize('panel.colors.reset'), 'top');
     }
 }
 

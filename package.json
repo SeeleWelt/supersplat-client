@@ -1,8 +1,8 @@
 {
-    "name": "supersplat",
+    "name": "ningjing",
     "version": "2.27.4",
-    "author": "PlayCanvas<support@playcanvas.com>",
-    "homepage": "https://playcanvas.com/supersplat/editor",
+    "author": "OPCMate.ai",
+    "homepage": "",
     "description": "3D Gaussian Splat Editor",
     "keywords": [
         "playcanvas",
@@ -16,18 +16,19 @@
     "scripts": {
         "build": "rollup -c",
         "watch": "rollup -c -w",
-        "serve": "serve dist -C",
+        "serve": "serve dist -C -l 1420",
         "develop": "cross-env BUILD_TYPE=debug concurrently --kill-others \"npm run watch\" \"npm run serve\"",
-        "develop:auto-launch": "concurrently --kill-others \"xdg-open 'http://localhost:3000/'\" \"npm run watch\" \"npm run serve\"",
-        "lint": "eslint src"
+        "develop:auto-launch": "concurrently --kill-others \"xdg-open 'http://localhost:1420/'\" \"npm run watch\" \"npm run serve\"",
+        "lint": "eslint src",
+        "tauri": "tauri"
     },
     "engines": {
         "node": ">=20.19.0"
     },
     "devDependencies": {
         "@playcanvas/eslint-config": "2.1.0",
-        "@playcanvas/splat-transform": "2.5.1",
         "@playcanvas/pcui": "6.1.4",
+        "@playcanvas/splat-transform": "2.5.1",
         "@rollup/plugin-alias": "6.0.0",
         "@rollup/plugin-image": "3.0.3",
         "@rollup/plugin-json": "6.1.0",
@@ -35,11 +36,12 @@
         "@rollup/plugin-strip": "3.0.4",
         "@rollup/plugin-terser": "1.0.0",
         "@rollup/plugin-typescript": "12.3.0",
+        "@tauri-apps/cli": "^2.11.2",
         "@types/wicg-file-system-access": "2023.10.7",
         "@typescript-eslint/eslint-plugin": "8.60.1",
         "@typescript-eslint/parser": "8.60.1",
         "autoprefixer": "10.5.0",
-        "concurrently": "9.2.1",
+        "concurrently": "^9.2.1",
         "cors": "2.8.6",
         "cross-env": "10.1.0",
         "eslint": "10.4.1",
@@ -57,5 +59,8 @@
         "serve": "14.2.6",
         "tslib": "2.8.1",
         "typescript": "6.0.3"
+    },
+    "overrides": {
+        "shell-quote": "1.8.4"
     }
 }

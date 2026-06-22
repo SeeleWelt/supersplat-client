@@ -2,6 +2,8 @@
 .tool-svg {
     display: inline;
     position: absolute;
+    left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
 
@@ -12,7 +14,7 @@
     &#brush-select-svg {
         >circle {
             fill: rgba(255, 102, 0, 0.2);
-            stroke: #f60;
+            stroke: #1D48CE;
             stroke-width: 1;
             stroke-dasharray: 5, 5;
         }
@@ -21,7 +23,7 @@
     &#rect-select-svg {
         >rect {
             fill: none;
-            stroke: #f60;
+            stroke: #1D48CE;
             stroke-width: 1;
             stroke-dasharray: 5, 5;
         }

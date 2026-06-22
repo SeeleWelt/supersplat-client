@@ -166,11 +166,17 @@ class PublishSettingsDialog extends Container {
             text: localize('popup.publish.cancel')
         });
 
+        const resetButton = new Button({
+            class: ['button', 'reset-action-button', 'dialog-reset-button'],
+            text: localize('panel.colors.reset')
+        });
+
         const okButton = new Button({
             class: 'button',
             text: localize('popup.publish.ok')
         });
 
+        footer.append(resetButton);
         footer.append(cancelButton);
         footer.append(okButton);
 
@@ -184,6 +190,7 @@ class PublishSettingsDialog extends Container {
 
         let onCancel: () => void;
         let onOK: () => void;
+        let resetArgs: [boolean, string[]] | null = null;
 
         cancelButton.on('click', () => onCancel());
         okButton.on('click', () => onOK());
@@ -284,6 +291,12 @@ class PublishSettingsDialog extends Container {
             updateLayout();
         };
 
+        resetButton.on('click', () => {
+            if (resetArgs) {
+                reset(...resetArgs);
+            }
+        });
+
         // function implementations
 
         this.show = (userStatus: UserStatus) => {
@@ -303,7 +316,8 @@ class PublishSettingsDialog extends Container {
             });
 
             // reset UI
-            reset(orderedPoses.length > 0, overwriteList);
+            resetArgs = [orderedPoses.length > 0, overwriteList];
+            reset(...resetArgs);
 
             this.hidden = false;
             this.dom.addEventListener('keydown', keydown);
@@ -396,6 +410,7 @@ class PublishSettingsDialog extends Container {
                     });
                 };
             }).finally(() => {
+                resetArgs = null;
                 this.dom.removeEventListener('keydown', keydown);
                 this.hide();
             });

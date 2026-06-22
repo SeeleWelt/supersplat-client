@@ -1,11 +1,15 @@
 @use 'colors.scss' as *;
 
 .tooltips {
-    position: absolute;
+    position: fixed;
+    z-index: 10000;
     background-color: $bcg-darkest;
     border: 1px solid $bcg-primary;
     padding: 4px;
     box-sizing: border-box;
+    pointer-events: none;
+    border-radius: 3px;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
 }
 
 .tooltips-content {

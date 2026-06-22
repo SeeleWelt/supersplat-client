@@ -1,5 +1,5 @@
 import { ReadFileSystem } from '@playcanvas/splat-transform';
-import { AppBase, Asset, GSplatResource } from 'playcanvas';
+import { AppBase, Asset, GSplatResource, Quat } from 'playcanvas';
 
 import { Events } from './events';
 import { loadGSplatData, validateGSplatData } from './io';
@@ -22,14 +22,14 @@ class AssetLoader {
 
         try {
             // Skip reordering for animation frames (speed) or when explicitly requested (already ordered)
-            const { gsplatData, transform } = await loadGSplatData(filename, fileSystem, skipReorder || animationFrame);
+            const { gsplatData } = await loadGSplatData(filename, fileSystem, skipReorder || animationFrame);
             validateGSplatData(gsplatData);
 
             const asset = new Asset(filename, 'gsplat', { url: `local-asset-${Date.now()}`, filename });
             this.app.assets.add(asset);
             asset.resource = new GSplatResource(this.app.graphicsDevice, gsplatData);
 
-            return new Splat(asset, transform.rotation);
+            return new Splat(asset, new Quat());
         } finally {
             if (!animationFrame) {
                 this.events.fire('stopSpinner');

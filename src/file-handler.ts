@@ -423,7 +423,7 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
         } else {
             try {
                 const handles = await window.showOpenFilePicker({
-                    id: 'SuperSplatFileImport',
+                    id: 'NingjingFileImport',
                     multiple: true,
                     excludeAcceptAllOption: false,
                     types: [
@@ -461,7 +461,7 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
     events.function('scene.openAnimation', async () => {
         try {
             const handle = await window.showDirectoryPicker({
-                id: 'SuperSplatFileOpenAnimation',
+                id: 'NingjingFileOpenAnimation',
                 mode: 'readwrite'
             });
 
@@ -506,7 +506,7 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
         if (hasFilePicker) {
             try {
                 const fileHandle = await window.showSaveFilePicker({
-                    id: 'SuperSplatFileExport',
+                    id: 'NingjingFileExport',
                     types: [filePickerTypes[fileType]],
                     suggestedName: options.filename
                 });

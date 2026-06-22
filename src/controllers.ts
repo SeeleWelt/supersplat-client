@@ -15,12 +15,23 @@ class PointerController {
     destroy: () => void;
 
     constructor(camera: Camera, target: HTMLElement) {
+        const canvasPoint = (event: MouseEvent) => {
+            const rect = camera.scene.canvas.getBoundingClientRect();
+
+            return {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top,
+                width: rect.width || 1,
+                height: rect.height || 1
+            };
+        };
 
         // Orbit mode: rotate camera around the focal point
         const orbit = (dx: number, dy: number) => {
-            const azim = camera.azim - dx * camera.scene.config.controls.orbitSensitivity;
-            const elev = camera.elevation - dy * camera.scene.config.controls.orbitSensitivity;
-            camera.setAzimElev(azim, elev);
+            const current = camera.azimElevTween.value;
+            const azim = current.azim - dx * camera.scene.config.controls.orbitSensitivity;
+            const elev = current.elev - dy * camera.scene.config.controls.orbitSensitivity;
+            camera.setAzimElev(azim, elev, 0);
         };
 
         const look = (dx: number, dy: number) => {
@@ -37,13 +48,14 @@ class PointerController {
             c.screenToWorld(x - dx, y - dy, distance, toWorldPoint);
 
             worldDiff.sub2(toWorldPoint, fromWorldPoint);
-            worldDiff.add(camera.focalPoint);
+            worldDiff.add(camera.focalPointTween.value);
 
-            camera.setFocalPoint(worldDiff);
+            camera.setFocalPoint(worldDiff, 0);
         };
 
         const zoom = (amount: number) => {
-            camera.setDistance(camera.distance - (camera.distance * 0.999 + 0.001) * amount * camera.scene.config.controls.zoomSensitivity, 2);
+            const distance = camera.distanceTween.value.distance;
+            camera.setDistance(distance - (distance * 0.999 + 0.001) * amount * camera.scene.config.controls.zoomSensitivity, 0);
         };
 
         // mouse state
@@ -66,8 +78,9 @@ class PointerController {
                 }
                 target.setPointerCapture(event.pointerId);
                 pressedButton = event.button;
-                x = event.offsetX;
-                y = event.offsetY;
+                const point = canvasPoint(event);
+                x = point.x;
+                y = point.y;
                 if (pressedButton === 1) {
                     mmbStartX = x;
                     mmbStartY = y;
@@ -77,9 +90,10 @@ class PointerController {
                 if (touches.length === 0) {
                     target.setPointerCapture(event.pointerId);
                 }
+                const point = canvasPoint(event);
                 touches.push({
-                    x: event.offsetX,
-                    y: event.offsetY,
+                    x: point.x,
+                    y: point.y,
                     id: event.pointerId
                 });
 
@@ -97,7 +111,8 @@ class PointerController {
                 if (event.button === pressedButton) {
                     // MMB tap (no significant movement) -> focus on cursor point (orbit only; fly uses MMB for zoom)
                     if (pressedButton === 1 && camera.controlMode === 'orbit' && !mmbDragged) {
-                        camera.pickFocalPoint(event.offsetX / target.clientWidth, event.offsetY / target.clientHeight);
+                        const point = canvasPoint(event);
+                        camera.pickFocalPoint(point.x / point.width, point.y / point.height);
                     }
                     pressedButton = -1;
                     target.releasePointerCapture(event.pointerId);
@@ -126,10 +141,11 @@ class PointerController {
                     return;
                 }
 
-                const dx = event.offsetX - x;
-                const dy = event.offsetY - y;
-                x = event.offsetX;
-                y = event.offsetY;
+                const point = canvasPoint(event);
+                const dx = point.x - x;
+                const dy = point.y - y;
+                x = point.x;
+                y = point.y;
 
                 if (camera.controlMode === 'fly') {
                     // Fly mode: left-drag to look around, middle to zoom, right works same as orbit
@@ -157,7 +173,7 @@ class PointerController {
                     //   (gated on a small drag threshold so a tap can be used to focus on release)
                     // - right button: pan, Shift/Ctrl -> orbit, Alt/Meta -> zoom
                     if (pressedButton === 1 && !mmbDragged) {
-                        if (dist(event.offsetX, event.offsetY, mmbStartX, mmbStartY) < CLICK_DRAG_THRESHOLD) {
+                        if (dist(point.x, point.y, mmbStartX, mmbStartY) < CLICK_DRAG_THRESHOLD) {
                             return;
                         }
                         mmbDragged = true;
@@ -183,12 +199,13 @@ class PointerController {
                     }
                 }
             } else {
+                const point = canvasPoint(event);
                 if (touches.length === 1) {
                     const touch = touches[0];
-                    const dx = event.offsetX - touch.x;
-                    const dy = event.offsetY - touch.y;
-                    touch.x = event.offsetX;
-                    touch.y = event.offsetY;
+                    const dx = point.x - touch.x;
+                    const dy = point.y - touch.y;
+                    touch.x = point.x;
+                    touch.y = point.y;
 
                     if (camera.controlMode === 'fly') {
                         look(dx, dy);
@@ -197,8 +214,8 @@ class PointerController {
                     }
                 } else if (touches.length === 2) {
                     const touch = touches[touches.map(t => t.id).indexOf(event.pointerId)];
-                    touch.x = event.offsetX;
-                    touch.y = event.offsetY;
+                    touch.x = point.x;
+                    touch.y = point.y;
 
                     const mx = (touches[0].x + touches[1].x) * 0.5;
                     const my = (touches[0].y + touches[1].y) * 0.5;
@@ -291,7 +308,8 @@ class PointerController {
             } else if (event.ctrlKey || event.metaKey) {
                 zoom(deltaY * -0.02);
             } else if (event.shiftKey) {
-                pan(event.offsetX, event.offsetY, deltaX, deltaY);
+                const point = canvasPoint(event);
+                pan(point.x, point.y, deltaX, deltaY);
             } else {
                 orbit(deltaX, deltaY);
             }
@@ -308,7 +326,8 @@ class PointerController {
                 if (camera.controlMode === 'fly') {
                     camera.scene.events.fire('camera.setControlMode', 'orbit');
                 }
-                camera.pickFocalPoint(event.offsetX / target.clientWidth, event.offsetY / target.clientHeight);
+                const point = canvasPoint(event);
+                camera.pickFocalPoint(point.x / point.width, point.y / point.height);
             }
         };
 

@@ -1,4 +1,4 @@
-import { Container, Label, Element as PcuiElement, TextInput } from '@playcanvas/pcui';
+import { Container, Element as PcuiElement, TextInput } from '@playcanvas/pcui';
 
 import { SplatRenameOp } from '../edit-ops';
 import { Element, ElementType } from '../element';
@@ -30,38 +30,33 @@ class SplatItem extends Container {
 
         super(args);
 
-        const text = new Label({
-            class: 'splat-item-text',
-            text: name
+        const text = new PcuiElement({
+            dom: document.createElement('div'),
+            class: 'splat-item-text'
         });
+        text.dom.classList.remove('pcui-element', 'font-regular');
+        text.dom.textContent = name;
 
-        const visible = new PcuiElement({
-            dom: createSvg(shownSvg),
-            class: 'splat-item-visible'
+        const visibleButton = new PcuiElement({
+            class: ['splat-item-action', 'splat-item-visible']
         });
-
-        const invisible = new PcuiElement({
-            dom: createSvg(hiddenSvg),
-            class: 'splat-item-visible',
-            hidden: true
-        });
+        visibleButton.dom.appendChild(createSvg(shownSvg));
 
         const remove = new PcuiElement({
-            dom: createSvg(deleteSvg),
-            class: 'splat-item-delete'
+            class: ['splat-item-action', 'splat-item-delete']
         });
+        remove.dom.appendChild(createSvg(deleteSvg));
 
         this.append(text);
-        this.append(visible);
-        this.append(invisible);
+        this.append(visibleButton);
         this.append(remove);
 
         this.getName = () => {
-            return text.value;
+            return text.dom.textContent ?? '';
         };
 
         this.setName = (value: string) => {
-            text.value = value;
+            text.dom.textContent = value;
         };
 
         this.getSelected = () => {
@@ -86,8 +81,7 @@ class SplatItem extends Container {
 
         this.setVisible = (value: boolean) => {
             if (value !== this.visible) {
-                visible.hidden = !value;
-                invisible.hidden = value;
+                visibleButton.dom.replaceChildren(createSvg(value ? shownSvg : hiddenSvg));
                 if (value) {
                     this.class.add('visible');
                     this.emit('visible', this);
@@ -122,19 +116,17 @@ class SplatItem extends Container {
             text.hidden = true;
 
             this.appendAfter(edit, text);
-            edit.value = text.value;
+            edit.value = this.name;
             edit.input.addEventListener('blur', onblur);
             edit.focus();
         });
 
         // handle clicks
-        visible.dom.addEventListener('click', toggleVisible);
-        invisible.dom.addEventListener('click', toggleVisible);
+        visibleButton.dom.addEventListener('click', toggleVisible);
         remove.dom.addEventListener('click', handleRemove);
 
         this.destroy = () => {
-            visible.dom.removeEventListener('click', toggleVisible);
-            invisible.dom.removeEventListener('click', toggleVisible);
+            visibleButton.dom.removeEventListener('click', toggleVisible);
             remove.dom.removeEventListener('click', handleRemove);
         };
     }

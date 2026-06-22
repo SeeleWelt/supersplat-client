@@ -1,10 +1,14 @@
+import { Button, Container } from '@playcanvas/pcui';
+
 import { Events } from '../events';
+import { pointerToElement, resizeCanvasToElement } from './pointer';
+import { localize } from '../ui/localization';
 
 class BrushSelection {
     activate: () => void;
     deactivate: () => void;
 
-    constructor(events: Events, parent: HTMLElement, mask: { canvas: HTMLCanvasElement, context: CanvasRenderingContext2D }) {
+    constructor(events: Events, parent: HTMLElement, mask: { canvas: HTMLCanvasElement, context: CanvasRenderingContext2D }, canvasContainer: Container) {
         // create svg
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.classList.add('tool-svg', 'hidden');
@@ -17,23 +21,36 @@ class BrushSelection {
 
         const { canvas, context } = mask;
 
-        let radius = 40;
+        const defaultRadius = 40;
+        let radius = defaultRadius;
 
         circle.setAttribute('r', radius.toString());
 
         const prev = { x: 0, y: 0 };
         let dragId: number | undefined;
 
+        const selectToolbar = new Container({
+            class: 'select-toolbar',
+            hidden: true
+        });
+
+        selectToolbar.dom.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+        });
+
+        const resetButton = new Button({ text: localize('panel.colors.reset'), class: ['select-toolbar-button', 'reset-action-button', 'select-toolbar-reset-button'] });
+        selectToolbar.append(resetButton);
+        canvasContainer.append(selectToolbar);
+
         const update = (e: PointerEvent) => {
-            const x = e.offsetX;
-            const y = e.offsetY;
+            const { x, y } = pointerToElement(e, parent);
 
             circle.setAttribute('cx', x.toString());
             circle.setAttribute('cy', y.toString());
 
             if (dragId !== undefined) {
                 context.beginPath();
-                context.strokeStyle = '#f60';
+                context.strokeStyle = '#1D48CE';
                 context.lineCap = 'round';
                 context.lineWidth = radius * 2;
                 context.moveTo(prev.x, prev.y);
@@ -54,10 +71,7 @@ class BrushSelection {
                 parent.setPointerCapture(dragId);
 
                 // initialize canvas
-                if (canvas.width !== parent.clientWidth || canvas.height !== parent.clientHeight) {
-                    canvas.width = parent.clientWidth;
-                    canvas.height = parent.clientHeight;
-                }
+                resizeCanvasToElement(canvas, parent);
 
                 // clear canvas
                 context.clearRect(0, 0, canvas.width, canvas.height);
@@ -65,8 +79,9 @@ class BrushSelection {
                 // display it
                 canvas.style.display = 'inline';
 
-                prev.x = e.offsetX;
-                prev.y = e.offsetY;
+                const point = pointerToElement(e, parent);
+                prev.x = point.x;
+                prev.y = point.y;
 
                 update(e);
             }
@@ -112,8 +127,15 @@ class BrushSelection {
             }
         };
 
+        resetButton.dom.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            radius = defaultRadius;
+            circle.setAttribute('r', radius.toString());
+        });
+
         this.activate = () => {
             svg.classList.remove('hidden');
+            selectToolbar.hidden = false;
             parent.style.display = 'block';
             parent.addEventListener('pointerdown', pointerdown);
             parent.addEventListener('pointermove', pointermove);
@@ -127,6 +149,7 @@ class BrushSelection {
                 dragEnd();
             }
             svg.classList.add('hidden');
+            selectToolbar.hidden = true;
             parent.style.display = 'none';
             parent.removeEventListener('pointerdown', pointerdown);
             parent.removeEventListener('pointermove', pointermove);

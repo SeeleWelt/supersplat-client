@@ -1,4 +1,4 @@
-import { ColorPicker, Container, Label, SliderInput } from '@playcanvas/pcui';
+import { Button, ColorPicker, Container, Label, SliderInput } from '@playcanvas/pcui';
 import { Color } from 'playcanvas';
 
 import { Events } from '../events';
@@ -25,8 +25,7 @@ class ColorPanel extends Container {
         args = {
             ...args,
             id: 'color-panel',
-            class: 'panel',
-            hidden: true
+            class: 'panel'
         };
 
         super(args);
@@ -52,8 +51,31 @@ class ColorPanel extends Container {
             text: localize('panel.colors')
         });
 
+        const reset = new Button({
+            class: ['reset-action-button', 'panel-reset-action'],
+            text: localize('panel.colors.reset')
+        });
+
+        const collapseToggle = new Container({
+            class: ['panel-header-button', 'panel-collapse-button', 'panel-collapse-right']
+        });
+
+        const updateCollapsedState = () => {
+            const collapsed = document.body.classList.contains('right-panel-collapsed');
+            collapseToggle.dom.textContent = collapsed ? '<' : '>';
+            collapseToggle.dom.title = collapsed ? '展开颜色面板' : '折叠颜色面板';
+        };
+
+        collapseToggle.on('click', () => {
+            document.body.classList.toggle('right-panel-collapsed');
+            updateCollapsedState();
+        });
+        updateCollapsedState();
+
         header.append(icon);
         header.append(label);
+        header.append(reset);
+        header.append(collapseToggle);
 
         // tint
 
@@ -206,21 +228,6 @@ class ColorPanel extends Container {
         transparencyRow.append(transparencyLabel);
         transparencyRow.append(transparencySlider);
 
-        // control row
-
-        const controlRow = new Container({
-            class: 'color-panel-control-row'
-        });
-
-        const reset = new Label({
-            class: 'panel-header-button',
-            text: '\uE304'
-        });
-
-        controlRow.append(new Label({ class: 'panel-header-spacer' }));
-        controlRow.append(reset);
-        controlRow.append(new Label({ class: 'panel-header-spacer' }));
-
         this.append(header);
         this.append(tintRow);
         this.append(temperatureRow);
@@ -229,8 +236,6 @@ class ColorPanel extends Container {
         this.append(blackPointRow);
         this.append(whitePointRow);
         this.append(transparencyRow);
-        this.append(new Label({ class: 'panel-header-spacer' }));
-        this.append(controlRow);
 
         // handle ui updates
 
@@ -406,7 +411,8 @@ class ColorPanel extends Container {
         events.on('splat.whitePoint', updateUIFromState);
         events.on('splat.transparency', updateUIFromState);
 
-        tooltips.register(reset, localize('panel.colors.reset'), 'bottom');
+        tooltips.register(reset, localize('panel.colors.reset'), 'top');
+        tooltips.register(collapseToggle, '折叠/展开颜色面板', 'top');
 
         // handle panel visibility
 
@@ -430,6 +436,12 @@ class ColorPanel extends Container {
         });
 
         events.on('viewPanel.visible', (visible: boolean) => {
+            if (visible) {
+                setVisible(false);
+            }
+        });
+
+        events.on('viewerPanel.visible', (visible: boolean) => {
             if (visible) {
                 setVisible(false);
             }

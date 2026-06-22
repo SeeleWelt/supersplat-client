@@ -1,6 +1,8 @@
-import { Container, NumericInput } from '@playcanvas/pcui';
+import { Button, Container, NumericInput } from '@playcanvas/pcui';
 
 import { Events } from '../events';
+import { pointerToElement } from './pointer';
+import { localize } from '../ui/localization';
 
 type PointerOp = 'set' | 'add' | 'remove';
 
@@ -14,7 +16,8 @@ class EyedropperSelection {
 
     constructor(events: Events, parent: HTMLElement, canvasContainer: Container) {
         let pointerId: number | null = null;
-        let threshold = 0.2;
+        const defaultThreshold = 0.2;
+        let threshold = defaultThreshold;
 
         const selectToolbar = new Container({
             class: 'select-toolbar',
@@ -33,8 +36,10 @@ class EyedropperSelection {
             min: 0,
             max: 1
         });
+        const resetButton = new Button({ text: localize('panel.colors.reset'), class: ['select-toolbar-button', 'reset-action-button', 'select-toolbar-reset-button'] });
 
         selectToolbar.append(thresholdInput);
+        selectToolbar.append(resetButton);
         canvasContainer.append(selectToolbar);
 
         const getPointerOp = (event: PointerEvent): PointerOp => {
@@ -48,11 +53,10 @@ class EyedropperSelection {
         };
         // Convert pointer event to normalized coordinates within the parent element
         const toNormalizedPoint = (event: PointerEvent): NormalizedPoint => {
-            const width = parent.clientWidth || 1;
-            const height = parent.clientHeight || 1;
+            const point = pointerToElement(event, parent);
             return {
-                x: clamp01(event.offsetX / width),
-                y: clamp01(event.offsetY / height)
+                x: clamp01(point.x / point.width),
+                y: clamp01(point.y / point.height)
             };
         };
 
@@ -65,6 +69,12 @@ class EyedropperSelection {
 
         thresholdInput.on('change', () => {
             threshold = clamp01(thresholdInput.value ?? threshold);
+        });
+
+        resetButton.dom.addEventListener('pointerdown', (event) => {
+            event.stopPropagation();
+            threshold = defaultThreshold;
+            thresholdInput.value = defaultThreshold;
         });
 
         const pointerdown = (event: PointerEvent) => {

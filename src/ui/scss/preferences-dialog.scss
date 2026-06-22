@@ -1,0 +1,176 @@
+@use 'colors.scss' as *;
+
+.preferences-dialog {
+    #dialog {
+        width: min(700px, calc(100vw - 48px));
+        height: min(640px, calc(100vh - 72px));
+        max-height: calc(100vh - 72px);
+    }
+
+    #content {
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .preferences-section {
+        padding: 4px 0 10px;
+        border-bottom: 1px solid $bcg-darker;
+
+        &:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+    }
+
+    .preferences-section-title {
+        height: 22px;
+        margin: 2px 0 6px;
+        color: $clr-hilight;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 22px;
+        text-transform: uppercase;
+        letter-spacing: 0;
+    }
+
+    .row {
+        min-height: 30px;
+        align-items: center;
+        gap: 12px;
+
+        .label {
+            width: 180px;
+            color: $text-primary;
+        }
+
+        .select {
+            min-width: 0;
+        }
+    }
+
+    .preferences-shortcut-list {
+        display: flex;
+        flex-direction: column;
+        max-height: 260px;
+        margin: 2px 0 8px;
+        overflow-y: auto;
+        border: 1px solid $bcg-darker;
+        border-radius: 4px;
+        background-color: $bcg-darkest;
+    }
+
+    .preferences-shortcut-group-title {
+        display: flex !important;
+        align-items: center;
+        height: 28px !important;
+        min-height: 28px;
+        padding: 0 12px;
+        color: $clr-hilight;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 28px;
+        text-transform: uppercase;
+        letter-spacing: 0;
+        background-color: rgba(255, 255, 255, 0.02);
+        border-top: 1px solid rgba(255, 255, 255, 0.04);
+
+        &:first-child {
+            border-top: 0;
+        }
+    }
+
+    .preferences-shortcut-row {
+        min-height: 34px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 148px 52px;
+        align-items: center;
+        column-gap: 8px;
+        padding: 4px 8px 4px 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.035);
+
+        &:last-child {
+            border-bottom: 0;
+        }
+
+        &:hover {
+            background-color: rgba($clr-hilight, 0.08);
+        }
+
+        &.recording {
+            background-color: rgba($clr-hilight, 0.16);
+
+            .shortcut-binding-button {
+                color: $clr-active;
+                border-color: $clr-hilight;
+                background-color: rgba($clr-hilight, 0.28);
+            }
+        }
+
+    }
+
+    .shortcut-action-label {
+        min-width: 0;
+        margin: 0;
+        color: $text-primary;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .shortcut-binding-button {
+        width: 148px !important;
+        height: 24px;
+        margin: 0;
+        padding: 0 10px;
+        color: $clr-icon-hilight;
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+        border: 1px solid $bcg-lighter;
+        border-radius: 5px;
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(0, 0, 0, 0.05)),
+            $bcg-dark;
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.08),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.32);
+
+        &:hover {
+            color: $clr-active;
+            border-color: $clr-hilight;
+            background:
+                linear-gradient(180deg, rgba($clr-hilight, 0.16), rgba($clr-hilight, 0.06)),
+                $bcg-dark;
+        }
+    }
+
+    .shortcut-reset-button {
+        width: 52px !important;
+        height: 24px;
+        margin: 0;
+        padding: 0;
+        color: $text-secondary;
+        border: 0;
+        border-radius: 4px;
+        background-color: transparent;
+        font-size: 11px;
+
+        &:hover {
+            color: $clr-hilight;
+            background-color: rgba($clr-hilight, 0.1);
+        }
+    }
+
+    .preferences-shortcut-actions {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 2px;
+    }
+
+    .preferences-reset-shortcuts-button {
+        width: auto !important;
+        min-width: 148px;
+        height: 28px;
+        padding: 0 14px;
+    }
+}

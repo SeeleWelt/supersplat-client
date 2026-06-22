@@ -11,6 +11,7 @@ import flyCameraSvg from './svg/fly-camera.svg';
 import orbitCameraSvg from './svg/orbit-camera.svg';
 import ringsSvg from './svg/rings.svg';
 import showHideSplatsSvg from './svg/show-hide-splats.svg';
+import viewerPanelSvg from './svg/viewer-panel.svg';
 import { Tooltips } from './tooltips';
 
 const createSvg = (svgString: string) => {
@@ -61,6 +62,11 @@ class RightToolbar extends Container {
             class: 'right-toolbar-button'
         });
 
+        const viewerPanel = new Button({
+            id: 'right-toolbar-viewer-panel',
+            class: ['right-toolbar-toggle', 'active']
+        });
+
         const colorPanel = new Button({
             id: 'right-toolbar-color-panel',
             class: 'right-toolbar-toggle'
@@ -83,6 +89,7 @@ class RightToolbar extends Container {
         flyMode.dom.appendChild(createSvg(flyCameraSvg));
         cameraFrameSelection.dom.appendChild(createSvg(cameraFrameSelectionSvg));
         cameraReset.dom.appendChild(createSvg(cameraResetSvg));
+        viewerPanel.dom.appendChild(createSvg(viewerPanelSvg));
         colorPanel.dom.appendChild(createSvg(colorPanelSvg));
 
         this.append(ringsModeToggle);
@@ -94,6 +101,7 @@ class RightToolbar extends Container {
         this.append(cameraFrameSelection);
         this.append(cameraReset);
         this.append(new Element({ class: 'right-toolbar-separator' }));
+        this.append(viewerPanel);
         this.append(colorPanel);
         this.append(options);
 
@@ -116,6 +124,7 @@ class RightToolbar extends Container {
         tooltips.register(flyMode, tooltip('tooltip.right-toolbar.fly-camera', 'camera.toggleControlMode'), 'left');
         tooltips.register(cameraFrameSelection, tooltip('tooltip.right-toolbar.frame-selection', 'camera.focus'), 'left');
         tooltips.register(cameraReset, tooltip('tooltip.right-toolbar.reset-camera', 'camera.reset'), 'left');
+        tooltips.register(viewerPanel, tooltip('tooltip.right-toolbar.viewer'), 'left');
         tooltips.register(colorPanel, tooltip('tooltip.right-toolbar.colors'), 'left');
         tooltips.register(options, tooltip('tooltip.right-toolbar.view-options'), 'left');
 
@@ -130,6 +139,7 @@ class RightToolbar extends Container {
         flyMode.on('click', () => events.fire('camera.setControlMode', 'fly'));
         cameraFrameSelection.on('click', () => events.fire('camera.focus'));
         cameraReset.on('click', () => events.fire('camera.reset'));
+        viewerPanel.on('click', () => events.fire('viewerPanel.toggleVisible'));
         colorPanel.on('click', () => events.fire('colorPanel.toggleVisible'));
         options.on('click', () => events.fire('viewPanel.toggleVisible'));
 
@@ -146,6 +156,10 @@ class RightToolbar extends Container {
         events.on('camera.controlMode', (mode: 'orbit' | 'fly') => {
             orbitMode.class[mode === 'orbit' ? 'add' : 'remove']('active');
             flyMode.class[mode === 'fly' ? 'add' : 'remove']('active');
+        });
+
+        events.on('viewerPanel.visible', (visible: boolean) => {
+            viewerPanel.class[visible ? 'add' : 'remove']('active');
         });
 
         events.on('colorPanel.visible', (visible: boolean) => {

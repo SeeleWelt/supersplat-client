@@ -1,11 +1,17 @@
 @use 'colors.scss' as *;
 
 #view-panel {
-    top: 50%;
-    transform: translate(0, -50%);
-    right: 102px;
-    width: 320px;
+    top: var(--desktop-titlebar-height);
+    right: 0;
+    bottom: 0;
+    width: var(--desktop-right-panel-width);
+    transform: none;
     flex-direction: column;
+    z-index: 5;
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 0;
+    overflow-y: auto;
 
     &:not(.pcui-hidden) {
         display: flex;
@@ -14,8 +20,8 @@
     & > .view-panel-row {
         display: flex;
         flex-direction: row;
-        padding: 2px;
-        height: 28px;
+        padding: 2px 8px;
+        min-height: 30px;
 
         & > .view-panel-row-label {
             flex-grow: 1;
@@ -54,7 +60,7 @@
             display: flex;
             flex-direction: row;
             margin: 2px 2px;
-            width: 185px;
+            width: 172px;
             justify-content: space-between;
 
             & > .view-panel-row-picker {
@@ -65,8 +71,44 @@
         }
 
         & > .view-panel-row-select {
-            width: 187px;
+            width: 174px;
             margin: 0;
+        }
+    }
+}
+
+body.right-panel-collapsed #view-panel {
+    overflow: visible;
+    border: 0;
+
+    > :not(.panel-header) {
+        display: none;
+    }
+
+    > .panel-header {
+        display: block;
+        min-height: 0;
+        padding: 0;
+        border: 0;
+        background-color: transparent;
+
+        > .panel-header-icon,
+        > .panel-header-label,
+        > .panel-reset-action {
+            display: none;
+        }
+
+        > .panel-collapse-button {
+            position: fixed;
+            top: calc(var(--desktop-titlebar-height) + 8px);
+            right: var(--desktop-right-rail-width);
+            z-index: 10;
+            width: 28px;
+            height: 28px;
+            border: 1px solid $bcg-light;
+            border-right: 0;
+            border-radius: 4px 0 0 4px;
+            background-color: $bcg-darkest;
         }
     }
 }

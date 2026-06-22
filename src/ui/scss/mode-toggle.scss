@@ -2,12 +2,16 @@
 
 #mode-toggle {
     position: absolute;
-    left: calc(50% - 60px);
-    top: 0px;
+    left: calc(var(--desktop-left-dock-width) + (100% - var(--desktop-left-dock-width) - var(--desktop-right-dock-width)) / 2);
+    right: auto;
+    top: calc(var(--desktop-titlebar-height) + 10px);
     width: 120px;
+    transform: translateX(-50%);
 
+    min-height: 30px;
     padding: 0px 8px;
-    border-radius: 0px 0px 8px 8px;
+    border-radius: 4px;
+    border: 1px solid $bcg-light;
 
     background-color: $bcg-dark;
 
@@ -17,6 +21,7 @@
     justify-content: center;
 
     cursor: pointer;
+    z-index: 4;
 
     &.centers-mode {
         #rings-icon, #rings-text {

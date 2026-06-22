@@ -5,8 +5,6 @@ import { recentFiles } from '../recent-files';
 import { ShortcutManager } from '../shortcut-manager';
 import { localize } from './localization';
 import { MenuPanel, MenuItem } from './menu-panel';
-import arrowSvg from './svg/arrow.svg';
-import collapseSvg from './svg/collapse.svg';
 import selectDelete from './svg/delete.svg';
 import sceneExport from './svg/export.svg';
 import sceneImport from './svg/import.svg';
@@ -27,6 +25,19 @@ const createSvg = (svgString: string) => {
     return new Element({
         dom: new DOMParser().parseFromString(decodedStr, 'image/svg+xml').documentElement
     });
+};
+
+const createTitlebarAction = (text: string, icon: string, onSelect: () => any) => {
+    const action = new Container({
+        class: 'titlebar-action'
+    });
+    action.dom.appendChild(createSvg(icon).dom);
+    action.append(new Label({
+        text,
+        class: 'titlebar-action-label'
+    }));
+    action.dom.addEventListener('click', onSelect);
+    return action;
 };
 
 const getOpenRecentItems = async (events: Events) => {
@@ -87,36 +98,44 @@ class Menu extends Container {
             class: 'menu-option'
         });
 
-        const toggleCollapsed = () => {
-            document.body.classList.toggle('collapsed');
-        };
-
-        // collapse menu on mobile
-        if (document.body.clientWidth < 600) {
-            toggleCollapsed();
-        }
-
-        const collapse = createSvg(collapseSvg);
-        collapse.dom.classList.add('menu-icon');
-        collapse.dom.setAttribute('id', 'menu-collapse');
-        collapse.dom.addEventListener('click', toggleCollapsed);
-
-        const arrow = createSvg(arrowSvg);
-        arrow.dom.classList.add('menu-icon');
-        arrow.dom.setAttribute('id', 'menu-arrow');
-        arrow.dom.addEventListener('click', toggleCollapsed);
-
         const buttonsContainer = new Container({
             id: 'menu-bar-options'
         });
+
+        const quickActions = new Container({
+            id: 'titlebar-actions'
+        });
+
+        const fileSeparator = new Element({
+            class: 'titlebar-action-separator'
+        });
+
+        quickActions.append(createTitlebarAction(localize('menu.file.new'), sceneNew, () => events.invoke('doc.new')));
+        quickActions.append(createTitlebarAction(localize('menu.file.open'), sceneOpen, async () => await events.invoke('doc.open')));
+        quickActions.append(createTitlebarAction(localize('menu.file.import', { ellipsis: false }), sceneImport, async () => await events.invoke('scene.import')));
+        quickActions.append(createTitlebarAction(localize('menu.file.save'), sceneSave, async () => await events.invoke('doc.save')));
+        quickActions.append(fileSeparator);
+
+        const exportAction = createTitlebarAction(localize('menu.file.export'), sceneExport, () => {});
+        exportAction.dom.setAttribute('id', 'titlebar-export-action');
+        quickActions.append(exportAction);
+
+        const publishAction = createTitlebarAction(localize('menu.file.publish', { ellipsis: false }), scenePublish, async () => await events.invoke('show.publishSettingsDialog'));
+        quickActions.append(publishAction);
+
+        const titlebarDrag = new Container({
+            id: 'titlebar-drag-region'
+        });
+        titlebarDrag.dom.setAttribute('data-tauri-drag-region', '');
+
         buttonsContainer.append(scene);
         buttonsContainer.append(selection);
         buttonsContainer.append(render);
         buttonsContainer.append(help);
-        buttonsContainer.append(collapse);
-        buttonsContainer.append(arrow);
 
         menubar.append(buttonsContainer);
+        menubar.append(quickActions);
+        menubar.append(titlebarDrag);
 
         // Get the shortcut manager for displaying keyboard shortcuts
         const shortcutManager: ShortcutManager = events.invoke('shortcutManager');
@@ -202,6 +221,13 @@ class Menu extends Container {
             icon: createSvg(scenePublish),
             isEnabled: () => !events.invoke('scene.empty'),
             onSelect: async () => await events.invoke('show.publishSettingsDialog')
+        }, {
+            // separator
+        }, {
+            text: localize('menu.file.preferences', { ellipsis: true }),
+            icon: 'E283',
+            extra: shortcutManager.formatShortcut('preferences.open'),
+            onSelect: () => events.fire('show.preferences')
         }]);
 
         const selectionMenuPanel = new MenuPanel([{
@@ -265,56 +291,10 @@ class Menu extends Container {
             onSelect: async () => await events.invoke('show.videoSettingsDialog')
         }]);
 
-        const videoTutorialsMenuPanel = new MenuPanel([{
-            text: localize('menu.help.video-tutorials.basics'),
-            icon: 'E261',
-            onSelect: () => window.open('https://youtu.be/MwzaEM2I55I', '_blank')?.focus()
-        }, {
-            text: localize('menu.help.video-tutorials.in-depth'),
-            icon: 'E261',
-            onSelect: () => window.open('https://youtu.be/J37rTieKgJ8', '_blank')?.focus()
-        }, {
-            text: localize('menu.help.video-tutorials.deleting-floaters'),
-            icon: 'E261',
-            onSelect: () => window.open('https://youtu.be/8qaLfwkkSdU', '_blank')?.focus()
-        }, {
-            text: localize('menu.help.video-tutorials.scaling'),
-            icon: 'E261',
-            onSelect: () => window.open('https://youtu.be/fRK1vVMg_EU', '_blank')?.focus()
-        }]);
-
         const helpMenuPanel = new MenuPanel([{
-            text: localize('menu.help.video-tutorials'),
-            icon: 'E261',
-            subMenu: videoTutorialsMenuPanel
-        }, {
-            text: localize('menu.help.user-guide'),
-            icon: 'E232',
-            onSelect: () => window.open('https://developer.playcanvas.com/user-manual/gaussian-splatting/editing/supersplat/', '_blank')?.focus()
-        }, {
             text: localize('menu.help.shortcuts'),
             icon: 'E136',
             onSelect: () => events.fire('show.shortcuts')
-        }, {
-            // separator
-        }, {
-            text: localize('menu.help.discord'),
-            icon: 'E233',
-            onSelect: () => window.open('https://discord.gg/T3pnhRTTAY', '_blank')?.focus()
-        }, {
-            text: localize('menu.help.forum'),
-            icon: 'E432',
-            onSelect: () => window.open('https://forum.playcanvas.com', '_blank')?.focus()
-        }, {
-            // separator
-        }, {
-            text: localize('menu.help.github-repo'),
-            icon: 'E259',
-            onSelect: () => window.open('https://github.com/playcanvas/supersplat', '_blank')?.focus()
-        }, {
-            text: localize('menu.help.log-issue'),
-            icon: 'E336',
-            onSelect: () => window.open('https://github.com/playcanvas/supersplat/issues', '_blank')?.focus()
         }, {
             // separator
         }, {
@@ -329,7 +309,6 @@ class Menu extends Container {
         this.append(exportMenuPanel);
         this.append(selectionMenuPanel);
         this.append(renderMenuPanel);
-        this.append(videoTutorialsMenuPanel);
         this.append(helpMenuPanel);
 
         const options: { dom: HTMLElement, menuPanel: MenuPanel }[] = [{
@@ -344,6 +323,9 @@ class Menu extends Container {
         }, {
             dom: help.dom,
             menuPanel: helpMenuPanel
+        }, {
+            dom: exportAction.dom,
+            menuPanel: exportMenuPanel
         }];
 
         options.forEach((option) => {

@@ -68,10 +68,18 @@
     }
 }
 
+.data-panel-reset-button {
+    height: 30px;
+    margin: 0 8px 8px;
+    padding: 0 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
 #data-list-box {
     overflow-y: auto;
     flex-grow: 1;
-    margin: 8px;
+    margin: 8px 8px 6px;
     background-color: $bcg-darker;
     border-radius: 2px;
     border: 1px solid $bcg-darkest;

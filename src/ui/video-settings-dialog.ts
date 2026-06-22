@@ -240,11 +240,17 @@ class VideoSettingsDialog extends Container {
             text: localize('panel.render.cancel')
         });
 
+        const resetButton = new Button({
+            class: ['button', 'reset-action-button', 'dialog-reset-button'],
+            text: localize('panel.colors.reset')
+        });
+
         const okButton = new Button({
             class: 'button',
             text: localize('panel.render.ok')
         });
 
+        footer.append(resetButton);
         footer.append(cancelButton);
         footer.append(okButton);
 
@@ -273,9 +279,20 @@ class VideoSettingsDialog extends Container {
         // reset UI and configure for current state
         const reset = () => {
             const totalFrames = events.invoke('timeline.frames');
+            resolutionSelect.value = '1080';
+            formatSelect.value = 'mp4';
+            codecSelect.options = codecOptions.mp4;
+            codecSelect.value = 'h264';
+            frameRateSelect.value = '30';
+            bitrateSelect.value = 'high';
             frameRangeInput.max = totalFrames - 1;
             frameRangeInput.value = [0, totalFrames - 1];
+            portraitBoolean.value = false;
+            transparentBgBoolean.value = false;
+            showDebugBoolean.value = false;
         };
+
+        resetButton.on('click', () => reset());
 
         // function implementations
 

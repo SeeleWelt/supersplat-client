@@ -271,11 +271,17 @@ class ExportPopup extends Container {
             text: localize('popup.cancel')
         });
 
+        const resetButton = new Button({
+            class: ['button', 'reset-action-button', 'dialog-reset-button'],
+            text: localize('panel.colors.reset')
+        });
+
         const exportButton = new Button({
             class: 'button',
             text: localize('popup.export')
         });
 
+        footer.append(resetButton);
         footer.append(cancelButton);
         footer.append(exportButton);
 
@@ -289,6 +295,8 @@ class ExportPopup extends Container {
 
         let onCancel: () => void;
         let onExport: () => void;
+        let resetArgs: [ExportType, string[], boolean] | null = null;
+        let showFilenameEditState = false;
 
         cancelButton.on('click', () => onCancel());
         exportButton.on('click', () => onExport());
@@ -324,6 +332,8 @@ class ExportPopup extends Container {
         });
 
         const reset = (exportType: ExportType, splatNames: string[], hasPoses: boolean) => {
+            dialog.dom.classList.toggle('viewer-export-dialog', exportType === 'viewer');
+
             const allRows = [
                 viewerTypeRow, animationRow, loopRow, colorRow, fovRow, compressRow, bandsRow, iterationsRow, filenameRow
             ];
@@ -377,6 +387,13 @@ class ExportPopup extends Container {
             fovSlider.value = events.invoke('camera.fov');
         };
 
+        resetButton.on('click', () => {
+            if (resetArgs) {
+                reset(...resetArgs);
+                filenameRow.hidden = !showFilenameEditState;
+            }
+        });
+
         this.show = (exportType: ExportType, splatNames: string[], showFilenameEdit: boolean) => {
             const frames = events.invoke('timeline.frames');
             const frameRate = events.invoke('timeline.frameRate');
@@ -386,9 +403,11 @@ class ExportPopup extends Container {
             .filter(p => p.frame >= 0 && p.frame < frames)
             .sort((a, b) => a.frame - b.frame);
 
-            reset(exportType, splatNames, orderedPoses.length > 0);
+            resetArgs = [exportType, splatNames, orderedPoses.length > 0];
+            reset(...resetArgs);
 
             // filename is only shown in safari where file picker is not supported
+            showFilenameEditState = showFilenameEdit;
             filenameRow.hidden = !showFilenameEdit;
 
             this.hidden = false;
@@ -519,6 +538,8 @@ class ExportPopup extends Container {
                     }
                 };
             }).finally(() => {
+                resetArgs = null;
+                showFilenameEditState = false;
                 this.dom.removeEventListener('keydown', keydown);
                 this.hide();
             });

@@ -5,6 +5,7 @@ import { Events } from '../events';
 import { Scene } from '../scene';
 import { SphereShape } from '../sphere-shape';
 import { Splat } from '../splat';
+import { localize } from '../ui/localization';
 
 class SphereSelection {
     activate: () => void;
@@ -38,6 +39,8 @@ class SphereSelection {
         const setButton = new Button({ text: 'Set', class: 'select-toolbar-button' });
         const addButton = new Button({ text: 'Add', class: 'select-toolbar-button' });
         const removeButton = new Button({ text: 'Remove', class: 'select-toolbar-button' });
+        const resetButton = new Button({ text: localize('panel.colors.reset'), class: ['select-toolbar-button', 'reset-action-button', 'select-toolbar-reset-button'] });
+        const defaultRadius = sphere.radius;
         const radius = new NumericInput({
             precision: 2,
             value: sphere.radius,
@@ -50,6 +53,7 @@ class SphereSelection {
         selectToolbar.append(addButton);
         selectToolbar.append(removeButton);
         selectToolbar.append(radius);
+        selectToolbar.append(resetButton);
 
         canvasContainer.append(selectToolbar);
 
@@ -66,6 +70,11 @@ class SphereSelection {
         });
         removeButton.dom.addEventListener('pointerdown', (e) => {
             e.stopPropagation(); apply('remove');
+        });
+        resetButton.dom.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            sphere.radius = defaultRadius;
+            radius.value = defaultRadius;
         });
         radius.on('change', () => {
             sphere.radius = radius.value;

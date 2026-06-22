@@ -1,8 +1,8 @@
-import { Button, Element, Container } from '@playcanvas/pcui';
+import { Button, Container, Element } from '@playcanvas/pcui';
 
 import { Events } from '../events';
 import { ShortcutManager } from '../shortcut-manager';
-import { localize, formatTooltipWithShortcut } from './localization';
+import { formatTooltipWithShortcut, localize } from './localization';
 import redoSvg from './svg/redo.svg';
 import brushSvg from './svg/select-brush.svg';
 import eyedropperSvg from './svg/select-eyedropper.svg';
@@ -12,6 +12,7 @@ import pickerSvg from './svg/select-picker.svg';
 import polygonSvg from './svg/select-poly.svg';
 import sphereSvg from './svg/select-sphere.svg';
 import boxSvg from './svg/show-hide-splats.svg';
+import transformPanelSvg from './svg/transform-panel.svg';
 import undoSvg from './svg/undo.svg';
 import { Tooltips } from './tooltips';
 // import cropSvg from './svg/crop.svg';
@@ -81,6 +82,11 @@ class BottomToolbar extends Container {
             class: 'bottom-toolbar-tool'
         });
 
+        const transformPanel = new Button({
+            id: 'bottom-toolbar-transform-panel',
+            class: ['bottom-toolbar-toggle', 'active']
+        });
+
         const eyedropper = new Button({
             id: 'bottom-toolbar-eyedropper',
             class: 'bottom-toolbar-tool'
@@ -135,6 +141,7 @@ class BottomToolbar extends Container {
         flood.dom.appendChild(createSvg(floodSvg));
         sphere.dom.appendChild(createSvg(sphereSvg));
         box.dom.appendChild(createSvg(boxSvg));
+        transformPanel.dom.appendChild(createSvg(transformPanelSvg));
         lasso.dom.appendChild(createSvg(lassoSvg));
         eyedropper.dom.appendChild(createSvg(eyedropperSvg));
         // crop.dom.appendChild(createSvg(cropSvg));
@@ -153,6 +160,8 @@ class BottomToolbar extends Container {
         this.append(box);
         // this.append(crop);
         this.append(new Element({ class: 'bottom-toolbar-separator' }));
+        this.append(transformPanel);
+        this.append(new Element({ class: 'bottom-toolbar-separator' }));
         this.append(translate);
         this.append(rotate);
         this.append(scale);
@@ -161,8 +170,8 @@ class BottomToolbar extends Container {
         this.append(coordSpace);
         this.append(origin);
 
-        undo.dom.addEventListener('click', () => events.fire('edit.undo'));
-        redo.dom.addEventListener('click', () => events.fire('edit.redo'));
+        undo.on('click', () => events.fire('edit.undo'));
+        redo.on('click', () => events.fire('edit.redo'));
         polygon.dom.addEventListener('click', () => events.fire('tool.polygonSelection'));
         lasso.dom.addEventListener('click', () => events.fire('tool.lassoSelection'));
         brush.dom.addEventListener('click', () => events.fire('tool.brushSelection'));
@@ -171,19 +180,13 @@ class BottomToolbar extends Container {
         eyedropper.dom.addEventListener('click', () => events.fire('tool.eyedropperSelection'));
         sphere.dom.addEventListener('click', () => events.fire('tool.sphereSelection'));
         box.dom.addEventListener('click', () => events.fire('tool.boxSelection'));
+        transformPanel.dom.addEventListener('click', () => events.fire('transformPanel.toggleVisible'));
         translate.dom.addEventListener('click', () => events.fire('tool.move'));
         rotate.dom.addEventListener('click', () => events.fire('tool.rotate'));
         scale.dom.addEventListener('click', () => events.fire('tool.scale'));
         measure.dom.addEventListener('click', () => events.fire('tool.measure'));
         coordSpace.dom.addEventListener('click', () => events.fire('tool.toggleCoordSpace'));
         origin.dom.addEventListener('click', () => events.fire('pivot.toggleOrigin'));
-
-        events.on('edit.canUndo', (value: boolean) => {
-            undo.enabled = value;
-        });
-        events.on('edit.canRedo', (value: boolean) => {
-            redo.enabled = value;
-        });
 
         events.on('tool.activated', (toolName: string) => {
             picker.class[toolName === 'rectSelection' ? 'add' : 'remove']('active');
@@ -206,6 +209,18 @@ class BottomToolbar extends Container {
 
         events.on('pivot.origin', (o: 'center' | 'boundCenter') => {
             origin.dom.classList[o === 'boundCenter' ? 'add' : 'remove']('active');
+        });
+
+        events.on('transformPanel.visible', (visible: boolean) => {
+            transformPanel.class[visible ? 'add' : 'remove']('active');
+        });
+
+        events.on('edit.canUndo', (value: boolean) => {
+            undo.enabled = value;
+        });
+
+        events.on('edit.canRedo', (value: boolean) => {
+            redo.enabled = value;
         });
 
         // Helper to compose localized tooltip text with shortcut
@@ -231,6 +246,7 @@ class BottomToolbar extends Container {
         tooltips.register(flood, tooltip('tooltip.bottom-toolbar.flood', 'tool.floodSelection'));
         tooltips.register(sphere, tooltip('tooltip.bottom-toolbar.sphere'));
         tooltips.register(box, tooltip('tooltip.bottom-toolbar.box'));
+        tooltips.register(transformPanel, localize('panel.scene-manager.transform'));
         tooltips.register(translate, tooltip('tooltip.bottom-toolbar.translate', 'tool.move'));
         tooltips.register(rotate, tooltip('tooltip.bottom-toolbar.rotate', 'tool.rotate'));
         tooltips.register(scale, tooltip('tooltip.bottom-toolbar.scale', 'tool.scale'));

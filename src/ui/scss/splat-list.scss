@@ -7,7 +7,10 @@
     .splat-item {
         display: flex;
         flex-direction: row;
-        padding: 2px;
+        align-items: center;
+        min-height: 28px;
+        padding: 2px 6px;
+        gap: 4px;
 
         &:hover:not(.selected).visible {
             cursor: pointer;
@@ -21,11 +24,19 @@
             margin: 0;
             flex-grow: 1;
             flex-shrink: 1;
+            min-width: 0;
         }
 
         .splat-item-text {
             flex-grow: 1;
             flex-shrink: 1;
+            min-width: 0;
+            padding: 0 4px;
+            color: $text-secondary;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 24px;
 
             .visible & {
                 &:hover:not(.selected) {
@@ -38,42 +49,40 @@
             }
         }
 
-        .splat-item-visible {
-            flex-grow: 0;
-            flex-shrink: 0;
-
+        .splat-item-action {
+            flex: 0 0 24px;
             width: 24px;
             height: 24px;
-            line-height: 24px;
-
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
             color: $text-secondary;
-
             cursor: pointer;
 
-            .visible & {
-                color: $text-secondary;
+            svg {
+                width: 16px;
+                height: 16px;
+                display: block;
+                color: currentColor;
             }
 
             &:hover {
                 color: $text-primary;
+                background-color: $bcg-dark;
+            }
+        }
+
+        .splat-item-visible {
+            .visible & {
+                color: $text-secondary;
             }
         }
 
         .splat-item-delete {
-            flex-grow: 0;
-            flex-shrink: 0;
-
-            padding: 4px;
-            width: 16px;
-            height: 16px;
-            line-height: 16px;
-
-            color: $text-secondary;
-
-            cursor: pointer;
-
             &:hover {
-                color: $text-primary;
+                color: #ff6b57;
             }
         }
     }

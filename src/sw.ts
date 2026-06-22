@@ -1,61 +1,22 @@
-import { version as appVersion } from '../package.json';
+const sw = self as unknown as ServiceWorkerGlobalScope;
 
-// export default null
-declare let self: ServiceWorkerGlobalScope;
-
-const cacheName = `superSplat-v${appVersion}`;
-
-const cacheUrls = [
-    './',
-    './index.css',
-    './index.html',
-    './index.js',
-    './index.js.map',
-    './manifest.json',
-    './static/icons/logo-192.png',
-    './static/icons/logo-512.png',
-    './static/images/screenshot-narrow.jpg',
-    './static/images/screenshot-wide.jpg',
-    './static/lib/lodepng/lodepng.js',
-    './static/lib/lodepng/lodepng.wasm',
-    './static/lib/webp/webp.mjs',
-    './static/lib/webp/webp.wasm',
-    './static/locales/de.json',
-    './static/locales/en.json',
-    './static/locales/fr.json',
-    './static/locales/ja.json',
-    './static/locales/ko.json',
-    './static/locales/zh-CN.json'
-];
-
-self.addEventListener('install', (event) => {
-    console.log(`installing v${appVersion}`);
-
-    // create cache for current version
-    event.waitUntil(
-        caches.open(cacheName)
-        .then((cache) => {
-            cache.addAll(cacheUrls);
-        })
-    );
+sw.addEventListener('install', (event: ExtendableEvent) => {
+    event.waitUntil(sw.skipWaiting());
 });
 
-self.addEventListener('activate', () => {
-    console.log(`activating v${appVersion}`);
+sw.addEventListener('activate', (event: ExtendableEvent) => {
+    event.waitUntil((async () => {
+        await sw.clients.claim();
 
-    // delete the old caches once this one is activated
-    caches.keys().then((names) => {
-        for (const name of names) {
-            if (name !== cacheName) {
-                caches.delete(name);
-            }
-        }
-    });
+        const names = await caches.keys();
+        await Promise.all(names.map(name => caches.delete(name)));
+        await sw.registration.unregister();
+
+        const clients = await sw.clients.matchAll({ type: 'window' });
+        await Promise.all(clients.map(client => client.navigate(client.url)));
+    })());
 });
 
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request)
-        .then(response => response ?? fetch(event.request))
-    );
+sw.addEventListener('fetch', (event: FetchEvent) => {
+    event.respondWith(fetch(event.request));
 });

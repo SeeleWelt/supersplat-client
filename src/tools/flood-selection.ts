@@ -1,6 +1,8 @@
-import { Container, NumericInput } from '@playcanvas/pcui';
+import { Button, Container, NumericInput } from '@playcanvas/pcui';
 
 import { Events } from '../events';
+import { elementSize, pointerToElement } from './pointer';
+import { localize } from '../ui/localization';
 
 type Pt = {x : number, y: number };
 
@@ -19,7 +21,8 @@ class FloodSelection {
         // create canvas
         const { canvas, context } = mask;
 
-        let threshold = 0.2;
+        const defaultThreshold = 0.2;
+        let threshold = defaultThreshold;
         let point: Pt;
         let imageData: ImageData;
 
@@ -41,7 +44,9 @@ class FloodSelection {
             min: 0.001,
             max: 0.999
         });
+        const resetButton = new Button({ text: localize('panel.colors.reset'), class: ['select-toolbar-button', 'reset-action-button', 'select-toolbar-reset-button'] });
         selectToolbar.append(thresholdInput);
+        selectToolbar.append(resetButton);
 
         canvasContainer.append(selectToolbar);
 
@@ -57,8 +62,7 @@ class FloodSelection {
         const refreshSelection = async () => {
             if (!point) return;
 
-            const width = parent.clientWidth;
-            const height = parent.clientHeight;
+            const { width, height } = elementSize(parent);
 
             if (!imageData || canvas.width !== width || canvas.height !== height) {
                 canvas.width = width;
@@ -104,6 +108,12 @@ class FloodSelection {
             threshold = thresholdInput.value;
         });
 
+        resetButton.dom.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            threshold = defaultThreshold;
+            thresholdInput.value = defaultThreshold;
+        });
+
         const isPrimary = (e: PointerEvent) => {
             return e.pointerType === 'mouse' ? e.button === 0 : e.isPrimary;
         };
@@ -112,21 +122,31 @@ class FloodSelection {
 
         const pointerdown = (e: PointerEvent) => {
             if (!clicked && isPrimary(e)) {
+                e.preventDefault();
+                e.stopPropagation();
                 clicked = true;
             }
         };
 
         const pointermove = (e: PointerEvent) => {
+            if (clicked) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             clicked = false;
         };
 
         const pointerup = async (e: PointerEvent) => {
             if (clicked && isPrimary(e)) {
+                e.preventDefault();
+                e.stopPropagation();
                 clicked = false;
 
+                const localPoint = pointerToElement(e, parent);
+                const { width, height } = elementSize(parent);
                 point = {
-                    x: Math.floor(e.offsetX),
-                    y: Math.floor(e.offsetY)
+                    x: Math.min(width - 1, Math.floor(localPoint.x)),
+                    y: Math.min(height - 1, Math.floor(localPoint.y))
                 };
 
                 await refreshSelection();
@@ -140,17 +160,17 @@ class FloodSelection {
         this.activate = () => {
             parent.style.display = 'block';
             selectToolbar.hidden = false;
-            canvasContainer.dom.addEventListener('pointerdown', pointerdown);
-            canvasContainer.dom.addEventListener('pointermove', pointermove);
-            canvasContainer.dom.addEventListener('pointerup', pointerup, true);
+            parent.addEventListener('pointerdown', pointerdown);
+            parent.addEventListener('pointermove', pointermove);
+            parent.addEventListener('pointerup', pointerup, true);
         };
 
         this.deactivate = () => {
             parent.style.display = 'none';
             selectToolbar.hidden = true;
-            canvasContainer.dom.removeEventListener('pointerdown', pointerdown);
-            canvasContainer.dom.removeEventListener('pointermove', pointermove);
-            canvasContainer.dom.removeEventListener('pointerup', pointerup);
+            parent.removeEventListener('pointerdown', pointerdown);
+            parent.removeEventListener('pointermove', pointermove);
+            parent.removeEventListener('pointerup', pointerup, true);
             point = undefined;
         };
     }

@@ -3,10 +3,11 @@ import { platform } from 'playcanvas';
 import { Events } from './events';
 import { Shortcuts, ShortcutBinding } from './shortcuts';
 
-// Mac uses different symbols for modifier keys
+// Mac uses different labels for modifier keys.
 const isMac = platform.name === 'osx';
+const STORAGE_KEY = 'ningjing.shortcuts';
 
-// Default shortcut bindings - the source of truth for key mappings
+// Default shortcut bindings - the source of truth for key mappings.
 const defaultShortcuts: Record<string, ShortcutBinding> = {
     // Navigation
     'camera.reset': { keys: ['f'], shift: 'required' },
@@ -55,8 +56,9 @@ const defaultShortcuts: Record<string, ShortcutBinding> = {
     'edit.redo': { keys: ['z'], ctrl: 'required', shift: 'required', repeat: true, capture: true },
     'dataPanel.toggle': { keys: ['d'], ctrl: 'required', capture: true },
     'timelinePanel.toggle': { keys: ['t'], ctrl: 'required', capture: true },
+    'preferences.open': { keys: [','], ctrl: 'required', capture: true },
 
-    // Camera fly keys - use physical positions (codes) for WASD layout on non-QWERTY keyboards
+    // Camera fly keys - use physical positions (codes) for WASD layout on non-QWERTY keyboards.
     'camera.fly.forward': { codes: ['KeyW'], held: true, shift: 'optional', alt: 'optional' },
     'camera.fly.backward': { codes: ['KeyS'], held: true, shift: 'optional', alt: 'optional' },
     'camera.fly.left': { codes: ['KeyA'], held: true, shift: 'optional', alt: 'optional' },
@@ -69,19 +71,57 @@ const defaultShortcuts: Record<string, ShortcutBinding> = {
 
 class ShortcutManager {
     private bindings: Record<string, ShortcutBinding>;
+    private shortcuts: Shortcuts;
+    private events: Events;
 
     constructor(events: Events) {
-        // Clone the defaults so they can be modified without affecting the originals
-        this.bindings = {};
-        for (const id in defaultShortcuts) {
-            this.bindings[id] = { ...defaultShortcuts[id] };
-        }
+        this.events = events;
+        this.bindings = this.cloneDefaults();
+        this.loadCustomBindings();
 
-        // Create shortcuts and register all bindings
-        const shortcuts = new Shortcuts(events);
+        this.shortcuts = new Shortcuts(events);
+        this.applyBindings();
+    }
+
+    private cloneDefaults() {
+        const bindings: Record<string, ShortcutBinding> = {};
+        for (const id in defaultShortcuts) {
+            bindings[id] = { ...defaultShortcuts[id] };
+        }
+        return bindings;
+    }
+
+    private loadCustomBindings() {
+        try {
+            const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') as Record<string, ShortcutBinding>;
+            for (const id in stored) {
+                if (defaultShortcuts[id]) {
+                    this.bindings[id] = {
+                        ...defaultShortcuts[id],
+                        ...stored[id]
+                    };
+                }
+            }
+        } catch {
+            // Ignore malformed stored shortcut data and keep defaults.
+        }
+    }
+
+    private saveCustomBindings() {
+        const custom: Record<string, ShortcutBinding> = {};
+        for (const id in this.bindings) {
+            if (JSON.stringify(this.bindings[id]) !== JSON.stringify(defaultShortcuts[id])) {
+                custom[id] = this.bindings[id];
+            }
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(custom));
+    }
+
+    private applyBindings() {
+        this.shortcuts.shortcuts.length = 0;
         for (const id in this.bindings) {
             const binding = this.bindings[id];
-            shortcuts.register({
+            this.shortcuts.register({
                 event: id,
                 keys: binding.keys,
                 codes: binding.codes,
@@ -95,15 +135,42 @@ class ShortcutManager {
         }
     }
 
-    /**
-     * Get a shortcut binding by its event ID.
-     */
     get(id: string): ShortcutBinding | undefined {
         return this.bindings[id];
     }
 
+    set(id: string, binding: ShortcutBinding) {
+        if (!defaultShortcuts[id]) return;
+        this.bindings[id] = {
+            ...defaultShortcuts[id],
+            ...binding
+        };
+        this.saveCustomBindings();
+        this.applyBindings();
+        this.events.fire('shortcuts.changed');
+    }
+
+    reset(id: string) {
+        if (!defaultShortcuts[id]) return;
+        this.bindings[id] = { ...defaultShortcuts[id] };
+        this.saveCustomBindings();
+        this.applyBindings();
+        this.events.fire('shortcuts.changed');
+    }
+
+    resetAll() {
+        this.bindings = this.cloneDefaults();
+        localStorage.removeItem(STORAGE_KEY);
+        this.applyBindings();
+        this.events.fire('shortcuts.changed');
+    }
+
+    defaultBinding(id: string): ShortcutBinding | undefined {
+        return defaultShortcuts[id] ? { ...defaultShortcuts[id] } : undefined;
+    }
+
     /**
-     * Format a shortcut for display (e.g., "Ctrl + Shift + Z" or "⌘⇧Z" on Mac).
+     * Format a shortcut for display (e.g., "Ctrl + Shift + Z" or "Cmd Shift Z" on Mac).
      */
     formatShortcut(id: string): string {
         const binding = this.bindings[id];
@@ -111,12 +178,10 @@ class ShortcutManager {
 
         const parts: string[] = [];
 
-        // Use Mac symbols: ⌘ (Cmd), ⌥ (Option), ⇧ (Shift)
-        if (binding.ctrl === 'required') parts.push(isMac ? '⌘' : 'Ctrl');
-        if (binding.alt === 'required') parts.push(isMac ? '⌥' : 'Alt');
-        if (binding.shift === 'required') parts.push(isMac ? '⇧' : 'Shift');
+        if (binding.ctrl === 'required') parts.push(isMac ? 'Cmd' : 'Ctrl');
+        if (binding.alt === 'required') parts.push(isMac ? 'Option' : 'Alt');
+        if (binding.shift === 'required') parts.push('Shift');
 
-        // Get the first key or code for display
         let keyDisplay = binding.keys?.[0] ?? binding.codes?.[0];
         if (!keyDisplay) return '';
 
@@ -125,7 +190,6 @@ class ShortcutManager {
         } else if (keyDisplay === 'Escape') {
             keyDisplay = 'Esc';
         } else if (keyDisplay.startsWith('Key')) {
-            // Physical key codes like 'KeyW' -> 'W'
             keyDisplay = keyDisplay.slice(3);
         } else if (keyDisplay.length === 1) {
             keyDisplay = keyDisplay.toUpperCase();

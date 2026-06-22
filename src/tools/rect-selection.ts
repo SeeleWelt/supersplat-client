@@ -1,4 +1,5 @@
 import { Events } from '../events';
+import { elementSize, pointerToElement } from './pointer';
 
 class RectSelection {
     activate: () => void;
@@ -41,8 +42,9 @@ class RectSelection {
                 dragMoved = false;
                 parent.setPointerCapture(dragId);
 
-                start.x = end.x = e.offsetX;
-                start.y = end.y = e.offsetY;
+                const point = pointerToElement(e, parent);
+                start.x = end.x = point.x;
+                start.y = end.y = point.y;
 
                 updateRect();
 
@@ -56,8 +58,9 @@ class RectSelection {
                 e.stopPropagation();
 
                 dragMoved = true;
-                end.x = e.offsetX;
-                end.y = e.offsetY;
+                const point = pointerToElement(e, parent);
+                end.x = point.x;
+                end.y = point.y;
 
                 updateRect();
             }
@@ -74,8 +77,7 @@ class RectSelection {
                 e.preventDefault();
                 e.stopPropagation();
 
-                const w = parent.clientWidth;
-                const h = parent.clientHeight;
+                const { width: w, height: h } = elementSize(parent);
 
                 if (dragMoved) {
                     // rect select - wait for selection to complete before hiding rect
@@ -90,7 +92,7 @@ class RectSelection {
                     await events.invoke(
                         'select.point',
                         e.shiftKey ? 'add' : (e.ctrlKey ? 'remove' : 'set'),
-                        { x: e.offsetX / parent.clientWidth, y: e.offsetY / parent.clientHeight }
+                        { x: end.x / w, y: end.y / h }
                     );
                 }
 

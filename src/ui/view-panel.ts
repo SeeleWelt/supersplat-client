@@ -1,4 +1,4 @@
-import { BooleanInput, ColorPicker, Container, Label, SelectInput, SliderInput } from '@playcanvas/pcui';
+import { BooleanInput, Button, ColorPicker, Container, Label, SelectInput, SliderInput } from '@playcanvas/pcui';
 import { Color } from 'playcanvas';
 
 import { Events } from '../events';
@@ -38,8 +38,31 @@ class ViewPanel extends Container {
             class: 'panel-header-label'
         });
 
+        const reset = new Button({
+            text: localize('panel.colors.reset'),
+            class: ['reset-action-button', 'panel-reset-action']
+        });
+
+        const collapseToggle = new Container({
+            class: ['panel-header-button', 'panel-collapse-button', 'panel-collapse-right']
+        });
+
+        const updateCollapsedState = () => {
+            const collapsed = document.body.classList.contains('right-panel-collapsed');
+            collapseToggle.dom.textContent = collapsed ? '<' : '>';
+            collapseToggle.dom.title = collapsed ? '展开右侧面板' : '折叠右侧面板';
+        };
+
+        collapseToggle.on('click', () => {
+            document.body.classList.toggle('right-panel-collapsed');
+            updateCollapsedState();
+        });
+        updateCollapsedState();
+
         header.append(icon);
         header.append(label);
+        header.append(reset);
+        header.append(collapseToggle);
 
         // colors
 
@@ -382,6 +405,12 @@ class ViewPanel extends Container {
             }
         });
 
+        events.on('viewerPanel.visible', (visible: boolean) => {
+            if (visible) {
+                setVisible(false);
+            }
+        });
+
         // sh bands
 
         events.on('view.bands', (bands: number) => {
@@ -511,6 +540,24 @@ class ViewPanel extends Container {
             events.fire('camera.setTonemapping', value);
         });
 
+        reset.on('click', () => {
+            events.fire('setBgClr', new Color(0, 0, 0, 1));
+            events.fire('setSelectedClr', new Color(1, 1, 0, 1));
+            events.fire('setUnselectedClr', new Color(0, 0, 1, 0.5));
+            events.fire('setLockedClr', new Color(0, 0, 0, 0.05));
+            events.fire('camera.setTonemapping', 'linear');
+            events.fire('camera.setFov', 75);
+            events.fire('view.setBands', 3);
+            events.fire('camera.setFlySpeed', 1);
+            events.fire('camera.setSplatSize', 2);
+            events.fire('view.setCentersUseGaussianColor', false);
+            events.fire('view.setOutlineSelection', false);
+            events.fire('grid.setVisible', true);
+            events.fire('camera.setBound', true);
+            events.fire('camera.setBoundDimensions', false);
+            events.fire('camera.setShowPoses', false);
+        });
+
         // tooltips
         const shortcutManager: ShortcutManager = events.invoke('shortcutManager');
         const shortcut = shortcutManager.formatShortcut('grid.toggleVisible');
@@ -519,6 +566,7 @@ class ViewPanel extends Container {
         tooltips.register(selectedClrPicker, localize('panel.view-options.selected-color'), 'top');
         tooltips.register(unselectedClrPicker, localize('panel.view-options.unselected-color'), 'top');
         tooltips.register(lockedClrPicker, localize('panel.view-options.locked-color'), 'top');
+        tooltips.register(reset, localize('panel.colors.reset'), 'left');
     }
 }
 

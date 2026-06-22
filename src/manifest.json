@@ -1,19 +1,19 @@
 {
-    "name": "SuperSplat",
-    "short_name": "SuperSplat",
-    "description": "SuperSplat is an advanced browser-based editor for manipulating and optimizing 3D Gaussian Splats. It is open source and engine agnostic.",
+    "name": "凝境",
+    "short_name": "凝境",
+    "description": "凝境是面向三维高斯场景数据的专业编辑与查看工具。",
     "display": "fullscreen",
     "start_url": "./",
     "scope": "./",
     "background_color": "#ffffff",
     "icons": [
         {
-            "src": "./static/icons/logo-192.png",
+            "src": "./static/icons/opcmate-logo.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "./static/icons/logo-512.png",
+            "src": "./static/icons/opcmate-logo.png",
             "sizes": "512x512",
             "type": "image/png"
         }

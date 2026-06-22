@@ -5,6 +5,7 @@ import { BoxShape } from '../box-shape';
 import { Events } from '../events';
 import { Scene } from '../scene';
 import { Splat } from '../splat';
+import { localize } from '../ui/localization';
 
 class BoxSelection {
     activate: () => void;
@@ -38,6 +39,10 @@ class BoxSelection {
         const setButton = new Button({ text: 'Set', class: 'select-toolbar-button' });
         const addButton = new Button({ text: 'Add', class: 'select-toolbar-button' });
         const removeButton = new Button({ text: 'Remove', class: 'select-toolbar-button' });
+        const resetButton = new Button({ text: localize('panel.colors.reset'), class: ['select-toolbar-button', 'reset-action-button', 'select-toolbar-reset-button'] });
+        const defaultLenX = box.lenX;
+        const defaultLenY = box.lenY;
+        const defaultLenZ = box.lenZ;
 
         const lenX = new NumericInput({
             precision: 2,
@@ -69,6 +74,7 @@ class BoxSelection {
         selectToolbar.append(lenX);
         selectToolbar.append(lenY);
         selectToolbar.append(lenZ);
+        selectToolbar.append(resetButton);
 
         canvasContainer.append(selectToolbar);
 
@@ -88,6 +94,15 @@ class BoxSelection {
         removeButton.dom.addEventListener('pointerdown', (e) => {
             e.stopPropagation();
             apply('remove');
+        });
+        resetButton.dom.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            box.lenX = defaultLenX;
+            box.lenY = defaultLenY;
+            box.lenZ = defaultLenZ;
+            lenX.value = defaultLenX;
+            lenY.value = defaultLenY;
+            lenZ.value = defaultLenZ;
         });
         lenX.on('change', () => {
             box.lenX = lenX.value;

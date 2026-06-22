@@ -1,5 +1,58 @@
 @use 'colors.scss' as *;
 
+#transform-panel {
+    top: calc(var(--desktop-titlebar-height) + 48px);
+    left: calc(var(--desktop-rail-width) + 16px);
+    width: 286px;
+    height: auto;
+    z-index: 14;
+    border-radius: 4px;
+    border: 1px solid $bcg-light;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.42);
+    display: flex;
+    flex-direction: column;
+
+    > .panel-header {
+        cursor: grab;
+
+        &.dragging {
+            cursor: grabbing;
+        }
+
+        > .panel-header-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            svg {
+                width: 16px;
+                height: 16px;
+                color: $clr-hilight;
+            }
+        }
+    }
+
+    &:not(.pcui-hidden) {
+        display: flex;
+    }
+
+    .transform-panel-close {
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 13px;
+        line-height: 1;
+        color: $text-secondary;
+    }
+}
+
+body.transform-panel-hidden #transform-panel {
+    display: none;
+}
+
 #transform {
     display: flex;
     flex-direction: column;
@@ -28,6 +81,13 @@
 
 .transform-expand {
     flex-grow: 1;
+}
+
+.transform-reset-button {
+    width: 100%;
+    height: 28px;
+    margin: 8px 0 0;
+    border-radius: 3px;
 }
 
 $height: 22px;

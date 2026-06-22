@@ -1,4 +1,4 @@
-import { Container, ContainerArgs, Label, NumericInput, VectorInput } from '@playcanvas/pcui';
+import { Button, Container, ContainerArgs, Label, NumericInput, VectorInput } from '@playcanvas/pcui';
 import { Quat, Vec3 } from 'playcanvas';
 
 import { Events } from '../events';
@@ -82,9 +82,22 @@ class Transform extends Container {
         scale.append(scaleLabel);
         scale.append(scaleInput);
 
+        const resetRow = new Container({
+            class: 'transform-row'
+        });
+
+        const resetButton = new Button({
+            class: ['reset-action-button', 'transform-reset-button'],
+            text: localize('panel.colors.reset'),
+            enabled: false
+        });
+
+        resetRow.append(resetButton);
+
         this.append(position);
         this.append(rotation);
         this.append(scale);
+        this.append(resetRow);
 
         const toArray = (v: Vec3) => {
             return [v.x, v.y, v.z];
@@ -145,6 +158,13 @@ class Transform extends Container {
             pivot.end();
         };
 
+        resetButton.on('click', () => {
+            const pivot = events.invoke('pivot') as Pivot;
+            pivot.start();
+            pivot.moveTRS(Vec3.ZERO, Quat.IDENTITY, Vec3.ONE);
+            pivot.end();
+        });
+
         [positionVector.inputs, rotationVector.inputs, scaleInput].flat().forEach((input) => {
             input.on('change', change);
             input.on('slider:mousedown', mousedown);
@@ -154,6 +174,7 @@ class Transform extends Container {
         // toggle ui availability based on selection
         events.on('selection.changed', (selection) => {
             positionVector.enabled = rotationVector.enabled = scaleInput.enabled = !!selection;
+            resetButton.enabled = !!selection;
         });
 
         events.on('pivot.placed', (pivot: Pivot) => {

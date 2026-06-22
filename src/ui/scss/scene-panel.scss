@@ -1,13 +1,53 @@
 @use 'colors.scss' as *;
 
 #scene-panel {
-    top: 102px;
-    left: 24px;
-    width: 320px;
+    top: var(--desktop-titlebar-height);
+    left: var(--desktop-rail-width);
+    bottom: 0;
+    width: var(--desktop-scene-panel-width);
+    z-index: 5;
+    border-top: 0;
+    border-bottom: 0;
+    border-left: 0;
+    display: flex;
+    flex-direction: column;
 }
 
-.collapsed #scene-panel {
-    display: none;
+body.scene-panel-collapsed #scene-panel {
+    overflow: visible;
+    border: 0;
+
+    > :not(:first-child) {
+        display: none;
+    }
+
+    > .panel-header:first-child {
+        position: absolute;
+        left: 0;
+        top: 8px;
+        width: 28px;
+        height: 28px;
+        min-height: 28px;
+        padding: 0;
+        justify-content: center;
+        background-color: transparent;
+        border-bottom: 0;
+
+        > .panel-header-icon,
+        > .panel-header-label,
+        > .panel-header-button:not(.panel-collapse-button) {
+            display: none;
+        }
+
+        > .panel-collapse-button {
+            width: 28px;
+            height: 28px;
+            border: 1px solid $bcg-light;
+            border-left: 0;
+            border-radius: 0 4px 4px 0;
+            background-color: $bcg-darkest;
+        }
+    }
 }
 
 .panel-header-button.active,
@@ -20,6 +60,8 @@
 }
 
 .splat-list-container {
-    max-height: 300px;
+    max-height: none;
     overflow: auto;
+    flex: 1 1 auto;
+    min-height: 96px;
 }

@@ -56,9 +56,9 @@ class EntityTransformHandler implements TransformHandler {
     }
 
     placePivot() {
-        // place initial pivot point
-        const origin = this.events.invoke('pivot.origin');
-        this.splat.getPivot(origin === 'center' ? 'center' : 'boundCenter', false, transform);
+        // Place the model-level gizmo at the same focal point used by camera focus.
+        this.splat.getPivot('center', false, transform);
+        transform.position.copy(this.splat.focalPoint());
         this.events.invoke('pivot').place(transform);
     }
 

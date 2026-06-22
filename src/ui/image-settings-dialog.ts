@@ -107,11 +107,17 @@ class ImageSettingsDialog extends Container {
             text: localize('panel.render.cancel')
         });
 
+        const resetButton = new Button({
+            class: ['button', 'reset-action-button', 'dialog-reset-button'],
+            text: localize('panel.colors.reset')
+        });
+
         const okButton = new Button({
             class: 'button',
             text: localize('panel.render.ok')
         });
 
+        footer.append(resetButton);
         footer.append(cancelButton);
         footer.append(okButton);
 
@@ -172,8 +178,14 @@ class ImageSettingsDialog extends Container {
 
         // reset UI and configure for current state
         const reset = () => {
+            presetSelect.value = 'viewport';
+            resolutionRow.enabled = false;
+            transparentBgBoolean.value = false;
+            showDebugBoolean.value = false;
             updateResolution();
         };
+
+        resetButton.on('click', () => reset());
 
         // function implementations
 

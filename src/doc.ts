@@ -13,9 +13,9 @@ import { localize } from './ui/localization';
 type FilePickerAcceptType = unknown;
 
 const SuperFileType: FilePickerAcceptType[] = [{
-    description: 'SuperSplat document',
+    description: 'Ningjing document',
     accept: {
-        'application/x-supersplat': ['.ssproj']
+        'application/x-ningjing': ['.ssproj']
     }
 }];
 
@@ -241,7 +241,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
         } else {
             try {
                 const fileHandles = await window.showOpenFilePicker({
-                    id: 'SuperSplatDocumentOpen',
+                    id: 'NingjingDocumentOpen',
                     multiple: false,
                     types: SuperFileType
                 });
@@ -316,7 +316,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
         if (window.showSaveFilePicker) {
             try {
                 const handle = await window.showSaveFilePicker({
-                    id: 'SuperSplatDocumentSave',
+                    id: 'NingjingDocumentSave',
                     types: SuperFileType,
                     suggestedName: 'scene.ssproj'
                 });

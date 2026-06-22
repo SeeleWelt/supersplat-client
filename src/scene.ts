@@ -165,7 +165,7 @@ class Scene {
             }
         });
 
-        observer.observe(window.document.getElementById('canvas-container'));
+        observer.observe(this.canvas);
 
         // configure depth layers to handle dynamic refraction
         const depthLayer = this.app.scene.layers.getLayerById(LAYERID_DEPTH);
