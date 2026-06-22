@@ -1,0 +1,427 @@
+@use 'colors.scss' as *;
+
+#welcome-screen {
+    position: fixed;
+    top: var(--desktop-titlebar-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 28;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding: 28px clamp(20px, 4vw, 48px);
+    color: $text-primary;
+    background:
+        linear-gradient(90deg, rgba(215, 168, 90, 0.09) 0, transparent 34%),
+        linear-gradient(180deg, #171218 0, #100E15 48%, #0d0c0d 100%);
+    pointer-events: auto;
+}
+
+body:not(.workspace-welcome) #welcome-screen {
+    display: none;
+}
+
+.welcome-shell {
+    width: min(980px, 100%);
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(260px, 360px) minmax(320px, 1fr);
+    grid-template-rows: auto auto 1fr;
+    gap: 18px 28px;
+    align-content: start;
+}
+
+.welcome-heading {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(215, 168, 90, 0.22);
+}
+
+.welcome-kicker {
+    color: var(--app-accent-soft);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.welcome-title {
+    color: $text-primary;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.welcome-subtitle {
+    max-width: 560px;
+    color: $text-secondary;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.welcome-actions,
+.empty-state-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.workspace-action {
+    height: 42px;
+    min-width: 0;
+    padding: 0 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(215, 168, 90, 0.26);
+    border-radius: 6px;
+    color: $text-primary;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
+        #171417;
+    cursor: pointer;
+
+    svg {
+        width: 17px;
+        height: 17px;
+        flex: 0 0 17px;
+        color: var(--app-accent-soft);
+    }
+
+    &:hover,
+    &:focus-visible {
+        border-color: rgba(215, 168, 90, 0.58);
+        background-color: #201b18;
+        outline: none;
+    }
+
+    &.primary {
+        color: #fff;
+        border-color: rgba(215, 168, 90, 0.72);
+        background:
+            linear-gradient(180deg, rgba(215, 168, 90, 0.32), rgba(215, 168, 90, 0.13)),
+            #191410;
+    }
+
+    &.compact {
+        height: 34px;
+        padding: 0 12px;
+    }
+}
+
+.workspace-action-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 700;
+}
+
+.welcome-dropzone {
+    grid-row: 3;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    min-height: 128px;
+    border: 1px dashed rgba(215, 168, 90, 0.36);
+    border-radius: 6px;
+    background-color: rgba(0, 0, 0, 0.12);
+}
+
+.drag-active .welcome-dropzone {
+    border-color: var(--app-accent);
+    background-color: rgba(215, 168, 90, 0.1);
+}
+
+.welcome-dropzone-title {
+    color: $text-primary;
+    font-weight: 700;
+}
+
+.welcome-dropzone-text {
+    color: $text-secondary;
+    line-height: 1.55;
+}
+
+.welcome-recent {
+    grid-row: 2 / span 2;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.welcome-section-header {
+    height: 30px;
+    display: flex;
+    align-items: center;
+}
+
+.welcome-section-title {
+    color: $text-primary;
+    font-weight: 700;
+}
+
+.welcome-recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    overflow: auto;
+}
+
+.welcome-recent-row {
+    min-height: 38px;
+    padding: 0 11px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 6px;
+    color: $text-primary;
+    background-color: rgba(255, 255, 255, 0.035);
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+        border-color: rgba(215, 168, 90, 0.42);
+        background-color: rgba(215, 168, 90, 0.08);
+        outline: none;
+    }
+}
+
+.welcome-recent-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.welcome-recent-date,
+.welcome-empty-recent {
+    color: $text-secondary;
+    font-size: 11px;
+}
+
+.welcome-empty-recent {
+    padding: 12px 0;
+}
+
+#empty-state {
+    position: absolute;
+    top: var(--desktop-titlebar-height);
+    left: var(--desktop-left-dock-width);
+    right: var(--desktop-right-dock-width);
+    bottom: 28px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    pointer-events: none;
+}
+
+.empty-state-panel {
+    width: min(420px, 100%);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid rgba(215, 168, 90, 0.28);
+    border-radius: 7px;
+    color: $text-primary;
+    background:
+        linear-gradient(180deg, rgba(215, 168, 90, 0.07), rgba(255, 255, 255, 0.02)),
+        rgba(16, 14, 21, 0.9);
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.32);
+    pointer-events: auto;
+}
+
+.empty-state-title {
+    color: $text-primary;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.empty-state-text {
+    color: $text-secondary;
+    line-height: 1.55;
+}
+
+#mode-switcher {
+    position: fixed;
+    top: 4px;
+    left: 50%;
+    z-index: 35;
+    height: 26px;
+    padding: 2px;
+    display: flex;
+    gap: 2px;
+    border: 1px solid rgba(215, 168, 90, 0.3);
+    border-radius: 6px;
+    background-color: rgba(16, 14, 21, 0.92);
+    transform: translateX(-50%);
+}
+
+.mode-switcher-button {
+    height: 20px;
+    min-width: 54px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 4px;
+    color: $text-secondary;
+    background-color: transparent;
+    font-weight: 700;
+
+    &:hover {
+        color: $text-primary;
+        background-color: rgba(215, 168, 90, 0.12);
+    }
+
+    &.active {
+        color: #fff;
+        background-color: var(--app-accent);
+    }
+}
+
+body.workspace-welcome {
+    #bottom-toolbar,
+    #right-toolbar,
+    #scene-panel,
+    #transform-panel,
+    #viewer-panel,
+    #view-panel,
+    #color-panel,
+    #mode-toggle,
+    #mode-switcher,
+    #status-bar,
+    #cursor-label,
+    #empty-state,
+    #view-cube-container {
+        display: none;
+    }
+}
+
+body.app-theme-light {
+    #welcome-screen {
+        color: #1f2328;
+        background:
+            linear-gradient(90deg, rgba(29, 72, 206, 0.08) 0, transparent 34%),
+            linear-gradient(180deg, #f8fafc 0, #edf1f5 100%);
+    }
+
+    .welcome-heading {
+        border-color: rgba(29, 72, 206, 0.18);
+    }
+
+    .welcome-kicker,
+    .welcome-title,
+    .welcome-section-title,
+    .welcome-dropzone-title,
+    .empty-state-title {
+        color: #1f2328;
+    }
+
+    .welcome-kicker {
+        color: #1D48CE;
+    }
+
+    .welcome-subtitle,
+    .welcome-dropzone-text,
+    .welcome-recent-date,
+    .welcome-empty-recent,
+    .empty-state-text {
+        color: #68717d;
+    }
+
+    .workspace-action {
+        color: #1f2328;
+        border-color: #c8d3e3;
+        background-color: #ffffff;
+
+        svg {
+            color: #1D48CE;
+        }
+
+        &:hover,
+        &:focus-visible {
+            border-color: #1D48CE;
+            background-color: #E8EFFC;
+        }
+
+        &.primary {
+            color: #ffffff;
+            border-color: #1D48CE;
+            background: #1D48CE;
+        }
+    }
+
+    .welcome-dropzone {
+        border-color: #b8c7df;
+        background-color: rgba(255, 255, 255, 0.58);
+    }
+
+    .drag-active .welcome-dropzone {
+        border-color: #1D48CE;
+        background-color: #E8EFFC;
+    }
+
+    .welcome-recent-row {
+        color: #1f2328;
+        border-color: #d5dce5;
+        background-color: #ffffff;
+
+        &:hover,
+        &:focus-visible {
+            border-color: #1D48CE;
+            background-color: #E8EFFC;
+        }
+    }
+
+    .empty-state-panel {
+        color: #1f2328;
+        border-color: #c8d3e3;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 16px 40px rgba(31, 35, 40, 0.14);
+    }
+
+    #mode-switcher {
+        border-color: #c8d3e3;
+        background-color: rgba(244, 246, 248, 0.96);
+    }
+
+    .mode-switcher-button {
+        color: #4b5562;
+
+        &:hover {
+            color: #1f2328;
+            background-color: #E8EFFC;
+        }
+
+        &.active {
+            color: #ffffff;
+            background-color: #1D48CE;
+        }
+    }
+}
+
+@media (max-width: 760px) {
+    .welcome-shell {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .welcome-recent {
+        grid-row: auto;
+    }
+
+    #mode-switcher {
+        left: auto;
+        right: calc(var(--desktop-window-controls-width) + 8px);
+        transform: none;
+    }
+}

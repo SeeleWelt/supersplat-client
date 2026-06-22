@@ -80,21 +80,25 @@ class Menu extends Container {
 
         const scene = new Label({
             text: localize('menu.file'),
+            id: 'menu-file-option',
             class: 'menu-option'
         });
 
         const render = new Label({
             text: localize('menu.render'),
+            id: 'menu-render-option',
             class: 'menu-option'
         });
 
         const selection = new Label({
             text: localize('menu.select'),
+            id: 'menu-select-option',
             class: 'menu-option'
         });
 
         const help = new Label({
             text: localize('menu.help'),
+            id: 'menu-help-option',
             class: 'menu-option'
         });
 

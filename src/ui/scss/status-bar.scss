@@ -46,6 +46,49 @@
     padding-right: 8px;
 }
 
+.status-bar-file-state {
+    height: 100%;
+    min-width: 0;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-left: 1px solid $bcg-light;
+}
+
+.status-bar-file-name {
+    max-width: 260px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: $text-primary;
+    font-size: 11px;
+}
+
+.status-bar-save-state {
+    height: 18px;
+    padding: 0 7px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba($clr-hilight, 0.3);
+    border-radius: 9px;
+    color: $clr-icon-hilight;
+    font-size: 11px;
+    line-height: 16px;
+
+    &.saved {
+        color: $text-secondary;
+        border-color: transparent;
+    }
+
+    &.unsaved {
+        color: $clr-icon-hilight;
+        border-color: rgba($clr-hilight, 0.42);
+        background-color: rgba($clr-hilight, 0.1);
+    }
+}
+
 .status-bar-stat {
     display: flex;
     flex-direction: row;
@@ -62,4 +105,26 @@
 .status-bar-stat-value {
     color: $text-primary;
     font-size: 11px;
+}
+
+body.app-theme-light {
+    .status-bar-file-state {
+        border-color: #c8ced6;
+    }
+
+    .status-bar-file-name {
+        color: #1f2328;
+    }
+
+    .status-bar-save-state {
+        &.saved {
+            color: #68717d;
+        }
+
+        &.unsaved {
+            color: #1D48CE;
+            border-color: rgba(29, 72, 206, 0.32);
+            background-color: #E8EFFC;
+        }
+    }
 }

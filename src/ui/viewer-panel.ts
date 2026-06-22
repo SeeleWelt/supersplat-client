@@ -271,8 +271,6 @@ class ViewerPanel extends Container {
         this.append(presetSection);
         this.append(cameraSection);
         this.append(displaySection);
-        this.append(new Element({ class: 'viewer-panel-separator' }));
-        this.append(advancedSection);
 
         tooltips.register(focusButton, localize('tooltip.right-toolbar.frame-selection'), 'left');
         tooltips.register(resetButton, localize('tooltip.right-toolbar.reset-camera'), 'left');

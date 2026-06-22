@@ -29,6 +29,23 @@ class StatusBar extends Container {
             text: localize('status-bar.splat-data').toUpperCase()
         });
 
+        const fileState = new Container({
+            class: 'status-bar-file-state'
+        });
+
+        const fileNameLabel = new Label({
+            class: 'status-bar-file-name',
+            text: localize('workspace.untitled')
+        });
+
+        const saveStateLabel = new Label({
+            class: ['status-bar-save-state', 'saved'],
+            text: localize('workspace.file.saved')
+        });
+
+        fileState.append(fileNameLabel);
+        fileState.append(saveStateLabel);
+
         // Panel toggle logic
         const setActivePanel = (panel: string) => {
             activePanel = panel;
@@ -75,6 +92,7 @@ class StatusBar extends Container {
 
         this.append(timelineButton);
         this.append(splatDataButton);
+        this.append(fileState);
         this.append(statsContainer);
 
         // register tooltips
@@ -92,6 +110,22 @@ class StatusBar extends Container {
 
         tooltips.register(timelineButton, tooltip('tooltip.status-bar.timeline', 'timelinePanel.toggle'), 'top');
         tooltips.register(splatDataButton, tooltip('tooltip.status-bar.splat-data', 'dataPanel.toggle'), 'top');
+
+        const updateFileState = (name?: string | null, dirty?: boolean) => {
+            if (name !== undefined) {
+                fileNameLabel.text = name || localize('workspace.untitled');
+            }
+            if (dirty !== undefined) {
+                saveStateLabel.text = dirty ? localize('workspace.file.unsaved') : localize('workspace.file.saved');
+                saveStateLabel.dom.classList.toggle('saved', !dirty);
+                saveStateLabel.dom.classList.toggle('unsaved', dirty);
+            }
+        };
+
+        events.on('doc.name', (name: string | null) => updateFileState(name));
+        events.on('doc.nameChanged', (name: string | null) => updateFileState(name));
+        events.on('scene.dirtyChanged', (dirty: boolean) => updateFileState(undefined, dirty));
+        events.on('doc.saved', () => updateFileState(undefined, false));
 
         // Handle keyboard shortcuts for panel toggles
         events.on('dataPanel.toggle', () => {

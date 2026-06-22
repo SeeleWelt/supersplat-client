@@ -324,7 +324,10 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
                 }
             }
             const model = await importSplatModel(files, animationFrame);
-            if (model) result.push(model);
+            if (model) {
+                result.push(model);
+                events.fire('scene.contentImported');
+            }
         } else {
             // check for unrecognized file types
             for (let i = 0; i < filenames.length; i++) {
@@ -345,7 +348,10 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
                 } else if (['.ply', '.splat', '.sog', '.ksplat', '.spz'].some(ext => filename.endsWith(ext))) {
                     // load gaussian splat model
                     const model = await importSplatModel([files[i]], animationFrame);
-                    if (model) result.push(model);
+                    if (model) {
+                        result.push(model);
+                        events.fire('scene.contentImported');
+                    }
                 } else if (filename.endsWith('images.txt')) {
                     // load colmap frames
                     await loadImagesTxt(files[i], events);
@@ -417,44 +423,54 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
         return getSplats().length === 0;
     });
 
+    const fireEmptyChanged = () => {
+        events.fire('scene.emptyChanged', events.invoke('scene.empty'));
+    };
+
+    events.on('scene.elementAdded', fireEmptyChanged);
+    events.on('scene.elementRemoved', fireEmptyChanged);
+
     events.function('scene.import', async () => {
         if (fileSelector) {
             fileSelector.click();
-        } else {
-            try {
-                const handles = await window.showOpenFilePicker({
-                    id: 'NingjingFileImport',
-                    multiple: true,
-                    excludeAcceptAllOption: false,
-                    types: [
-                        allImportTypes,
-                        filePickerTypes.ply,
-                        filePickerTypes.compressedPly,
-                        filePickerTypes.splat,
-                        filePickerTypes.sog,
-                        filePickerTypes.lcc,
-                        filePickerTypes.ksplat,
-                        filePickerTypes.spz,
-                        filePickerTypes.indexTxt
-                    ]
+            return true;
+        }
+
+        try {
+            const handles = await window.showOpenFilePicker({
+                id: 'NingjingFileImport',
+                multiple: true,
+                excludeAcceptAllOption: false,
+                types: [
+                    allImportTypes,
+                    filePickerTypes.ply,
+                    filePickerTypes.compressedPly,
+                    filePickerTypes.splat,
+                    filePickerTypes.sog,
+                    filePickerTypes.lcc,
+                    filePickerTypes.ksplat,
+                    filePickerTypes.spz,
+                    filePickerTypes.indexTxt
+                ]
+            });
+
+            const files = [];
+            for (let i = 0; i < handles.length; i++) {
+                files.push({
+                    filename: handles[i].name,
+                    contents: await handles[i].getFile()
                 });
+            }
 
-                const files = [];
-                for (let i = 0; i < handles.length; i++) {
-                    files.push({
-                        filename: handles[i].name,
-                        contents: await handles[i].getFile()
-                    });
-                }
+            return await importFiles(files);
 
-                importFiles(files);
-
-            } catch (error) {
-                if (error.name !== 'AbortError') {
-                    console.error(error);
-                }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.error(error);
             }
         }
+
+        return false;
     });
 
     // open a folder

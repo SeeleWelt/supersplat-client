@@ -26,6 +26,7 @@
 @use 'timeline-panel.scss';
 @use 'status-bar.scss';
 @use 'tool.scss';
+@use 'workspace.scss';
 
 * {
     box-sizing: border-box;
@@ -107,7 +108,7 @@ body {
     --app-accent: #D7A85A;
     --app-accent-soft: #E6C27A;
     --desktop-titlebar-height: 34px;
-    --desktop-titlebar-brand-width: 92px;
+    --desktop-titlebar-brand-width: 220px;
     --desktop-window-controls-width: 138px;
     --desktop-rail-width: 48px;
     --desktop-left-panel-width: 272px;
@@ -788,6 +789,7 @@ body.viewer-mode #transform-panel,
 body.viewer-mode #mode-toggle,
 body.viewer-mode #timeline-panel,
 body.viewer-mode #data-panel,
+body.viewer-mode #menu-select-option,
 body.viewer-mode .status-bar-toggle {
     display: none;
 }
@@ -1108,6 +1110,7 @@ body.viewer-mode #status-bar {
 
 @media (max-width: 900px) {
     body {
+        --desktop-titlebar-brand-width: 160px;
         --desktop-left-panel-width: 0px;
         --desktop-scene-panel-width: 0px;
         --desktop-right-panel-width: 280px;

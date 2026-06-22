@@ -1,16 +1,19 @@
 import { Container, Label } from '@playcanvas/pcui';
 import { Mat4, path, Vec3 } from 'playcanvas';
 
+import { ElementType } from '../element';
 import { Events } from '../events';
 import { AboutPopup } from './about-popup';
 import logo from './app-logo.png';
 import { BottomToolbar } from './bottom-toolbar';
 import { ColorPanel } from './color-panel';
 import { DataPanel } from './data-panel';
+import { EmptyState } from './empty-state';
 import { ExportPopup } from './export-popup';
 import { ImageSettingsDialog } from './image-settings-dialog';
 import { localize, localizeInit } from './localization';
 import { Menu } from './menu';
+import { ModeSwitcher } from './mode-switcher';
 import { ModeToggle } from './mode-toggle';
 import { Popup, ShowOptions } from './popup';
 import { PreferencesDialog, applyPreferences, loadPreferences } from './preferences-dialog';
@@ -28,6 +31,7 @@ import { VideoSettingsDialog } from './video-settings-dialog';
 import { ViewCube } from './view-cube';
 import { ViewPanel } from './view-panel';
 import { ViewerPanel } from './viewer-panel';
+import { WelcomeScreen } from './welcome-screen';
 
 // ts compiler and vscode find this type, but eslint does not
 type FilePickerAcceptType = unknown;
@@ -128,10 +132,57 @@ class EditorUI {
         const rightToolbar = new RightToolbar(events, tooltips);
         const modeToggle = new ModeToggle(events, tooltips);
         const menu = new Menu(events);
+        const modeSwitcher = new ModeSwitcher(events);
+
+        let workspaceActive = false;
+        let sceneEmpty = true;
+        let currentDocName: string = null;
+        let currentDirty = false;
+        const workspaceUi: {
+            welcomeScreen?: WelcomeScreen;
+            emptyState?: EmptyState;
+        } = {};
+
+        const titlebarTitle = document.getElementById('desktop-titlebar-title');
+
+        const refreshTitle = () => {
+            const title = currentDocName || localize('workspace.untitled');
+            const fullTitle = `${title}${currentDirty ? ' *' : ''}`;
+            if (titlebarTitle) {
+                titlebarTitle.textContent = fullTitle;
+                titlebarTitle.setAttribute('title', fullTitle);
+            }
+            document.title = fullTitle;
+        };
+
+        const refreshDirty = () => {
+            if (events.functions.has('scene.dirty')) {
+                currentDirty = !!events.invoke('scene.dirty');
+            }
+            refreshTitle();
+        };
+
+        const enterWorkspace = () => {
+            if (!workspaceActive) {
+                workspaceActive = true;
+                document.body.classList.remove('workspace-welcome');
+            }
+            workspaceUi.welcomeScreen!.hidden = true;
+            workspaceUi.emptyState!.hidden = !sceneEmpty;
+            workspaceUi.welcomeScreen!.refreshRecent();
+        };
+
+        const refreshEmptyState = () => {
+            workspaceUi.emptyState!.hidden = !workspaceActive || !sceneEmpty;
+        };
+
+        workspaceUi.welcomeScreen = new WelcomeScreen(events, enterWorkspace);
+        workspaceUi.emptyState = new EmptyState(events, enterWorkspace);
 
         canvasContainer.dom.appendChild(canvas);
         canvasContainer.append(cursorLabel);
         canvasContainer.append(toolsContainer);
+        canvasContainer.append(workspaceUi.emptyState);
         canvasContainer.append(scenePanel);
         canvasContainer.append(transformPanel);
         canvasContainer.append(viewerPanel);
@@ -141,6 +192,7 @@ class EditorUI {
         canvasContainer.append(rightToolbar);
         canvasContainer.append(modeToggle);
         canvasContainer.append(menu);
+        canvasContainer.append(modeSwitcher);
 
         // view axes container
         const viewCube = new ViewCube(events);
@@ -210,6 +262,7 @@ class EditorUI {
         topContainer.append(preferencesDialog);
 
         appContainer.append(editorContainer);
+        appContainer.append(workspaceUi.welcomeScreen);
         appContainer.append(topContainer);
         appContainer.append(tooltipsContainer);
 
@@ -222,6 +275,62 @@ class EditorUI {
 
         document.body.appendChild(appContainer.dom);
         document.body.setAttribute('tabIndex', '-1');
+        document.body.classList.add('workspace-welcome');
+        refreshTitle();
+
+        events.on('doc.name', (name: string | null) => {
+            currentDocName = name;
+            if (name) {
+                enterWorkspace();
+            }
+            refreshTitle();
+            workspaceUi.welcomeScreen!.refreshRecent();
+        });
+
+        events.on('doc.nameChanged', (name: string | null) => {
+            currentDocName = name;
+            refreshTitle();
+        });
+
+        events.on('doc.saved', () => {
+            currentDirty = false;
+            refreshTitle();
+        });
+
+        events.on('scene.dirtyChanged', (dirty: boolean) => {
+            currentDirty = dirty;
+            refreshTitle();
+        });
+
+        events.on('edit.apply', refreshDirty);
+
+        events.on('scene.emptyChanged', (empty: boolean) => {
+            sceneEmpty = empty;
+            if (!empty) {
+                enterWorkspace();
+            }
+            refreshEmptyState();
+        });
+
+        events.on('scene.contentImported', () => {
+            enterWorkspace();
+            refreshDirty();
+        });
+
+        events.on('scene.elementAdded', (element: { type: ElementType }) => {
+            if (element.type === ElementType.splat) {
+                sceneEmpty = false;
+                enterWorkspace();
+                refreshEmptyState();
+            }
+        });
+
+        events.on('scene.elementRemoved', () => {
+            if (events.functions.has('scene.empty')) {
+                sceneEmpty = !!events.invoke('scene.empty');
+            }
+            refreshEmptyState();
+        });
 
         events.on('show.shortcuts', () => {
             shortcutsPopup.hidden = false;

@@ -63,12 +63,44 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
         }
     });
 
+    let importedDirty = false;
+    let lastDirty = false;
+
+    const isDirty = () => {
+        return importedDirty || editHistory.cursor !== lastExportCursor;
+    };
+
+    const fireDirtyChanged = () => {
+        const dirty = isDirty();
+        if (dirty !== lastDirty) {
+            lastDirty = dirty;
+            events.fire('scene.dirtyChanged', dirty);
+        }
+    };
+
     events.function('scene.dirty', () => {
-        return editHistory.cursor !== lastExportCursor;
+        return isDirty();
     });
 
     events.on('doc.saved', () => {
         lastExportCursor = editHistory.cursor;
+        importedDirty = false;
+        fireDirtyChanged();
+    });
+
+    events.on('scene.clear', () => {
+        importedDirty = false;
+        lastExportCursor = editHistory.cursor;
+        fireDirtyChanged();
+    });
+
+    events.on('scene.contentImported', () => {
+        importedDirty = true;
+        fireDirtyChanged();
+    });
+
+    events.on('edit.apply', () => {
+        fireDirtyChanged();
     });
 
     // force render on some events

@@ -201,7 +201,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
 
     // handle user requesting a new document
     events.function('doc.new', async () => {
-        if (!await getResetConfirmation()) {
+        if ((!events.invoke('scene.empty') || events.invoke('scene.dirty')) && !await getResetConfirmation()) {
             return false;
         }
         resetScene();
@@ -225,6 +225,9 @@ const registerDocEvents = (scene: Scene, events: Events) => {
             documentFileHandle = handle;
             recentFiles.add(handle);
         }
+
+        events.fire('doc.saved');
+        return true;
     });
 
     events.function('doc.open', async () => {
@@ -233,36 +236,47 @@ const registerDocEvents = (scene: Scene, events: Events) => {
         }
 
         if (fileSelector) {
-            fileSelector.show(async (file?: File) => {
-                if (file) {
-                    await loadDocument(file);
-                }
-            });
-        } else {
-            try {
-                const fileHandles = await window.showOpenFilePicker({
-                    id: 'NingjingDocumentOpen',
-                    multiple: false,
-                    types: SuperFileType
+            return new Promise<boolean>((resolve) => {
+                fileSelector.show(async (file?: File) => {
+                    if (file) {
+                        await loadDocument(file);
+                        events.fire('doc.setName', file.name);
+                        events.fire('doc.saved');
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
                 });
+            });
+        }
 
-                if (fileHandles?.length === 1) {
-                    const fileHandle = fileHandles[0];
+        try {
+            const fileHandles = await window.showOpenFilePicker({
+                id: 'NingjingDocumentOpen',
+                multiple: false,
+                types: SuperFileType
+            });
 
-                    // null file handle incase loadDocument fails
-                    await loadDocument(await fileHandle.getFile());
+            if (fileHandles?.length === 1) {
+                const fileHandle = fileHandles[0];
 
-                    // store file handle for subsequent saves
-                    documentFileHandle = fileHandle;
-                    events.fire('doc.setName', fileHandle.name);
-                    recentFiles.add(fileHandle);
-                }
-            } catch (error) {
-                if (error.name !== 'AbortError') {
-                    console.error(error);
-                }
+                // null file handle incase loadDocument fails
+                await loadDocument(await fileHandle.getFile());
+
+                // store file handle for subsequent saves
+                documentFileHandle = fileHandle;
+                events.fire('doc.setName', fileHandle.name);
+                recentFiles.add(fileHandle);
+                events.fire('doc.saved');
+                return true;
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.error(error);
             }
         }
+
+        return false;
     });
 
     events.function('doc.openRecent', async (fileHandle: FileSystemFileHandle) => {
@@ -283,6 +297,8 @@ const registerDocEvents = (scene: Scene, events: Events) => {
             documentFileHandle = fileHandle;
             events.fire('doc.setName', fileHandle.name);
             recentFiles.add(fileHandle);
+            events.fire('doc.saved');
+            return true;
         } catch (error) {
             if (error.name !== 'AbortError') {
                 console.error(error);
@@ -293,6 +309,8 @@ const registerDocEvents = (scene: Scene, events: Events) => {
                 });
             }
         }
+
+        return false;
     });
 
     events.function('doc.save', async () => {
@@ -346,6 +364,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
         if (name !== docName) {
             docName = name;
             events.fire('doc.name', docName);
+            events.fire('doc.nameChanged', docName);
         }
     };
 
