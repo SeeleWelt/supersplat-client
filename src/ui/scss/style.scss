@@ -104,6 +104,8 @@
 }
 
 body {
+    --app-accent: #D7A85A;
+    --app-accent-soft: #E6C27A;
     --desktop-titlebar-height: 34px;
     --desktop-titlebar-brand-width: 92px;
     --desktop-window-controls-width: 138px;
@@ -125,6 +127,9 @@ body.ui-density-compact {
 }
 
 body.app-theme-light {
+    --app-accent: #1D48CE;
+    --app-accent-soft: #5076E5;
+
     color: #1f2328;
     background-color: #e2e5e9;
 
@@ -219,25 +224,32 @@ body.app-theme-light {
         background-color: #ffffff;
     }
 
+    .pcui-boolean-input-toggle.pcui-boolean-input-ticked:not(.pcui-disabled, .pcui-readonly),
+    .pcui-boolean-input-toggle.pcui-boolean-input-ticked:not(.pcui-disabled, .pcui-readonly):hover,
+    .pcui-boolean-input-toggle.pcui-boolean-input-ticked:not(.pcui-disabled, .pcui-readonly):focus {
+        border-color: #1D48CE !important;
+        background-color: #1D48CE !important;
+    }
+
     .pcui-button:hover,
     .preferences-dialog .shortcut-binding-button:hover {
         color: #111418;
-        border-color: $clr-hilight;
-        background-color: #fff3e8;
+        border-color: #1D48CE;
+        background-color: #E8EFFC;
     }
 
     .reset-action-button {
-        color: #9a4300;
-        border-color: rgba($clr-hilight, 0.62);
+        color: #1D48CE;
+        border-color: rgba(29, 72, 206, 0.62);
         background:
-            linear-gradient(180deg, rgba($clr-hilight, 0.15), rgba($clr-hilight, 0.05)),
+            linear-gradient(180deg, rgba(29, 72, 206, 0.15), rgba(29, 72, 206, 0.05)),
             #ffffff;
         box-shadow: 0 1px 2px rgba(31, 35, 40, 0.12);
 
         &:hover {
             color: #111418;
             background:
-                linear-gradient(180deg, rgba($clr-hilight, 0.28), rgba($clr-hilight, 0.12)),
+                linear-gradient(180deg, rgba(29, 72, 206, 0.28), rgba(29, 72, 206, 0.12)),
                 #ffffff;
         }
     }
@@ -251,13 +263,20 @@ body.app-theme-light {
         background-color: #f4f6f8;
     }
 
+    #app-label {
+        color: #1D48CE;
+        border-color: rgba(29, 72, 206, 0.28);
+        background-color: rgba(255, 255, 255, 0.76);
+        box-shadow: 0 6px 18px rgba(31, 35, 40, 0.12);
+    }
+
     .menu-option:hover,
     .titlebar-action:hover {
         color: #111418;
         background-color: #e6ebf1;
 
         svg {
-            color: $clr-hilight;
+            color: #1D48CE;
         }
     }
 
@@ -299,7 +318,7 @@ body.app-theme-light {
         }
 
         &.active {
-            background-color: $clr-hilight !important;
+            background-color: #1D48CE !important;
 
             svg,
             &::before {
@@ -312,7 +331,7 @@ body.app-theme-light {
     #right-toolbar > .right-toolbar-toggle.active {
         svg,
         &::before {
-            color: $clr-hilight;
+            color: #1D48CE;
         }
     }
 
@@ -326,7 +345,7 @@ body.app-theme-light {
 
         > .panel-header-icon,
         .panel-header-button {
-            color: $clr-hilight;
+            color: #1D48CE;
         }
     }
 
@@ -375,8 +394,8 @@ body.app-theme-light {
 
     .viewer-panel-mode-button.active {
         color: white;
-        border-color: $clr-hilight;
-        background-color: $clr-hilight;
+        border-color: #1D48CE;
+        background-color: #1D48CE;
     }
 
     .viewer-panel-toggle,
@@ -388,7 +407,7 @@ body.app-theme-light {
         }
 
         &.pcui-boolean-input-ticked {
-            background-color: $clr-hilight;
+            background-color: #1D48CE;
 
             &::after {
                 background-color: white;
@@ -419,7 +438,7 @@ body.app-theme-light {
 
     .data-list-item.active {
         color: #1D48CE;
-        border-left-color: $clr-hilight;
+        border-left-color: #1D48CE;
     }
 
     #histogram-cursor {
@@ -430,6 +449,83 @@ body.app-theme-light {
     #histogram-stats-overlay {
         background-color: rgba(255, 255, 255, 0.86);
         box-shadow: 0 1px 4px rgba(31, 35, 40, 0.18);
+    }
+
+    #highlight-rect {
+        fill: rgba(29, 72, 206, 0.18);
+        stroke: #1D48CE;
+    }
+
+    #transform-panel {
+        border-color: #c2c8d0;
+        background-color: #f7f8fa;
+        box-shadow: 0 16px 32px rgba(31, 35, 40, 0.16);
+
+        > .panel-header {
+            border-color: #d1d6de;
+            background-color: #eef2f6;
+        }
+
+        .transform-panel-close {
+            color: #68717d;
+            background-color: transparent;
+
+            &:hover {
+                color: #1f2328;
+                background-color: #dde4ed;
+            }
+        }
+    }
+
+    #transform {
+        background-color: #ffffff;
+    }
+
+    .transform-row {
+        color: #1f2328;
+    }
+
+    #transform .transform-label {
+        color: #4b5562;
+    }
+
+    #transform .pcui-vector-input,
+    #transform .pcui-numeric-input,
+    #transform input {
+        color: #1f2328;
+        border-color: #b8c0ca;
+        background-color: #ffffff;
+    }
+
+    #transform .pcui-vector-input.pcui-disabled,
+    #transform .pcui-numeric-input.pcui-disabled,
+    #transform .pcui-vector-input.pcui-disabled .pcui-numeric-input,
+    #transform .pcui-vector-input.pcui-disabled input,
+    #transform .pcui-numeric-input.pcui-disabled input {
+        color: #68717d;
+        -webkit-text-fill-color: #68717d;
+        border-color: #c8ced6;
+        background-color: #eef2f6;
+        opacity: 1;
+    }
+
+    #transform .pcui-numeric-input-slider-control,
+    #transform .pcui-numeric-input-slider-control::before,
+    #transform .pcui-numeric-input-slider-control::after {
+        border-color: #aeb7c2;
+        background-color: #d6dde5;
+    }
+
+    #transform .pcui-numeric-input:not(.pcui-disabled):focus-within,
+    #transform .pcui-vector-input:not(.pcui-disabled):focus-within {
+        border-color: #1D48CE;
+        box-shadow: 0 0 0 1px rgba(29, 72, 206, 0.18);
+    }
+
+    #transform .pcui-numeric-input:hover,
+    #transform .pcui-vector-input:hover {
+        border-color: #9aa7b7;
+        background-color: #f8fafc;
     }
 
     .settings-dialog #dialog {
@@ -538,7 +634,7 @@ body.app-theme-light {
         .shortcut-binding-button:hover,
         .preferences-shortcut-row.recording .shortcut-binding-button {
             color: #111418;
-            border-color: $clr-hilight;
+            border-color: #1D48CE;
             background:
                 linear-gradient(180deg, #F5F7FA, #E8EFFC);
         }
@@ -574,7 +670,7 @@ body.app-theme-light {
     }
 
     .pcui-slider-handle {
-        border-color: $clr-hilight;
+        border-color: #1D48CE;
         background-color: #ffffff;
     }
 
@@ -710,7 +806,7 @@ body.viewer-mode #status-bar {
     flex-direction: row;
     align-items: center;
     background:
-        linear-gradient(180deg, rgba(29, 72, 206, 0.08), rgba(16, 14, 21, 0)),
+        linear-gradient(180deg, rgba(215, 168, 90, 0.08), rgba(16, 14, 21, 0)),
         #100E15;
     border-bottom: 1px solid $bcg-light;
     color: $text-secondary;
@@ -876,7 +972,7 @@ body.viewer-mode #status-bar {
 
 #coord-space-toggle.active {
     background-color: $bcg-dark !important;
-    color: #1D48CE;
+    color: $clr-hilight;
 }
 
 #file-selector {
@@ -898,8 +994,8 @@ body.viewer-mode #status-bar {
     right: calc(var(--desktop-right-dock-width) + 16px);
     bottom: 20px;
     padding: 5px 9px;
-    color: #DDE6FF;
-    border: 1px solid rgba(80, 118, 229, 0.34);
+    color: #F2E8D4;
+    border: 1px solid rgba(215, 168, 90, 0.34);
     border-radius: 4px;
     background-color: rgba(16, 14, 21, 0.62);
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);

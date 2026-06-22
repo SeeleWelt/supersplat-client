@@ -52,7 +52,7 @@
         height: 64px;
         border-radius: 14px;
         overflow: hidden;
-        box-shadow: 0 10px 24px rgba(29, 72, 206, 0.22);
+        box-shadow: 0 10px 24px rgba(215, 168, 90, 0.18);
 
         img {
             display: block;
@@ -103,7 +103,7 @@
         transition: background-color 0.15s ease;
 
         &:hover {
-            background-color: rgba(29, 72, 206, 0.15);
+            background-color: rgba(215, 168, 90, 0.14);
 
             .about-dep-name {
                 color: $clr-hilight;

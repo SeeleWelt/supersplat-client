@@ -13,8 +13,9 @@
 
     &#brush-select-svg {
         >circle {
-            fill: rgba(255, 102, 0, 0.2);
-            stroke: #1D48CE;
+            fill: rgba(215, 168, 90, 0.2);
+            fill: color-mix(in srgb, var(--app-accent) 20%, transparent);
+            stroke: var(--app-accent);
             stroke-width: 1;
             stroke-dasharray: 5, 5;
         }
@@ -23,7 +24,7 @@
     &#rect-select-svg {
         >rect {
             fill: none;
-            stroke: #1D48CE;
+            stroke: var(--app-accent);
             stroke-width: 1;
             stroke-dasharray: 5, 5;
         }

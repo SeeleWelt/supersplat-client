@@ -3,6 +3,9 @@ import { pointerToElement, resizeCanvasToElement } from './pointer';
 
 type Point = { x: number, y: number };
 
+const themeAccent = () => getComputedStyle(document.body).getPropertyValue('--app-accent').trim() || '#D7A85A';
+const themeAccentSoft = () => getComputedStyle(document.body).getPropertyValue('--app-accent-soft').trim() || '#E6C27A';
+
 class LassoSelection {
     activate: () => void;
     deactivate: () => void;
@@ -33,7 +36,7 @@ class LassoSelection {
 
         const paint = () => {
             polygon.setAttribute('points', [...points, currentPoint].reduce((prev, current) => `${prev}${current.x}, ${current.y} `, ''));
-            polygon.setAttribute('stroke', isClosed() ? '#5076E5' : '#1D48CE');
+            polygon.setAttribute('stroke', isClosed() ? themeAccentSoft() : themeAccent());
         };
 
         let dragId: number | undefined;
@@ -64,7 +67,7 @@ class LassoSelection {
             context.clearRect(0, 0, canvas.width, canvas.height);
 
             context.beginPath();
-            context.fillStyle = '#1D48CE';
+            context.fillStyle = themeAccent();
             context.beginPath();
             points.forEach((p, idx) => {
                 if (idx === 0) {

@@ -3,6 +3,9 @@ import { pointerToElement, resizeCanvasToElement } from './pointer';
 
 type Point = { x: number, y: number };
 
+const themeAccent = () => getComputedStyle(document.body).getPropertyValue('--app-accent').trim() || '#D7A85A';
+const themeAccentSoft = () => getComputedStyle(document.body).getPropertyValue('--app-accent-soft').trim() || '#E6C27A';
+
 class PolygonSelection {
     activate: () => void;
     deactivate: () => void;
@@ -34,7 +37,7 @@ class PolygonSelection {
 
         const paint = () => {
             polyline.setAttribute('points', [...points, currentPoint].filter(v => v).reduce((prev, current) => `${prev}${current.x}, ${current.y} `, ''));
-            polyline.setAttribute('stroke', isClosed() ? '#5076E5' : '#1D48CE');
+            polyline.setAttribute('stroke', isClosed() ? themeAccentSoft() : themeAccent());
         };
 
         const commitSelection = async (e: MouseEvent) => {
@@ -45,7 +48,7 @@ class PolygonSelection {
             context.clearRect(0, 0, canvas.width, canvas.height);
 
             context.beginPath();
-            context.fillStyle = '#1D48CE';
+            context.fillStyle = themeAccent();
             context.beginPath();
             points.forEach((p, idx) => {
                 if (idx === 0) {

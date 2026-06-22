@@ -4,6 +4,8 @@ import { Events } from '../events';
 import { pointerToElement, resizeCanvasToElement } from './pointer';
 import { localize } from '../ui/localization';
 
+const themeAccent = () => getComputedStyle(document.body).getPropertyValue('--app-accent').trim() || '#D7A85A';
+
 class BrushSelection {
     activate: () => void;
     deactivate: () => void;
@@ -50,7 +52,7 @@ class BrushSelection {
 
             if (dragId !== undefined) {
                 context.beginPath();
-                context.strokeStyle = '#1D48CE';
+                context.strokeStyle = themeAccent();
                 context.lineCap = 'round';
                 context.lineWidth = radius * 2;
                 context.moveTo(prev.x, prev.y);
