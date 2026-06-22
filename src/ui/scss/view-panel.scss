@@ -75,6 +75,21 @@
             margin: 0;
         }
     }
+
+    > .view-panel-actions {
+        display: flex;
+        margin-top: auto;
+        padding: 10px 8px 12px;
+        border-top: 1px solid $bcg-darker;
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.08)),
+            $bcg-primary;
+
+        > .panel-reset-action {
+            width: 100%;
+            height: 30px;
+        }
+    }
 }
 
 body.right-panel-collapsed #view-panel {
@@ -93,8 +108,7 @@ body.right-panel-collapsed #view-panel {
         background-color: transparent;
 
         > .panel-header-icon,
-        > .panel-header-label,
-        > .panel-reset-action {
+        > .panel-header-label {
             display: none;
         }
 

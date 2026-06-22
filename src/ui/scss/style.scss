@@ -384,6 +384,14 @@ body.app-theme-light {
         background-color: #ffffff;
     }
 
+    #color-panel > .color-panel-actions,
+    #view-panel > .view-panel-actions {
+        border-color: #d1d6de;
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(238, 242, 246, 0.96)),
+            #f7f8fa;
+    }
+
     .viewer-panel-preset-button:hover,
     .viewer-panel-button:hover,
     .viewer-panel-mode-button:hover {

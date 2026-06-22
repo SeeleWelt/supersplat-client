@@ -61,7 +61,6 @@ class ViewPanel extends Container {
 
         header.append(icon);
         header.append(label);
-        header.append(reset);
         header.append(collapseToggle);
 
         // colors
@@ -376,7 +375,13 @@ class ViewPanel extends Container {
         this.append(showGridRow);
         this.append(showBoundRow);
         this.append(showBoundDimensionsRow);
+        const actions = new Container({
+            class: 'view-panel-actions'
+        });
+        actions.append(reset);
+
         this.append(showCameraPosesRow);
+        this.append(actions);
 
         // handle panel visibility
 

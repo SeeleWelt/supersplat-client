@@ -74,7 +74,6 @@ class ColorPanel extends Container {
 
         header.append(icon);
         header.append(label);
-        header.append(reset);
         header.append(collapseToggle);
 
         // tint
@@ -235,7 +234,13 @@ class ColorPanel extends Container {
         this.append(brightnessRow);
         this.append(blackPointRow);
         this.append(whitePointRow);
+        const actions = new Container({
+            class: 'color-panel-actions'
+        });
+        actions.append(reset);
+
         this.append(transparencyRow);
+        this.append(actions);
 
         // handle ui updates
 
