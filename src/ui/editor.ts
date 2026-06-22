@@ -138,6 +138,7 @@ class EditorUI {
         let sceneEmpty = true;
         let currentDocName: string = null;
         let currentDirty = false;
+        let emptyStateDismissed = false;
         const workspaceUi: {
             welcomeScreen?: WelcomeScreen;
             emptyState?: EmptyState;
@@ -168,16 +169,18 @@ class EditorUI {
                 document.body.classList.remove('workspace-welcome');
             }
             workspaceUi.welcomeScreen!.hidden = true;
-            workspaceUi.emptyState!.hidden = !sceneEmpty;
+            workspaceUi.emptyState!.hidden = !sceneEmpty || emptyStateDismissed;
             workspaceUi.welcomeScreen!.refreshRecent();
         };
 
         const refreshEmptyState = () => {
-            workspaceUi.emptyState!.hidden = !workspaceActive || !sceneEmpty;
+            workspaceUi.emptyState!.hidden = !workspaceActive || !sceneEmpty || emptyStateDismissed;
         };
 
         workspaceUi.welcomeScreen = new WelcomeScreen(events, enterWorkspace);
-        workspaceUi.emptyState = new EmptyState(events, enterWorkspace);
+        workspaceUi.emptyState = new EmptyState(events, enterWorkspace, () => {
+            emptyStateDismissed = true;
+        });
 
         canvasContainer.dom.appendChild(canvas);
         canvasContainer.append(cursorLabel);
@@ -307,6 +310,7 @@ class EditorUI {
         events.on('scene.emptyChanged', (empty: boolean) => {
             sceneEmpty = empty;
             if (!empty) {
+                emptyStateDismissed = false;
                 enterWorkspace();
             }
             refreshEmptyState();
@@ -320,6 +324,7 @@ class EditorUI {
         events.on('scene.elementAdded', (element: { type: ElementType }) => {
             if (element.type === ElementType.splat) {
                 sceneEmpty = false;
+                emptyStateDismissed = false;
                 enterWorkspace();
                 refreshEmptyState();
             }

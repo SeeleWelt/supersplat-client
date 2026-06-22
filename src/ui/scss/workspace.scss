@@ -217,12 +217,16 @@ body:not(.workspace-welcome) #welcome-screen {
     left: var(--desktop-left-dock-width);
     right: var(--desktop-right-dock-width);
     bottom: 28px;
-    z-index: 6;
+    z-index: 12;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
-    pointer-events: none;
+    pointer-events: auto;
+}
+
+#empty-state.pcui-hidden {
+    display: none;
 }
 
 .empty-state-panel {
@@ -241,10 +245,43 @@ body:not(.workspace-welcome) #welcome-screen {
     pointer-events: auto;
 }
 
+.empty-state-header {
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .empty-state-title {
+    min-width: 0;
+    flex: 1 1 auto;
     color: $text-primary;
     font-size: 16px;
     font-weight: 700;
+}
+
+.empty-state-close {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(215, 168, 90, 0.24);
+    border-radius: 4px;
+    color: $text-secondary;
+    background-color: rgba(255, 255, 255, 0.03);
+    font-size: 18px;
+    line-height: 22px;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+        color: $text-primary;
+        border-color: rgba(215, 168, 90, 0.58);
+        background-color: rgba(215, 168, 90, 0.12);
+        outline: none;
+    }
 }
 
 .empty-state-text {
@@ -387,6 +424,19 @@ body.app-theme-light {
         border-color: #c8d3e3;
         background: rgba(255, 255, 255, 0.94);
         box-shadow: 0 16px 40px rgba(31, 35, 40, 0.14);
+    }
+
+    .empty-state-close {
+        color: #68717d;
+        border-color: #c8d3e3;
+        background-color: #ffffff;
+
+        &:hover,
+        &:focus-visible {
+            color: #1f2328;
+            border-color: #1D48CE;
+            background-color: #E8EFFC;
+        }
     }
 
     #mode-switcher {
