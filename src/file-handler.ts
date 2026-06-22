@@ -473,6 +473,10 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
         return false;
     });
 
+    events.on('scene.import', async () => {
+        await events.invoke('scene.import');
+    });
+
     // open a folder
     events.function('scene.openAnimation', async () => {
         try {

@@ -50,8 +50,17 @@ class Shortcuts {
         const shortcuts = this.shortcuts;
 
         const handleEvent = (e: KeyboardEvent, down: boolean, capture: boolean) => {
-            // skip if focus is elsewhere (input fields, modals, etc.)
-            if (e.target !== document.body) return;
+            const target = e.target as HTMLElement;
+
+            // Skip text entry and modal UI, but keep app-level shortcuts active across
+            // the normal workspace surface like a desktop client.
+            if (target !== document.body) {
+                const tag = target.tagName;
+                const editable = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+                if (editable || target.closest('#top-container')) {
+                    return;
+                }
+            }
 
             const isCtrlKey = e.code.startsWith('Control');
             const isShiftKey = e.code.startsWith('Shift');

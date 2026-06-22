@@ -173,11 +173,12 @@ class Menu extends Container {
         const fileMenuPanel = new MenuPanel([{
             text: localize('menu.file.new'),
             icon: createSvg(sceneNew),
-            isEnabled: () => !events.invoke('scene.empty'),
+            extra: shortcutManager.formatShortcut('doc.new'),
             onSelect: () => events.invoke('doc.new')
         }, {
             text: localize('menu.file.open'),
             icon: createSvg(sceneOpen),
+            extra: shortcutManager.formatShortcut('doc.open'),
             onSelect: async () => {
                 await events.invoke('doc.open');
             }
@@ -201,11 +202,13 @@ class Menu extends Container {
         }, {
             text: localize('menu.file.save'),
             icon: createSvg(sceneSave),
+            extra: shortcutManager.formatShortcut('doc.save'),
             isEnabled: () => events.invoke('doc.name'),
             onSelect: async () => await events.invoke('doc.save')
         }, {
             text: localize('menu.file.save-as', { ellipsis: true }),
             icon: createSvg(sceneSave),
+            extra: shortcutManager.formatShortcut('doc.saveAs'),
             isEnabled: () => !events.invoke('scene.empty'),
             onSelect: async () => await events.invoke('doc.saveAs')
         }, {
@@ -213,6 +216,7 @@ class Menu extends Container {
         }, {
             text: localize('menu.file.import', { ellipsis: true }),
             icon: createSvg(sceneImport),
+            extra: shortcutManager.formatShortcut('scene.import'),
             onSelect: async () => {
                 await events.invoke('scene.import');
             }

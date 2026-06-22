@@ -9,6 +9,13 @@ const STORAGE_KEY = 'ningjing.shortcuts';
 
 // Default shortcut bindings - the source of truth for key mappings.
 const defaultShortcuts: Record<string, ShortcutBinding> = {
+    // File
+    'doc.new': { keys: ['n'], ctrl: 'required', capture: true },
+    'doc.open': { keys: ['o'], ctrl: 'required', capture: true },
+    'doc.save': { keys: ['s'], ctrl: 'required', capture: true },
+    'doc.saveAs': { keys: ['s'], ctrl: 'required', shift: 'required', capture: true },
+    'scene.import': { keys: ['i'], ctrl: 'required', capture: true },
+
     // Navigation
     'camera.reset': { keys: ['f'], shift: 'required' },
     'camera.focus': { keys: ['f'] },
@@ -33,7 +40,7 @@ const defaultShortcuts: Record<string, ShortcutBinding> = {
     // Selection
     'select.all': { keys: ['a'], ctrl: 'required', capture: true },
     'select.none': { keys: ['a'], ctrl: 'required', shift: 'required', capture: true },
-    'select.invert': { keys: ['i'], ctrl: 'required' },
+    'select.invert': { keys: ['i'], ctrl: 'required', shift: 'required', capture: true },
     'select.delete': { keys: ['Delete', 'Backspace'] },
 
     // Tools

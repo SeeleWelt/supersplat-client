@@ -35,6 +35,16 @@ const DEFAULT_PREFERENCES: AppPreferences = {
 
 const SHORTCUT_GROUPS: ShortcutGroup[] = [
     {
+        localeKey: 'popup.shortcuts.file',
+        shortcuts: [
+            { id: 'doc.new', localeKey: 'popup.shortcuts.new-scene' },
+            { id: 'doc.open', localeKey: 'popup.shortcuts.open-file' },
+            { id: 'doc.save', localeKey: 'popup.shortcuts.save' },
+            { id: 'doc.saveAs', localeKey: 'popup.shortcuts.save-as' },
+            { id: 'scene.import', localeKey: 'popup.shortcuts.import-scene' }
+        ]
+    },
+    {
         localeKey: 'popup.preferences.shortcuts.general',
         shortcuts: [
             { id: 'preferences.open', localeKey: 'popup.shortcuts.preferences' },

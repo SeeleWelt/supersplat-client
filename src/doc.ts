@@ -205,6 +205,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
             return false;
         }
         resetScene();
+        events.fire('doc.created');
         return true;
     });
 
@@ -354,6 +355,22 @@ const registerDocEvents = (scene: Scene, events: Events) => {
             });
             events.fire('doc.saved');
         }
+    });
+
+    events.on('doc.new', async () => {
+        await events.invoke('doc.new');
+    });
+
+    events.on('doc.open', async () => {
+        await events.invoke('doc.open');
+    });
+
+    events.on('doc.save', async () => {
+        await events.invoke('doc.save');
+    });
+
+    events.on('doc.saveAs', async () => {
+        await events.invoke('doc.saveAs');
     });
 
     // doc name

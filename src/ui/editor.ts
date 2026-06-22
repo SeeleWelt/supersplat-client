@@ -300,6 +300,13 @@ class EditorUI {
             refreshTitle();
         });
 
+        events.on('doc.created', () => {
+            sceneEmpty = true;
+            emptyStateDismissed = false;
+            enterWorkspace();
+            refreshEmptyState();
+        });
+
         events.on('scene.dirtyChanged', (dirty: boolean) => {
             currentDirty = dirty;
             refreshTitle();

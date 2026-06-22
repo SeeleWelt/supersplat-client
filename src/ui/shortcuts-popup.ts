@@ -24,6 +24,16 @@ interface CategoryConfig {
 
 // Display configuration for the shortcuts popup
 const popupConfig: Record<string, CategoryConfig> = {
+    file: {
+        localeKey: 'popup.shortcuts.file',
+        shortcuts: [
+            { id: 'doc.new', localeKey: 'popup.shortcuts.new-scene' },
+            { id: 'doc.open', localeKey: 'popup.shortcuts.open-file' },
+            { id: 'doc.save', localeKey: 'popup.shortcuts.save' },
+            { id: 'doc.saveAs', localeKey: 'popup.shortcuts.save-as' },
+            { id: 'scene.import', localeKey: 'popup.shortcuts.import-scene' }
+        ]
+    },
     navigation: {
         localeKey: 'popup.shortcuts.navigation',
         shortcuts: [
@@ -109,7 +119,7 @@ const popupConfig: Record<string, CategoryConfig> = {
 };
 
 // Category display order
-const categoryOrder = ['navigation', 'camera', 'show', 'selection', 'tools', 'playback', 'other'];
+const categoryOrder = ['file', 'navigation', 'camera', 'show', 'selection', 'tools', 'playback', 'other'];
 
 class ShortcutsPopup extends Container {
     constructor(events: Events, args = {}) {
