@@ -38,7 +38,7 @@ class EmptyState extends Container {
         closeButton.className = 'empty-state-close';
         closeButton.type = 'button';
         closeButton.setAttribute('aria-label', localize('workspace.empty.close'));
-        closeButton.textContent = '×';
+        closeButton.textContent = 'x';
 
         closeButton.addEventListener('pointerdown', (event) => {
             event.preventDefault();
