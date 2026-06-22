@@ -263,13 +263,6 @@ body.app-theme-light {
         background-color: #f4f6f8;
     }
 
-    #app-label {
-        color: #1D48CE;
-        border-color: rgba(29, 72, 206, 0.28);
-        background-color: rgba(255, 255, 255, 0.76);
-        box-shadow: 0 6px 18px rgba(31, 35, 40, 0.12);
-    }
-
     .menu-option:hover,
     .titlebar-action:hover {
         color: #111418;
@@ -995,20 +988,6 @@ body.viewer-mode #status-bar {
     padding: 6px;
     color: $text-secondary !important;
     font-size: 14px;
-}
-
-#app-label {
-    position: absolute;
-    right: calc(var(--desktop-right-dock-width) + 16px);
-    bottom: 20px;
-    padding: 5px 9px;
-    color: #F2E8D4;
-    border: 1px solid rgba(215, 168, 90, 0.34);
-    border-radius: 4px;
-    background-color: rgba(16, 14, 21, 0.62);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
-    text-shadow: none;
-    z-index: 2;
 }
 
 #cursor-label {

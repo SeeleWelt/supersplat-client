@@ -78,12 +78,6 @@ class EditorUI {
         const canvas = document.createElement('canvas');
         canvas.id = 'canvas';
 
-        // app label
-        const appLabel = new Label({
-            id: 'app-label',
-            text: '凝境'
-        });
-
         // cursor label
         const cursorLabel = new Label({
             id: 'cursor-label'
@@ -136,7 +130,6 @@ class EditorUI {
         const menu = new Menu(events);
 
         canvasContainer.dom.appendChild(canvas);
-        canvasContainer.append(appLabel);
         canvasContainer.append(cursorLabel);
         canvasContainer.append(toolsContainer);
         canvasContainer.append(scenePanel);
