@@ -28,6 +28,11 @@ type PlyElement = {
 
 type ParsedPlyModel = ParsedMeshData;
 
+type ParsedFace = {
+    indices: number[];
+    color: number[] | null;
+};
+
 const plyTypeAliases: Record<string, PlyScalarType> = {
     char: 'char',
     int8: 'char',
@@ -120,7 +125,7 @@ const parseHeader = (header: string) => {
                 if (!current) {
                     throw new Error('Invalid PLY file: property without element');
                 }
-                if (parts[1] === 'list') {
+                if (parts[1].toLowerCase() === 'list') {
                     current.properties.push({
                         kind: 'list',
                         countType: parseType(parts[2]),
@@ -159,14 +164,33 @@ const getColorValue = (vertex: Record<string, number>, names: string[], fallback
 };
 
 const colorPropertyNames = {
-    red: ['red', 'r', 'diffuse_red'],
-    green: ['green', 'g', 'diffuse_green'],
-    blue: ['blue', 'b', 'diffuse_blue'],
-    alpha: ['alpha', 'a', 'diffuse_alpha']
+    red: ['red', 'r', 'diffuse_red', 'diffusered', 'color_red', 'color_r', 'scalar_red'],
+    green: ['green', 'g', 'diffuse_green', 'diffusegreen', 'color_green', 'color_g', 'scalar_green'],
+    blue: ['blue', 'b', 'diffuse_blue', 'diffuseblue', 'color_blue', 'color_b', 'scalar_blue'],
+    alpha: ['alpha', 'a', 'diffuse_alpha', 'diffusealpha', 'color_alpha', 'color_a', 'scalar_alpha']
 };
 
 const hasAnyProperty = (vertex: Record<string, number>, names: string[]) => {
     return names.some(name => vertex[name] !== undefined);
+};
+
+const getRecordColor = (record: Record<string, number>) => {
+    const hasColor = hasAnyProperty(record, [
+        ...colorPropertyNames.red,
+        ...colorPropertyNames.green,
+        ...colorPropertyNames.blue
+    ]);
+
+    if (!hasColor) {
+        return null;
+    }
+
+    return [
+        getColorValue(record, colorPropertyNames.red, 1),
+        getColorValue(record, colorPropertyNames.green, 1),
+        getColorValue(record, colorPropertyNames.blue, 1),
+        getColorValue(record, colorPropertyNames.alpha, 1)
+    ];
 };
 
 const appendVertex = (
@@ -196,19 +220,10 @@ const appendVertex = (
         normals.push(0, 0, 0);
     }
 
-    const hasColor = hasAnyProperty(vertex, [
-        ...colorPropertyNames.red,
-        ...colorPropertyNames.green,
-        ...colorPropertyNames.blue
-    ]);
-    if (hasColor) {
+    const color = getRecordColor(vertex);
+    if (color) {
         flags.hasColors = true;
-        colors.push(
-            getColorValue(vertex, colorPropertyNames.red, 1),
-            getColorValue(vertex, colorPropertyNames.green, 1),
-            getColorValue(vertex, colorPropertyNames.blue, 1),
-            getColorValue(vertex, colorPropertyNames.alpha, 1)
-        );
+        colors.push(color[0], color[1], color[2], color[3]);
     } else {
         colors.push(1, 1, 1, 1);
     }
@@ -227,6 +242,97 @@ const appendFace = (values: number[], indices: number[]) => {
     for (let i = 1; i < values.length - 1; i++) {
         indices.push(values[0], values[i], values[i + 1]);
     }
+};
+
+const appendExpandedVertex = (
+    sourceIndex: number,
+    positions: number[],
+    normals: number[],
+    uvs: number[],
+    target: Required<Pick<ParsedMeshData, 'positions' | 'normals' | 'colors' | 'uvs'>>,
+    color: number[],
+    flags: { hasNormals: boolean; hasUvs: boolean }
+) => {
+    const positionOffset = sourceIndex * 3;
+    target.positions.push(
+        positions[positionOffset],
+        positions[positionOffset + 1],
+        positions[positionOffset + 2]
+    );
+
+    if (flags.hasNormals) {
+        const normalOffset = sourceIndex * 3;
+        target.normals.push(
+            normals[normalOffset],
+            normals[normalOffset + 1],
+            normals[normalOffset + 2]
+        );
+    }
+
+    target.colors.push(color[0], color[1], color[2], color[3]);
+
+    if (flags.hasUvs) {
+        const uvOffset = sourceIndex * 2;
+        target.uvs.push(uvs[uvOffset], uvs[uvOffset + 1]);
+    }
+};
+
+const buildFaceColorMesh = (
+    positions: number[],
+    normals: number[],
+    uvs: number[],
+    faces: ParsedFace[],
+    flags: { hasNormals: boolean; hasUvs: boolean }
+): ParsedPlyModel => {
+    const expanded = {
+        positions: [] as number[],
+        normals: [] as number[],
+        colors: [] as number[],
+        uvs: [] as number[]
+    };
+
+    faces.forEach((face) => {
+        const color = face.color ?? [1, 1, 1, 1];
+        for (let i = 1; i < face.indices.length - 1; i++) {
+            appendExpandedVertex(face.indices[0], positions, normals, uvs, expanded, color, flags);
+            appendExpandedVertex(face.indices[i], positions, normals, uvs, expanded, color, flags);
+            appendExpandedVertex(face.indices[i + 1], positions, normals, uvs, expanded, color, flags);
+        }
+    });
+
+    return {
+        positions: expanded.positions,
+        normals: flags.hasNormals ? expanded.normals : undefined,
+        colors: expanded.colors,
+        uvs: flags.hasUvs ? expanded.uvs : undefined,
+        primitiveType: PRIMITIVE_TRIANGLES
+    };
+};
+
+const buildPlyModel = (
+    positions: number[],
+    normals: number[],
+    colors: number[],
+    uvs: number[],
+    faces: ParsedFace[],
+    flags: { hasNormals: boolean; hasColors: boolean; hasUvs: boolean }
+): ParsedPlyModel => {
+    const faceColors = faces.some(face => !!face.color);
+    if (!flags.hasColors && faceColors) {
+        return buildFaceColorMesh(positions, normals, uvs, faces, flags);
+    }
+
+    const indices: number[] = [];
+    faces.forEach(face => appendFace(face.indices, indices));
+
+    return {
+        positions,
+        normals: flags.hasNormals ? normals : undefined,
+        colors: flags.hasColors ? colors : undefined,
+        uvs: flags.hasUvs ? uvs : undefined,
+        indices: indices.length ? indices : undefined,
+        primitiveType: indices.length ? PRIMITIVE_TRIANGLES : PRIMITIVE_POINTS
+    };
 };
 
 const readBinaryScalar = (view: DataView, offset: number, type: PlyScalarType, littleEndian: boolean) => {
@@ -250,12 +356,12 @@ const parseAsciiBody = (text: string, elements: PlyElement[]): ParsedPlyModel =>
     const normals: number[] = [];
     const colors: number[] = [];
     const uvs: number[] = [];
-    const indices: number[] = [];
+    const faces: ParsedFace[] = [];
     const flags = { hasNormals: false, hasColors: false, hasUvs: false };
 
     for (const element of elements) {
         for (let i = 0; i < element.count; i++) {
-            const vertex: Record<string, number> = {};
+            const record: Record<string, number> = {};
             let faceIndices: number[] | null = null;
 
             for (const property of element.properties) {
@@ -270,28 +376,22 @@ const parseAsciiBody = (text: string, elements: PlyElement[]): ParsedPlyModel =>
                     }
                 } else {
                     const value = Number(tokens[cursor++]);
-                    if (element.name === 'vertex') {
-                        vertex[property.name] = value;
-                    }
+                    record[property.name] = value;
                 }
             }
 
             if (element.name === 'vertex') {
-                appendVertex(vertex, positions, normals, colors, uvs, flags);
+                appendVertex(record, positions, normals, colors, uvs, flags);
             } else if (element.name === 'face' && faceIndices && faceIndices.length >= 3) {
-                appendFace(faceIndices, indices);
+                faces.push({
+                    indices: faceIndices,
+                    color: getRecordColor(record)
+                });
             }
         }
     }
 
-    return {
-        positions,
-        normals: flags.hasNormals ? normals : undefined,
-        colors: flags.hasColors ? colors : undefined,
-        uvs: flags.hasUvs ? uvs : undefined,
-        indices: indices.length ? indices : undefined,
-        primitiveType: indices.length ? PRIMITIVE_TRIANGLES : PRIMITIVE_POINTS
-    };
+    return buildPlyModel(positions, normals, colors, uvs, faces, flags);
 };
 
 const parseBinaryBody = (bytes: Uint8Array, offset: number, format: PlyFormat, elements: PlyElement[]): ParsedPlyModel => {
@@ -303,12 +403,12 @@ const parseBinaryBody = (bytes: Uint8Array, offset: number, format: PlyFormat, e
     const normals: number[] = [];
     const colors: number[] = [];
     const uvs: number[] = [];
-    const indices: number[] = [];
+    const faces: ParsedFace[] = [];
     const flags = { hasNormals: false, hasColors: false, hasUvs: false };
 
     for (const element of elements) {
         for (let i = 0; i < element.count; i++) {
-            const vertex: Record<string, number> = {};
+            const record: Record<string, number> = {};
             let faceIndices: number[] | null = null;
 
             for (const property of element.properties) {
@@ -326,28 +426,22 @@ const parseBinaryBody = (bytes: Uint8Array, offset: number, format: PlyFormat, e
                 } else {
                     const value = readBinaryScalar(view, cursor, property.type, littleEndian);
                     cursor += plyTypeSize[property.type];
-                    if (element.name === 'vertex') {
-                        vertex[property.name] = value;
-                    }
+                    record[property.name] = value;
                 }
             }
 
             if (element.name === 'vertex') {
-                appendVertex(vertex, positions, normals, colors, uvs, flags);
+                appendVertex(record, positions, normals, colors, uvs, flags);
             } else if (element.name === 'face' && faceIndices && faceIndices.length >= 3) {
-                appendFace(faceIndices, indices);
+                faces.push({
+                    indices: faceIndices,
+                    color: getRecordColor(record)
+                });
             }
         }
     }
 
-    return {
-        positions,
-        normals: flags.hasNormals ? normals : undefined,
-        colors: flags.hasColors ? colors : undefined,
-        uvs: flags.hasUvs ? uvs : undefined,
-        indices: indices.length ? indices : undefined,
-        primitiveType: indices.length ? PRIMITIVE_TRIANGLES : PRIMITIVE_POINTS
-    };
+    return buildPlyModel(positions, normals, colors, uvs, faces, flags);
 };
 
 const parsePlyModel = (bytes: Uint8Array): ParsedPlyModel => {
