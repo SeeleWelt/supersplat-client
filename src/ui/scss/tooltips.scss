@@ -3,13 +3,13 @@
 .tooltips {
     position: fixed;
     z-index: 10000;
-    background-color: $bcg-darkest;
-    border: 1px solid $bcg-primary;
-    padding: 4px;
+    background-color: rgba(24, 38, 53, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    padding: 6px 8px;
     box-sizing: border-box;
     pointer-events: none;
-    border-radius: 3px;
-    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+    border-radius: 10px;
+    filter: drop-shadow(0 10px 20px rgba(15, 23, 42, 0.18));
 }
 
 .tooltips-content {
@@ -20,6 +20,6 @@
     overflow-wrap: break-word;
     word-wrap: break-word;
 
-    color: $clr-default;
+    color: #FFFFFF;
     margin: 0;
 }

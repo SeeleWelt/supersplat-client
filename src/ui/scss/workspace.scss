@@ -13,9 +13,15 @@
     padding: 28px clamp(20px, 4vw, 48px);
     color: $text-primary;
     background:
-        linear-gradient(90deg, rgba(215, 168, 90, 0.09) 0, transparent 34%),
-        linear-gradient(180deg, #171218 0, #100E15 48%, #0d0c0d 100%);
+        radial-gradient(circle at 16% 18%, rgba($clr-hilight, 0.16), transparent 26%),
+        linear-gradient(180deg, #100E15 0, #15131A 100%);
     pointer-events: auto;
+
+    &.drag-active {
+        background:
+            radial-gradient(circle at 16% 18%, rgba($clr-hilight, 0.24), transparent 28%),
+            linear-gradient(180deg, #100E15 0, #17151D 100%);
+    }
 }
 
 body:not(.workspace-welcome) #welcome-screen {
@@ -38,11 +44,11 @@ body:not(.workspace-welcome) #welcome-screen {
     flex-direction: column;
     gap: 6px;
     padding-bottom: 4px;
-    border-bottom: 1px solid rgba(215, 168, 90, 0.22);
+    border-bottom: 1px solid rgba($clr-hilight, 0.18);
 }
 
 .welcome-kicker {
-    color: var(--app-accent-soft);
+    color: $clr-icon-hilight;
     font-size: 11px;
     font-weight: 700;
 }
@@ -75,13 +81,14 @@ body:not(.workspace-welcome) #welcome-screen {
     display: flex;
     align-items: center;
     gap: 10px;
-    border: 1px solid rgba(215, 168, 90, 0.26);
-    border-radius: 6px;
+    border: 1px solid $bcg-light;
+    border-radius: 14px;
     color: $text-primary;
     appearance: none;
     background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
-        #171417;
+        linear-gradient(180deg, rgba($bcg-dark, 0.94), rgba($bcg-primary, 0.88)),
+        $bcg-primary;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
     cursor: pointer;
     text-align: left;
 
@@ -89,22 +96,25 @@ body:not(.workspace-welcome) #welcome-screen {
         width: 17px;
         height: 17px;
         flex: 0 0 17px;
-        color: var(--app-accent-soft);
+        color: $clr-icon-hilight;
     }
 
     &:hover,
     &:focus-visible {
-        border-color: rgba(215, 168, 90, 0.58);
-        background-color: #201b18;
+        border-color: rgba($clr-hilight, 0.48);
+        background-color: rgba($clr-hilight, 0.08);
         outline: none;
     }
 
     &.primary {
-        color: #fff;
-        border-color: rgba(215, 168, 90, 0.72);
+        color: $clr-icon-hilight;
+        border-color: rgba($clr-hilight, 0.72);
         background:
-            linear-gradient(180deg, rgba(215, 168, 90, 0.32), rgba(215, 168, 90, 0.13)),
-            #191410;
+            linear-gradient(180deg, rgba($clr-hilight, 0.22), rgba($clr-hilight, 0.1)),
+            $bcg-dark;
+        box-shadow:
+            inset 0 0 0 1px rgba($clr-hilight, 0.18),
+            0 14px 26px rgba(0, 0, 0, 0.22);
     }
 
     &.compact {
@@ -121,32 +131,19 @@ body:not(.workspace-welcome) #welcome-screen {
     font-weight: 700;
 }
 
-.welcome-dropzone {
+.welcome-drag-panel {
     grid-row: 3;
-    padding: 16px;
+    min-height: 0;
+    padding: 2px 0 0;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 5px;
-    min-height: 128px;
-    border: 1px dashed rgba(215, 168, 90, 0.36);
-    border-radius: 6px;
-    background-color: rgba(0, 0, 0, 0.12);
+    align-items: flex-start;
 }
 
-.drag-active .welcome-dropzone {
-    border-color: var(--app-accent);
-    background-color: rgba(215, 168, 90, 0.1);
-}
-
-.welcome-dropzone-title {
-    color: $text-primary;
-    font-weight: 700;
-}
-
-.welcome-dropzone-text {
+.welcome-drag-panel-text {
+    margin: 0;
     color: $text-secondary;
-    line-height: 1.55;
+    font-size: 11px;
+    line-height: 1.45;
 }
 
 .welcome-recent {
@@ -182,16 +179,16 @@ body:not(.workspace-welcome) #welcome-screen {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 6px;
+    border: 1px solid $bcg-light;
+    border-radius: 12px;
     color: $text-primary;
-    background-color: rgba(255, 255, 255, 0.035);
+    background-color: rgba($bcg-primary, 0.74);
     cursor: pointer;
 
     &:hover,
     &:focus-visible {
-        border-color: rgba(215, 168, 90, 0.42);
-        background-color: rgba(215, 168, 90, 0.08);
+        border-color: rgba($clr-hilight, 0.45);
+        background-color: rgba($clr-hilight, 0.08);
         outline: none;
     }
 }
@@ -237,13 +234,14 @@ body:not(.workspace-welcome) #welcome-screen {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    border: 1px solid rgba(215, 168, 90, 0.28);
-    border-radius: 7px;
+    border: 1px solid $bcg-light;
+    border-radius: 16px;
     color: $text-primary;
     background:
-        linear-gradient(180deg, rgba(215, 168, 90, 0.07), rgba(255, 255, 255, 0.02)),
-        rgba(16, 14, 21, 0.9);
-    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.32);
+        linear-gradient(180deg, rgba($bcg-dark, 0.94), rgba($bcg-primary, 0.92)),
+        rgba($bcg-primary, 0.9);
+    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.36);
+    backdrop-filter: blur(18px);
     pointer-events: auto;
 }
 
@@ -266,22 +264,41 @@ body:not(.workspace-welcome) #welcome-screen {
     width: 24px;
     height: 24px;
     flex: 0 0 24px;
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(215, 168, 90, 0.24);
-    border-radius: 4px;
+    border: 1px solid $bcg-light;
+    border-radius: 999px;
     color: $text-secondary;
-    background-color: rgba(255, 255, 255, 0.03);
-    font-size: 18px;
+    background-color: $bcg-dark;
+    font-size: 0;
     line-height: 22px;
     cursor: pointer;
 
+    &::before,
+    &::after {
+        content: '';
+        position: absolute;
+        width: 12px;
+        height: 1.5px;
+        border-radius: 999px;
+        background-color: currentColor;
+    }
+
+    &::before {
+        transform: rotate(45deg);
+    }
+
+    &::after {
+        transform: rotate(-45deg);
+    }
+
     &:hover,
     &:focus-visible {
-        color: $text-primary;
-        border-color: rgba(215, 168, 90, 0.58);
-        background-color: rgba(215, 168, 90, 0.12);
+        color: $clr-icon-hilight;
+        border-color: rgba($clr-hilight, 0.58);
+        background-color: rgba($clr-hilight, 0.1);
         outline: none;
     }
 }
@@ -323,7 +340,6 @@ body.app-theme-light {
     .welcome-kicker,
     .welcome-title,
     .welcome-section-title,
-    .welcome-dropzone-title,
     .empty-state-title {
         color: #1f2328;
     }
@@ -333,7 +349,7 @@ body.app-theme-light {
     }
 
     .welcome-subtitle,
-    .welcome-dropzone-text,
+    .welcome-drag-panel-text,
     .welcome-recent-date,
     .welcome-empty-recent,
     .empty-state-text {
@@ -362,14 +378,10 @@ body.app-theme-light {
         }
     }
 
-    .welcome-dropzone {
-        border-color: #b8c7df;
-        background-color: rgba(255, 255, 255, 0.58);
-    }
-
-    .drag-active .welcome-dropzone {
-        border-color: #1D48CE;
-        background-color: #E8EFFC;
+    #welcome-screen.drag-active {
+        background:
+            linear-gradient(90deg, rgba(29, 72, 206, 0.13) 0, transparent 38%),
+            linear-gradient(180deg, #f8fafc 0, #edf1f5 100%);
     }
 
     .welcome-recent-row {

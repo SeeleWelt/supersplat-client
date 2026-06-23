@@ -34,11 +34,16 @@ const fragmentShader = /* glsl*/ `
         vec4(0.0, 0.0, 1.0, 0.0)
     );
 
-    vec3 colors[3] = vec3[3](
-        vec3(1.0, 0.2, 0.2),
-        vec3(0.2, 1.0, 0.2),
-        vec3(0.2, 0.2, 1.0)
+    vec3 axisColors[3] = vec3[3](
+        vec3(0.86, 0.42, 0.34),
+        vec3(0.48, 0.70, 0.45),
+        vec3(0.42, 0.58, 0.86)
     );
+
+    const vec3 originColor = vec3(0.90, 0.76, 0.48);
+    const vec3 majorColor = vec3(0.55, 0.45, 0.30);
+    const vec3 minorColor = vec3(0.34, 0.31, 0.28);
+    const vec3 microColor = vec3(0.25, 0.23, 0.22);
 
     int axis0[3] = int[3](1, 0, 0);
     int axis1[3] = int[3](2, 2, 1);
@@ -124,45 +129,47 @@ const fragmentShader = /* glsl*/ `
         float levelSize;
         float levelAlpha;
 
-        // 10m grid with colored main axes
-        levelPos = pos * 0.1;
-        levelSize = 2.0 / 1000.0;
-        levelAlpha = pristineGrid(levelPos, ddx * 0.1, ddy * 0.1, vec2(levelSize)) * fade;
+        // 5m drafting grid with restrained axis accents
+        levelPos = pos * 0.2;
+        levelSize = 3.0 / 1000.0;
+        levelAlpha = pristineGrid(levelPos, ddx * 0.2, ddy * 0.2, vec2(levelSize)) * fade * 0.82;
         if (levelAlpha > epsilon) {
             vec3 color;
             vec2 loc = abs(levelPos);
             if (loc.x < levelSize) {
                 if (loc.y < levelSize) {
-                    color = vec3(1.0);
+                    color = originColor;
                 } else {
-                    color = colors[axis1[plane]];
+                    color = axisColors[axis1[plane]];
+                    levelAlpha *= 1.3;
                 }
             } else if (loc.y < levelSize) {
-                color = colors[axis0[plane]];
+                color = axisColors[axis0[plane]];
+                levelAlpha *= 1.3;
             } else {
-                color = vec3(0.9);
+                color = majorColor;
             }
             gl_FragColor = vec4(color, levelAlpha);
             gl_FragDepth = writeDepth(levelAlpha) ? calcDepth(worldPos) : 1.0;
             return;
         }
 
-        // 1m grid
-        levelPos = pos;
+        // 0.5m grid
+        levelPos = pos * 2.0;
         levelSize = 1.0 / 100.0;
-        levelAlpha = pristineGrid(levelPos, ddx, ddy, vec2(levelSize)) * fade;
+        levelAlpha = pristineGrid(levelPos, ddx * 2.0, ddy * 2.0, vec2(levelSize)) * fade * 0.36;
         if (levelAlpha > epsilon) {
-            gl_FragColor = vec4(vec3(0.7), levelAlpha);
+            gl_FragColor = vec4(minorColor, levelAlpha);
             gl_FragDepth = writeDepth(levelAlpha) ? calcDepth(worldPos) : 1.0;
             return;
         }
 
         // 0.1m grid
         levelPos = pos * 10.0;
-        levelSize = 1.0 / 100.0;
-        levelAlpha = pristineGrid(levelPos, ddx * 10.0, ddy * 10.0, vec2(levelSize)) * fade;
+        levelSize = 0.8 / 100.0;
+        levelAlpha = pristineGrid(levelPos, ddx * 10.0, ddy * 10.0, vec2(levelSize)) * fade * 0.20;
         if (levelAlpha > epsilon) {
-            gl_FragColor = vec4(vec3(0.7), levelAlpha);
+            gl_FragColor = vec4(microColor, levelAlpha);
             gl_FragDepth = writeDepth(levelAlpha) ? calcDepth(worldPos) : 1.0;
             return;
         }

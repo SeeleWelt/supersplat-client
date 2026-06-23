@@ -46,10 +46,14 @@ class ModeToggle extends Container {
         this.append(centersText);
         this.append(ringsText);
 
+        let enabled = false;
+
         this.dom.addEventListener('pointerdown', (event) => {
             event.stopPropagation();
-            events.fire('camera.toggleMode');
-            events.fire('camera.setOverlay', true);
+            if (enabled) {
+                events.fire('camera.toggleMode');
+                events.fire('camera.setOverlay', true);
+            }
         });
 
         events.on('camera.mode', (mode: string) => {
@@ -57,6 +61,19 @@ class ModeToggle extends Container {
             this.class[mode === 'rings' ? 'add' : 'remove']('rings-mode');
         });
 
+        events.on('camera.mode.available', (value: boolean) => {
+            enabled = value;
+            this.class[value ? 'remove' : 'add']('disabled');
+        });
+
+        events.on('selection.changed', () => {
+            if (events.functions.has('camera.mode.available')) {
+                enabled = !!events.invoke('camera.mode.available');
+                this.class[enabled ? 'remove' : 'add']('disabled');
+            }
+        });
+
+        this.class.add('disabled');
         tooltips.register(this, localize('tooltip.right-toolbar.splat-mode'));
     }
 }

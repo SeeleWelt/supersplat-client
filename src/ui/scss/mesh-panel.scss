@@ -1,0 +1,286 @@
+@use 'colors.scss' as *;
+
+#mesh-panel {
+    top: var(--desktop-titlebar-height);
+    right: 0;
+    bottom: 0;
+    width: var(--desktop-right-panel-width);
+    transform: none;
+    flex-direction: column;
+    z-index: 5;
+    overflow-y: auto;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+
+    &:not(.pcui-hidden) {
+        display: flex;
+    }
+
+    > .panel-header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        flex: 0 0 auto;
+        background: $bcg-darker;
+        background-color: $bcg-darker;
+    }
+
+    .panel-reset-action {
+        flex: 0 0 auto;
+    }
+
+    > .mesh-panel-section-group {
+        display: flex;
+        flex: 0 0 auto;
+        flex-direction: column;
+        width: 100%;
+        box-sizing: border-box;
+        border-top: 1px solid rgba($bcg-lighter, 0.2);
+
+        > .mesh-panel-section {
+            min-height: 24px;
+            padding: 12px 12px 4px;
+            color: $clr-icon-hilight;
+            font-weight: 700;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        > .mesh-panel-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            min-height: 30px;
+            padding: 3px 12px;
+
+            > .mesh-panel-row-label {
+                flex: 1 1 auto;
+                min-width: 88px;
+            }
+
+            > .mesh-panel-row-picker {
+                height: 24px;
+                margin: 0;
+                padding: 0;
+            }
+
+            > .mesh-panel-row-slider {
+                width: 176px;
+                margin: 0;
+
+                > .pcui-slider-container > .pcui-slider-bar > .pcui-slider-handle {
+                    background-color: $clr-default;
+                    border-radius: 3px;
+                }
+            }
+
+            > .mesh-panel-row-select {
+                width: 176px;
+                margin: 0;
+            }
+
+            > .mesh-panel-row-value {
+                width: 176px;
+                margin: 0;
+                color: $clr-icon-hilight;
+                text-align: right;
+                font-weight: 700;
+            }
+
+            > .mesh-panel-row-toggle {
+                background-color: $bcg-dark;
+
+                &::after {
+                    background-color: $clr-default;
+                }
+
+                &.pcui-boolean-input-ticked {
+                    background-color: rgba($clr-hilight, 0.28);
+
+                    &::after {
+                        background-color: $clr-icon-hilight;
+                    }
+                }
+            }
+        }
+
+        > .mesh-panel-view-mode-row {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 4px;
+            padding: 8px 12px 10px;
+
+            > .mesh-panel-view-mode-button {
+                min-width: 0;
+                height: 28px;
+                margin: 0;
+                padding: 0 6px;
+                border: 1px solid rgba($bcg-lighter, 0.28);
+                background-color: rgba($bcg-dark, 0.78);
+                color: rgba($clr-default, 0.78);
+                font-size: 11px;
+                font-weight: 700;
+
+                &:hover {
+                    border-color: rgba($clr-icon-hilight, 0.45);
+                    color: $clr-icon-hilight;
+                }
+
+                &.active {
+                    border-color: rgba($clr-hilight, 0.78);
+                    background-color: rgba($clr-hilight, 0.22);
+                    color: $clr-icon-hilight;
+                }
+            }
+        }
+
+        > .mesh-panel-button-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+            padding: 10px 12px;
+
+            > .mesh-panel-texture-button {
+                min-height: 28px;
+            }
+        }
+
+        > .mesh-panel-texture-block {
+            display: flex;
+            flex: 0 0 auto;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 12px 10px;
+            border-top: 1px solid rgba($bcg-lighter, 0.12);
+
+            > .mesh-panel-texture-main {
+                display: grid;
+                grid-template-columns: 64px minmax(0, 1fr);
+                gap: 8px;
+                min-width: 0;
+            }
+
+            > .mesh-panel-texture-main > .mesh-panel-texture-preview {
+                position: relative;
+                width: 64px;
+                height: 64px;
+                overflow: hidden;
+                background-color: rgba($bcg-darker, 0.72);
+                border: 1px solid rgba($bcg-lighter, 0.28);
+
+                > img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                    display: block;
+
+                    &[hidden] {
+                        display: none;
+                    }
+                }
+
+                > div {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 100%;
+                    height: 100%;
+                    padding: 4px;
+                    color: rgba($clr-default, 0.58);
+                    text-align: center;
+                    font-size: 11px;
+                    line-height: 14px;
+
+                    &[hidden] {
+                        display: none;
+                    }
+                }
+            }
+
+            > .mesh-panel-texture-main > .mesh-panel-texture-info {
+                min-width: 0;
+                align-self: center;
+
+                > .mesh-panel-texture-name {
+                    color: $clr-icon-hilight;
+                    font-weight: 700;
+                    line-height: 18px;
+                }
+
+                > .mesh-panel-texture-path,
+                > .mesh-panel-texture-size {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    color: rgba($clr-default, 0.7);
+                    line-height: 17px;
+                }
+            }
+
+            > .mesh-panel-texture-actions {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 6px;
+                width: 100%;
+                min-width: 0;
+
+                > .mesh-panel-texture-button {
+                    min-height: 28px;
+                }
+            }
+        }
+    }
+
+    > .mesh-panel-actions {
+        display: flex;
+        flex: 0 0 auto;
+        margin-top: auto;
+        padding: 12px;
+        border-top: 1px solid rgba($bcg-lighter, 0.2);
+        background: $bcg-dark;
+
+        > .panel-reset-action {
+            width: 100%;
+            height: 30px;
+        }
+    }
+
+}
+
+body.right-panel-collapsed #mesh-panel {
+    overflow: visible;
+    border: 0;
+
+    > :not(.panel-header) {
+        display: none;
+    }
+
+    > .panel-header {
+        display: block;
+        min-height: 0;
+        padding: 0;
+        border: 0;
+        background-color: transparent;
+
+        > .panel-header-icon,
+        > .panel-header-label {
+            display: none;
+        }
+
+        > .panel-collapse-button {
+            position: fixed;
+            top: var(--desktop-titlebar-height);
+            right: var(--desktop-right-rail-width);
+            z-index: 10;
+            width: 28px;
+            height: 28px;
+            border: 1px solid rgba($bcg-lighter, 0.3);
+            border-right: 0;
+            border-radius: 0;
+            background-color: rgba($bcg-dark, 0.92);
+        }
+    }
+}

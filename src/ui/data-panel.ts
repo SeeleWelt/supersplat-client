@@ -3,9 +3,10 @@ import { Mat4 } from 'playcanvas';
 
 import { Element } from '../element';
 import { Events } from '../events';
+import { ModelElement } from '../model-element';
 import { Splat } from '../splat';
 import { Histogram } from './histogram';
-import { localize } from './localization';
+import { localize, formatInteger } from './localization';
 import { Tooltips } from './tooltips';
 
 // gpu propMode constants. these must match the propMode dispatch in
@@ -70,6 +71,17 @@ const isPositionDependentMode = (mode: number) => {
 };
 // ColorGrade-dependent. f_dc_* (raw DC, modes 66..68) bypasses ColorGrade.
 const isColorGradeDependentMode = (mode: number) => mode === 8 /* opacity */ || isFinalColorMode(mode);
+
+const formatMeasure = (value: number) => {
+    if (!Number.isFinite(value)) {
+        return '-';
+    }
+    const abs = Math.abs(value);
+    if (abs !== 0 && (abs < 0.001 || abs >= 10000)) {
+        return value.toExponential(2);
+    }
+    return value.toFixed(3);
+};
 
 // every input that can require a histogram refresh. subscribers update one
 // field and call tick(); the hash collapses no-op changes into a fast path
@@ -155,6 +167,7 @@ class DataPanel extends Container {
 
         // track the selected data property
         let selectedDataProp = 'x';
+        let selectedMeshDataProp = 'vertex:x';
 
         // data list box
         const dataListBox = new Container({
@@ -324,6 +337,80 @@ class DataPanel extends Container {
             });
         };
 
+        const meshDataLabel = (prop: string) => {
+            const vertex = localize('panel.mesh-data.vertex');
+            const face = localize('panel.mesh-data.face');
+            const position = localize('panel.splat-data.position');
+            const normal = localize('panel.mesh-data.normal');
+            const center = localize('panel.mesh-data.center');
+
+            const labels: Record<string, string> = {
+                'vertex:x': `${vertex} ${position} X`,
+                'vertex:y': `${vertex} ${position} Y`,
+                'vertex:z': `${vertex} ${position} Z`,
+                'vertex:distance': `${vertex} ${localize('panel.splat-data.distance')}`,
+                'vertex:camera-depth': `${vertex} ${localize('panel.splat-data.camera-depth')}`,
+                'vertex:normal-x': `${vertex} ${normal} X`,
+                'vertex:normal-y': `${vertex} ${normal} Y`,
+                'vertex:normal-z': `${vertex} ${normal} Z`,
+                'vertex:u': `${vertex} UV U`,
+                'vertex:v': `${vertex} UV V`,
+                'vertex:red': `${vertex} ${localize('panel.splat-data.red')}`,
+                'vertex:green': `${vertex} ${localize('panel.splat-data.green')}`,
+                'vertex:blue': `${vertex} ${localize('panel.splat-data.blue')}`,
+                'vertex:alpha': `${vertex} ${localize('panel.mesh-data.alpha')}`,
+                'face:center-x': `${face} ${center} X`,
+                'face:center-y': `${face} ${center} Y`,
+                'face:center-z': `${face} ${center} Z`,
+                'face:normal-x': `${face} ${normal} X`,
+                'face:normal-y': `${face} ${normal} Y`,
+                'face:normal-z': `${face} ${normal} Z`,
+                'face:area': `${face} ${localize('panel.mesh-data.area')}`,
+                'face:distance': `${face} ${localize('panel.splat-data.distance')}`,
+                'face:camera-depth': `${face} ${localize('panel.splat-data.camera-depth')}`
+            };
+            return labels[prop] ?? prop;
+        };
+
+        const populateMeshDataSelector = (model_: ModelElement) => {
+            const props = model_.getMeshDataProperties();
+            if (!props.some(prop => prop.id === selectedMeshDataProp)) {
+                selectedMeshDataProp = props[0]?.id ?? 'vertex:x';
+            }
+
+            dataListBox.dom.innerHTML = '';
+            (['vertex', 'face'] as const).forEach((domain) => {
+                const domainProps = props.filter(prop => prop.domain === domain);
+                if (!domainProps.length) {
+                    return;
+                }
+
+                const section = document.createElement('div');
+                section.className = 'data-list-section';
+                section.textContent = domain === 'vertex' ? localize('panel.mesh-data.vertices') : localize('panel.mesh-data.faces');
+                dataListBox.dom.appendChild(section);
+
+                domainProps.forEach((prop) => {
+                    const item = document.createElement('div');
+                    item.classList.add('data-list-item');
+                    if (prop.id === selectedMeshDataProp) {
+                        item.classList.add('active');
+                    }
+                    item.textContent = meshDataLabel(prop.id);
+                    item.addEventListener('click', () => {
+                        selectedMeshDataProp = prop.id;
+                        dataListBox.dom.querySelectorAll('.data-list-item').forEach((el) => {
+                            el.classList.remove('active');
+                        });
+                        item.classList.add('active');
+                        renderMeshHistogram(); // eslint-disable-line no-use-before-define
+                    });
+
+                    dataListBox.dom.appendChild(item);
+                });
+            });
+        };
+
         // ordered: visible-only (histogram filter), log scale (histogram
         // display), then all-properties (list filter, sitting right above the
         // property list it affects).
@@ -348,6 +435,121 @@ class DataPanel extends Container {
         const histogramContainer = new Container({
             id: 'histogram-container'
         });
+
+        const meshDetailsContainer = new Container({
+            id: 'mesh-details-container',
+            hidden: true
+        });
+
+        const meshDetailsTitle = document.createElement('div');
+        meshDetailsTitle.className = 'mesh-details-title';
+        meshDetailsTitle.textContent = localize('panel.mesh-data.summary');
+
+        const meshDetailsGrid = document.createElement('div');
+        meshDetailsGrid.className = 'mesh-details-grid';
+
+        const meshRows: Record<string, HTMLElement> = {};
+        const addMeshRow = (key: string, label: string) => {
+            const row = document.createElement('div');
+            row.className = 'mesh-details-row';
+            const labelEl = document.createElement('div');
+            labelEl.className = 'mesh-details-label';
+            labelEl.textContent = label;
+            const valueEl = document.createElement('div');
+            valueEl.className = 'mesh-details-value';
+            row.appendChild(labelEl);
+            row.appendChild(valueEl);
+            meshDetailsGrid.appendChild(row);
+            meshRows[key] = valueEl;
+        };
+
+        [
+            ['vertices', localize('panel.mesh-data.vertices')],
+            ['selectedVertices', localize('panel.mesh-data.selected-vertices')],
+            ['triangles', localize('panel.mesh-data.triangles')],
+            ['selectedTriangles', localize('panel.mesh-data.selected-triangles')],
+            ['fullySelectedTriangles', localize('panel.mesh-data.fully-selected-triangles')],
+            ['lines', localize('panel.mesh-data.lines')],
+            ['points', localize('panel.mesh-data.points')],
+            ['meshInstances', localize('panel.mesh-data.mesh-instances')],
+            ['vertexStreams', localize('panel.mesh-data.vertex-streams')],
+            ['materials', localize('panel.mesh-data.materials')],
+            ['vertexColors', localize('panel.mesh-data.vertex-colors')],
+            ['textures', localize('panel.mesh-data.textures')],
+            ['dimensions', localize('panel.mesh-data.dimensions')]
+        ].forEach(([key, label]) => addMeshRow(key, label));
+
+        type MeshChartBar = {
+            label: HTMLElement;
+            value: HTMLElement;
+            fill: HTMLElement;
+        };
+
+        const meshChartBars: Record<string, MeshChartBar> = {};
+        const meshCharts = document.createElement('div');
+        meshCharts.className = 'mesh-chart-grid';
+
+        const addMeshChart = (title: string, bars: [string, string][]) => {
+            const chart = document.createElement('div');
+            chart.className = 'mesh-chart-card';
+            const titleEl = document.createElement('div');
+            titleEl.className = 'mesh-chart-title';
+            titleEl.textContent = title;
+            chart.appendChild(titleEl);
+
+            bars.forEach(([key, label]) => {
+                const row = document.createElement('div');
+                row.className = 'mesh-chart-row';
+                const meta = document.createElement('div');
+                meta.className = 'mesh-chart-meta';
+                const labelEl = document.createElement('span');
+                labelEl.className = 'mesh-chart-label';
+                labelEl.textContent = label;
+                const valueEl = document.createElement('span');
+                valueEl.className = 'mesh-chart-value';
+                meta.appendChild(labelEl);
+                meta.appendChild(valueEl);
+
+                const track = document.createElement('div');
+                track.className = 'mesh-chart-track';
+                const fill = document.createElement('div');
+                fill.className = 'mesh-chart-fill';
+                track.appendChild(fill);
+
+                row.appendChild(meta);
+                row.appendChild(track);
+                chart.appendChild(row);
+                meshChartBars[key] = { label: labelEl, value: valueEl, fill };
+            });
+
+            meshCharts.appendChild(chart);
+        };
+
+        addMeshChart(localize('panel.mesh-data.chart.selection'), [
+            ['selectedVerticesChart', localize('panel.mesh-data.selected-vertices')],
+            ['unselectedVerticesChart', localize('panel.mesh-data.unselected-vertices')],
+            ['deletedVerticesChart', localize('status-bar.deleted')]
+        ]);
+        addMeshChart(localize('panel.mesh-data.chart.primitives'), [
+            ['trianglesChart', localize('panel.mesh-data.triangles')],
+            ['linesChart', localize('panel.mesh-data.lines')],
+            ['pointsChart', localize('panel.mesh-data.points')]
+        ]);
+        addMeshChart(localize('panel.mesh-data.chart.resources'), [
+            ['meshInstancesChart', localize('panel.mesh-data.mesh-instances')],
+            ['vertexStreamsChart', localize('panel.mesh-data.vertex-streams')],
+            ['materialsChart', localize('panel.mesh-data.materials')],
+            ['texturesChart', localize('panel.mesh-data.textures')]
+        ]);
+        addMeshChart(localize('panel.mesh-data.chart.bounds'), [
+            ['widthChart', `${localize('panel.mesh-data.dimension')} X`],
+            ['heightChart', `${localize('panel.mesh-data.dimension')} Y`],
+            ['depthChart', `${localize('panel.mesh-data.dimension')} Z`]
+        ]);
+
+        meshDetailsContainer.dom.appendChild(meshDetailsTitle);
+        meshDetailsContainer.dom.appendChild(meshDetailsGrid);
+        meshDetailsContainer.dom.appendChild(meshCharts);
 
         // wrap the canvas, SVG highlight overlay and stats overlay so the
         // parent can be a flex column with a fixed info row underneath. without
@@ -419,9 +621,11 @@ class DataPanel extends Container {
 
         this.append(controlsContainer);
         this.append(histogramContainer);
+        this.append(meshDetailsContainer);
 
         // current splat
         let splat: Splat;
+        let model: ModelElement;
 
         let pendingToken = 0;
         let lastGpuMode = 0;
@@ -527,15 +731,125 @@ class DataPanel extends Container {
             scheduleUpdate();
         };
 
+        const setMode = (mode: 'splat' | 'mesh' | 'empty') => {
+            const splatMode = mode === 'splat';
+            const meshMode = mode === 'mesh';
+            controlsContainer.hidden = !splatMode && !meshMode;
+            controls.hidden = !splatMode && !meshMode;
+            onScreenOnly.hidden = meshMode;
+            showAll.hidden = meshMode;
+            histogramContainer.hidden = !splatMode && !meshMode;
+            meshDetailsContainer.hidden = !meshMode;
+        };
+
+        const setMeshChartBar = (key: string, value: number, max: number, formatter = formatInteger) => {
+            const bar = meshChartBars[key];
+            if (!bar) {
+                return;
+            }
+            const pct = max > 0 ? Math.max(0, Math.min(100, value / max * 100)) : 0;
+            bar.value.textContent = formatter(value);
+            bar.fill.style.width = `${pct}%`;
+            bar.fill.classList.toggle('is-empty', pct === 0);
+        };
+
+        const renderMeshHistogram = () => {
+            if (!model) {
+                setMode('empty');
+                return;
+            }
+
+            setMode('mesh');
+            const props = model.getMeshDataProperties();
+            if (!props.some(prop => prop.id === selectedMeshDataProp)) {
+                selectedMeshDataProp = props[0]?.id ?? 'vertex:x';
+                populateMeshDataSelector(model);
+            }
+
+            const result = model.calcMeshDataHistogram(selectedMeshDataProp, histogram.histogram.bins.length);
+            histogram.setData({
+                selected: result.selected,
+                unselected: result.unselected,
+                min: result.min,
+                max: result.max,
+                numValues: result.numValues,
+                logScale: inputs.logScale
+            });
+
+            statsCountLabel.textContent = selectedMeshDataProp.startsWith('face:') ?
+                `${localize('panel.mesh-data.faces')}:` :
+                `${localize('panel.mesh-data.vertices')}:`;
+            statsSelectedLabel.textContent = `${localize('panel.splat-data.totals.selected')}:`;
+            refreshRange();
+        };
+
+        const renderMeshDetails = () => {
+            if (!model) {
+                setMode('empty');
+                return;
+            }
+
+            setMode('mesh');
+            const stats = model.meshStats;
+            const deletedVertices = model.deletedVertexCount;
+            const totalVertices = stats.vertices + deletedVertices;
+            const unselectedVertices = Math.max(0, stats.vertices - stats.selectedVertices);
+            const textureCount = (stats.hasDiffuseMap ? 1 : 0) + (stats.hasNormalMap ? 1 : 0);
+            const primitiveMax = Math.max(stats.triangles, stats.lines, stats.points, 1);
+            const resourceMax = Math.max(stats.meshInstances, stats.vertexStreams, stats.materials, textureCount, 1);
+            const dimensionMax = Math.max(stats.width, stats.height, stats.depth, 1);
+
+            meshRows.vertices.textContent = formatInteger(stats.vertices);
+            meshRows.selectedVertices.textContent = `${formatInteger(stats.selectedVertices)} / ${formatInteger(stats.vertices)}`;
+            meshRows.triangles.textContent = formatInteger(stats.triangles);
+            meshRows.selectedTriangles.textContent = formatInteger(stats.selectedTriangles);
+            meshRows.fullySelectedTriangles.textContent = formatInteger(stats.fullySelectedTriangles);
+            meshRows.lines.textContent = formatInteger(stats.lines);
+            meshRows.points.textContent = formatInteger(stats.points);
+            meshRows.meshInstances.textContent = formatInteger(stats.meshInstances);
+            meshRows.vertexStreams.textContent = formatInteger(stats.vertexStreams);
+            meshRows.materials.textContent = formatInteger(stats.materials);
+            meshRows.vertexColors.textContent = stats.hasVertexColors ? localize('panel.mesh-data.yes') : localize('panel.mesh-data.no');
+
+            const textures: string[] = [];
+            if (stats.hasDiffuseMap) {
+                textures.push(localize('panel.mesh.texture.diffuse-map'));
+            }
+            if (stats.hasNormalMap) {
+                textures.push(localize('panel.mesh.texture.normal-map'));
+            }
+            meshRows.textures.textContent = textures.length ? textures.join(' / ') : localize('panel.mesh.texture.none');
+            meshRows.dimensions.textContent = `${formatMeasure(stats.width)} x ${formatMeasure(stats.height)} x ${formatMeasure(stats.depth)}`;
+
+            setMeshChartBar('selectedVerticesChart', stats.selectedVertices, Math.max(totalVertices, 1));
+            setMeshChartBar('unselectedVerticesChart', unselectedVertices, Math.max(totalVertices, 1));
+            setMeshChartBar('deletedVerticesChart', deletedVertices, Math.max(totalVertices, 1));
+            setMeshChartBar('trianglesChart', stats.triangles, primitiveMax);
+            setMeshChartBar('linesChart', stats.lines, primitiveMax);
+            setMeshChartBar('pointsChart', stats.points, primitiveMax);
+            setMeshChartBar('meshInstancesChart', stats.meshInstances, resourceMax);
+            setMeshChartBar('vertexStreamsChart', stats.vertexStreams, resourceMax);
+            setMeshChartBar('materialsChart', stats.materials, resourceMax);
+            setMeshChartBar('texturesChart', textureCount, resourceMax);
+            setMeshChartBar('widthChart', stats.width, dimensionMax, formatMeasure);
+            setMeshChartBar('heightChart', stats.height, dimensionMax, formatMeasure);
+            setMeshChartBar('depthChart', stats.depth, dimensionMax, formatMeasure);
+        };
+
         resetButton.on('click', () => {
-            selectedDataProp = 'x';
             onScreenOnlyValue.value = false;
             logScaleValue.value = false;
             showAllValue.value = false;
             inputs.onScreenOnly = false;
             inputs.logScale = false;
-            inputs.mode = propModeFor(selectedDataProp) ?? 0;
-            if (splat) {
+            if (model) {
+                selectedMeshDataProp = 'vertex:x';
+                populateMeshDataSelector(model);
+                renderMeshDetails();
+                renderMeshHistogram();
+            } else if (splat) {
+                selectedDataProp = 'x';
+                inputs.mode = propModeFor(selectedDataProp) ?? 0;
                 populateDataSelector(splat);
                 lastHash = '';
                 tick();
@@ -549,6 +863,28 @@ class DataPanel extends Container {
             if (splat_ === splat) {
                 inputs.stateVersion++;
                 tick();
+            }
+        });
+
+        events.on('model.vertexSelection', (model_: ModelElement) => {
+            if (model_ === model) {
+                renderMeshDetails();
+                renderMeshHistogram();
+            }
+        });
+
+        events.on('model.geometry', (model_: ModelElement) => {
+            if (model_ === model) {
+                populateMeshDataSelector(model);
+                renderMeshDetails();
+                renderMeshHistogram();
+            }
+        });
+
+        events.on('model.material', (model_: ModelElement) => {
+            if (model_ === model) {
+                renderMeshDetails();
+                renderMeshHistogram();
             }
         });
 
@@ -619,10 +955,24 @@ class DataPanel extends Container {
         events.on('selection.changed', (selection: Element) => {
             if (selection instanceof Splat) {
                 splat = selection;
+                model = null;
+                setMode('splat');
+                statsCountLabel.textContent = `${localize('panel.splat-data.totals.splats')}:`;
+                statsSelectedLabel.textContent = `${localize('panel.splat-data.totals.selected')}:`;
                 inputs.splatId = splat.uid;
                 inputs.mode = propModeFor(selectedDataProp) ?? 0;
                 populateDataSelector(splat);
                 tick();
+            } else if (selection instanceof ModelElement) {
+                splat = null;
+                model = selection;
+                populateMeshDataSelector(model);
+                renderMeshDetails();
+                renderMeshHistogram();
+            } else {
+                splat = null;
+                model = null;
+                setMode('empty');
             }
         });
 
@@ -633,7 +983,12 @@ class DataPanel extends Container {
                     // panel just became visible; clear the dedupe hash so the
                     // next tick definitely fires.
                     lastHash = '';
-                    tick();
+                    if (model) {
+                        renderMeshDetails();
+                        renderMeshHistogram();
+                    } else {
+                        tick();
+                    }
 
                     // scroll the selected list item into view
                     const activeItem = dataListBox.dom.querySelector('.data-list-item.active');
@@ -646,7 +1001,11 @@ class DataPanel extends Container {
 
         logScaleValue.on('change', () => {
             inputs.logScale = logScaleValue.value;
-            tick();
+            if (model) {
+                renderMeshHistogram();
+            } else {
+                tick();
+            }
         });
 
         showAllValue.on('change', () => {
@@ -820,6 +1179,19 @@ class DataPanel extends Container {
             // case where the gesture ended off-canvas.
             clearCursorLabel();
             hideStats();
+            if (model) {
+                events.fire(
+                    'select.meshDataRange',
+                    op,
+                    selectedMeshDataProp,
+                    histogram.histogram.minValue,
+                    histogram.histogram.maxValue,
+                    histogram.histogram.bins.length,
+                    start,
+                    end
+                );
+                return;
+            }
             if (!splat) return;
 
             // capture state synchronously at drag-end and enqueue the whole

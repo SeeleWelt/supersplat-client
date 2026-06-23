@@ -12,7 +12,7 @@ class DroppedFile {
     }
 }
 
-type DropHandlerFunc = (files: Array<DroppedFile>, resetScene: boolean) => void;
+type DropHandlerFunc = (files: Array<DroppedFile>, resetScene: boolean) => void | Promise<void>;
 
 const resolveDirectories = (entries: Array<FileSystemEntry>): Promise<Array<FileSystemFileEntry>> => {
     const promises: Promise<Array<FileSystemFileEntry>>[] = [];
@@ -76,43 +76,72 @@ const removeCommonPrefix = (urls: Array<DroppedFile>) => {
 };
 
 // configure drag and drop
-const CreateDropHandler = (target: HTMLElement, dropHandler: DropHandlerFunc) => {
-
-    const dragstart = (ev: DragEvent) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        ev.dataTransfer.effectAllowed = 'all';
+const CreateDropHandler = (target: EventTarget, dropHandler: DropHandlerFunc) => {
+    const isFileDrag = (dataTransfer: DataTransfer | null) => {
+        return !!dataTransfer && Array.from(dataTransfer.types ?? []).includes('Files');
     };
 
-    const dragover = (ev: DragEvent) => {
+    const filesFromDataTransfer = (dataTransfer: DataTransfer) => {
+        return Array.from(dataTransfer.files ?? []).map((file) => {
+            return new DroppedFile(file.webkitRelativePath || file.name, file);
+        });
+    };
+
+    const getEntry = (item: DataTransferItem) => {
+        return typeof item.webkitGetAsEntry === 'function' ? item.webkitGetAsEntry() : null;
+    };
+
+    const allowFileDrop = (ev: DragEvent) => {
+        if (!isFileDrag(ev.dataTransfer)) {
+            return;
+        }
+
         ev.preventDefault();
-        ev.stopPropagation();
-        ev.dataTransfer.effectAllowed = 'all';
+        if (ev.dataTransfer) {
+            ev.dataTransfer.dropEffect = 'copy';
+        }
     };
 
     const drop = async (ev: DragEvent) => {
-        ev.preventDefault();
+        if (!isFileDrag(ev.dataTransfer)) {
+            return;
+        }
 
-        const items = Array.from(ev.dataTransfer.items);
+        ev.preventDefault();
+        (ev as any).__supersplatDropHandled = true;
+
+        const dataTransfer = ev.dataTransfer;
+        if (!dataTransfer) {
+            dropHandler([], ev.shiftKey);
+            return;
+        }
+
+        const items = Array.from(dataTransfer.items ?? []);
+        const fallbackFiles = filesFromDataTransfer(dataTransfer);
 
         // handle single file drops so documents can propagate the filesystemfilehandle
         if (items.length === 1) {
             const item = items[0];
-            if (item.getAsFileSystemHandle && item.webkitGetAsEntry().isFile) {
-                const handle = await item.getAsFileSystemHandle();
-                if (handle?.kind === 'file') {
-                    const fileHandle = handle as FileSystemFileHandle;
-                    const file = await fileHandle.getFile();
-                    const droppedFile = new DroppedFile(file.name, file, fileHandle);
-                    dropHandler([droppedFile], ev.shiftKey);
-                    return;
+            const entry = getEntry(item);
+            if (item.kind === 'file' && item.getAsFileSystemHandle && (!entry || entry.isFile)) {
+                try {
+                    const handle = await item.getAsFileSystemHandle();
+                    if (handle?.kind === 'file') {
+                        const fileHandle = handle as FileSystemFileHandle;
+                        const file = await fileHandle.getFile();
+                        const droppedFile = new DroppedFile(file.name, file, fileHandle);
+                        dropHandler([droppedFile], ev.shiftKey);
+                        return;
+                    }
+                } catch {
+                    // Fall back to DataTransfer.files below.
                 }
             }
         }
 
         // Map to entries first
         const entries = items
-        .map(item => item.webkitGetAsEntry())
+        .map(item => getEntry(item))
         .filter(v => v);
 
         // resolve directories to files
@@ -128,6 +157,10 @@ const CreateDropHandler = (target: HTMLElement, dropHandler: DropHandlerFunc) =>
             })
         );
 
+        if (!files.length) {
+            files.push(...fallbackFiles);
+        }
+
         if (files.length > 1) {
             // if all files share a common filename prefix, remove it
             removeCommonPrefix(files);
@@ -137,9 +170,16 @@ const CreateDropHandler = (target: HTMLElement, dropHandler: DropHandlerFunc) =>
         dropHandler(files, ev.shiftKey);
     };
 
-    target.addEventListener('dragstart', dragstart, true);
-    target.addEventListener('dragover', dragover, true);
-    target.addEventListener('drop', drop, true);
+    const allowFileDropListener: EventListener = (ev: Event) => {
+        allowFileDrop(ev as DragEvent);
+    };
+    const dropListener: EventListener = (ev: Event) => {
+        void drop(ev as DragEvent);
+    };
+
+    target.addEventListener('dragenter', allowFileDropListener, true);
+    target.addEventListener('dragover', allowFileDropListener, true);
+    target.addEventListener('drop', dropListener, true);
 };
 
 export { CreateDropHandler };

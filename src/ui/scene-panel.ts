@@ -75,8 +75,9 @@ class ScenePanel extends Container {
 
         const updateCollapsedState = () => {
             const collapsed = document.body.classList.contains('scene-panel-collapsed');
-            collapseToggle.dom.textContent = collapsed ? '>' : '<';
-            collapseToggle.dom.title = collapsed ? 'Show scene manager' : 'Hide scene manager';
+            collapseToggle.class[collapsed ? 'add' : 'remove']('is-collapsed');
+            collapseToggle.dom.title = collapsed ? localize('panel.scene-manager.expand') : localize('panel.scene-manager.collapse');
+            collapseToggle.dom.setAttribute('aria-label', collapseToggle.dom.title);
         };
 
         collapseToggle.on('click', () => {
@@ -101,9 +102,9 @@ class ScenePanel extends Container {
         });
 
         tooltips.register(soloToggle, localize('tooltip.scene.solo'), 'top');
-        tooltips.register(sceneImport, 'Import Scene', 'top');
-        tooltips.register(sceneNew, 'New Scene', 'top');
-        tooltips.register(collapseToggle, 'Show / hide scene manager', 'top');
+        tooltips.register(sceneImport, localize('workspace.action.import-model'), 'top');
+        tooltips.register(sceneNew, localize('workspace.action.new'), 'top');
+        tooltips.register(collapseToggle, localize('panel.scene-manager.toggle'), 'top');
 
         const splatList = new SplatList(events);
 

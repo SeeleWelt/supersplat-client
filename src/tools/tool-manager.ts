@@ -56,6 +56,10 @@ class ToolManager {
     }
 
     activate(toolName: string | null) {
+        if (toolName && this.events.functions.has('tool.allowed') && !this.events.invoke('tool.allowed', toolName)) {
+            return;
+        }
+
         if (toolName === this.active) {
             // re-activating the currently active tool deactivates it
             if (toolName) {

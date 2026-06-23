@@ -1,7 +1,9 @@
 import { Container, Label } from '@playcanvas/pcui';
 
 import { Events } from '../events';
+import { ModelElement } from '../model-element';
 import { localize } from './localization';
+import { Splat } from '../splat';
 import transformPanelSvg from './svg/transform-panel.svg';
 import { Tooltips } from './tooltips';
 import { Transform } from './transform';
@@ -41,9 +43,11 @@ class TransformPanel extends Container {
         });
 
         const close = new Label({
-            text: 'x',
             class: ['panel-header-button', 'transform-panel-close']
         });
+        close.dom.setAttribute('role', 'button');
+        close.dom.setAttribute('aria-label', localize('panel.scene-manager.transform.close'));
+        close.dom.setAttribute('title', localize('panel.scene-manager.transform.close'));
 
         close.on('click', () => {
             events.fire('transformPanel.setVisible', false);
@@ -169,14 +173,15 @@ class TransformPanel extends Container {
         };
 
         const setVisible = (visible: boolean) => {
-            if (visible === this.hidden) {
-                this.hidden = !visible;
-                updateBodyState(visible);
+            const changed = visible === this.hidden;
+            this.hidden = !visible;
+            updateBodyState(visible);
+            if (changed) {
                 events.fire('transformPanel.visible', visible);
             }
         };
 
-        updateBodyState(!this.hidden);
+        setVisible(true);
 
         events.function('transformPanel.visible', () => {
             return !this.hidden;
@@ -190,7 +195,27 @@ class TransformPanel extends Container {
             setVisible(this.hidden);
         });
 
-        tooltips.register(close, 'Hide transform panel', 'top');
+        events.on('selection.changed', (selection: unknown) => {
+            const canTransform = selection instanceof ModelElement ||
+                (selection instanceof Splat && selection.numSelected > 0);
+            if (canTransform) {
+                setVisible(true);
+            }
+        });
+
+        events.on('splat.stateChanged', (selection: Splat) => {
+            if (events.invoke('selection') === selection && selection.numSelected > 0) {
+                setVisible(true);
+            }
+        });
+
+        events.on('model.vertexSelection', (selection: ModelElement) => {
+            if (events.invoke('selection') === selection) {
+                setVisible(true);
+            }
+        });
+
+        tooltips.register(close, localize('panel.scene-manager.transform.close'), 'top');
     }
 }
 

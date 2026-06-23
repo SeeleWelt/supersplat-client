@@ -27,19 +27,6 @@ const createSvg = (svgString: string) => {
     });
 };
 
-const createTitlebarAction = (text: string, icon: string, onSelect: () => any) => {
-    const action = new Container({
-        class: 'titlebar-action'
-    });
-    action.dom.appendChild(createSvg(icon).dom);
-    action.append(new Label({
-        text,
-        class: 'titlebar-action-label'
-    }));
-    action.dom.addEventListener('click', onSelect);
-    return action;
-};
-
 const getOpenRecentItems = async (events: Events) => {
     const files = await recentFiles.get();
     const items: MenuItem[] = files.map((file) => {
@@ -106,27 +93,6 @@ class Menu extends Container {
             id: 'menu-bar-options'
         });
 
-        const quickActions = new Container({
-            id: 'titlebar-actions'
-        });
-
-        const fileSeparator = new Element({
-            class: 'titlebar-action-separator'
-        });
-
-        quickActions.append(createTitlebarAction(localize('menu.file.new'), sceneNew, () => events.invoke('doc.new')));
-        quickActions.append(createTitlebarAction(localize('menu.file.open'), sceneOpen, async () => await events.invoke('doc.open')));
-        quickActions.append(createTitlebarAction(localize('menu.file.import', { ellipsis: false }), sceneImport, async () => await events.invoke('scene.import')));
-        quickActions.append(createTitlebarAction(localize('menu.file.save'), sceneSave, async () => await events.invoke('doc.save')));
-        quickActions.append(fileSeparator);
-
-        const exportAction = createTitlebarAction(localize('menu.file.export'), sceneExport, () => {});
-        exportAction.dom.setAttribute('id', 'titlebar-export-action');
-        quickActions.append(exportAction);
-
-        const publishAction = createTitlebarAction(localize('menu.file.publish', { ellipsis: false }), scenePublish, async () => await events.invoke('show.publishSettingsDialog'));
-        quickActions.append(publishAction);
-
         const titlebarDrag = new Container({
             id: 'titlebar-drag-region'
         });
@@ -138,7 +104,6 @@ class Menu extends Container {
         buttonsContainer.append(help);
 
         menubar.append(buttonsContainer);
-        menubar.append(quickActions);
         menubar.append(titlebarDrag);
 
         // Get the shortcut manager for displaying keyboard shortcuts
@@ -311,6 +276,179 @@ class Menu extends Container {
             onSelect: () => events.fire('show.about')
         }]);
 
+        const refreshLocalizedText = () => {
+            scene.text = localize('menu.file');
+            render.text = localize('menu.render');
+            selection.text = localize('menu.select');
+            help.text = localize('menu.help');
+
+            exportMenuPanel.setItems([{
+                text: localize('menu.file.export.ply'),
+                icon: createSvg(sceneExport),
+                isEnabled: () => !events.invoke('scene.empty'),
+                onSelect: () => events.invoke('scene.export', 'ply')
+            }, {
+                text: localize('menu.file.export.splat'),
+                icon: createSvg(sceneExport),
+                isEnabled: () => !events.invoke('scene.empty'),
+                onSelect: () => events.invoke('scene.export', 'splat')
+            }, {
+                text: localize('menu.file.export.sog'),
+                icon: createSvg(sceneExport),
+                isEnabled: () => !events.invoke('scene.empty'),
+                onSelect: () => events.invoke('scene.export', 'sog')
+            }, {
+            }, {
+                text: localize('menu.file.export.viewer', { ellipsis: true }),
+                icon: createSvg(sceneExport),
+                isEnabled: () => !events.invoke('scene.empty'),
+                onSelect: () => events.invoke('scene.export', 'viewer')
+            }]);
+
+            fileMenuPanel.setItems([{
+                text: localize('menu.file.new'),
+                icon: createSvg(sceneNew),
+                extra: shortcutManager.formatShortcut('doc.new'),
+                onSelect: () => events.invoke('doc.new')
+            }, {
+                text: localize('menu.file.open'),
+                icon: createSvg(sceneOpen),
+                extra: shortcutManager.formatShortcut('doc.open'),
+                onSelect: async () => {
+                    await events.invoke('doc.open');
+                }
+            }, {
+                text: localize('menu.file.open-recent'),
+                icon: createSvg(sceneOpen),
+                subMenu: openRecentMenuPanel,
+                isEnabled: async () => {
+                    try {
+                        const items = await getOpenRecentItems(events);
+                        openRecentMenuPanel.setItems(items);
+                        return items.length > 0;
+                    } catch (error) {
+                        console.error('Failed to load recent files:', error);
+                        return false;
+                    }
+                }
+            }, {
+            }, {
+                text: localize('menu.file.save'),
+                icon: createSvg(sceneSave),
+                extra: shortcutManager.formatShortcut('doc.save'),
+                isEnabled: () => events.invoke('doc.name'),
+                onSelect: async () => await events.invoke('doc.save')
+            }, {
+                text: localize('menu.file.save-as', { ellipsis: true }),
+                icon: createSvg(sceneSave),
+                extra: shortcutManager.formatShortcut('doc.saveAs'),
+                isEnabled: () => !events.invoke('scene.empty'),
+                onSelect: async () => await events.invoke('doc.saveAs')
+            }, {
+            }, {
+                text: localize('menu.file.import', { ellipsis: true }),
+                icon: createSvg(sceneImport),
+                extra: shortcutManager.formatShortcut('scene.import'),
+                onSelect: async () => {
+                    await events.invoke('scene.import');
+                }
+            }, {
+                text: localize('menu.file.export'),
+                icon: createSvg(sceneExport),
+                subMenu: exportMenuPanel
+            }, {
+                text: localize('menu.file.publish', { ellipsis: true }),
+                icon: createSvg(scenePublish),
+                isEnabled: () => !events.invoke('scene.empty'),
+                onSelect: async () => await events.invoke('show.publishSettingsDialog')
+            }, {
+            }, {
+                text: localize('menu.file.preferences', { ellipsis: true }),
+                icon: 'E283',
+                extra: shortcutManager.formatShortcut('preferences.open'),
+                onSelect: () => events.fire('show.preferences')
+            }]);
+
+            selectionMenuPanel.setItems([{
+                text: localize('menu.select.all'),
+                icon: createSvg(selectAll),
+                extra: shortcutManager.formatShortcut('select.all'),
+                onSelect: () => events.fire('select.all')
+            }, {
+                text: localize('menu.select.none'),
+                icon: createSvg(selectNone),
+                extra: shortcutManager.formatShortcut('select.none'),
+                onSelect: () => events.fire('select.none')
+            }, {
+                text: localize('menu.select.invert'),
+                icon: createSvg(selectInverse),
+                extra: shortcutManager.formatShortcut('select.invert'),
+                onSelect: () => events.fire('select.invert')
+            }, {
+            }, {
+                text: localize('menu.select.lock'),
+                icon: createSvg(selectLock),
+                extra: shortcutManager.formatShortcut('select.hide'),
+                isEnabled: () => events.invoke('selection.splats'),
+                onSelect: () => events.fire('select.hide')
+            }, {
+                text: localize('menu.select.unlock'),
+                icon: createSvg(selectUnlock),
+                extra: shortcutManager.formatShortcut('select.unhide'),
+                onSelect: () => events.fire('select.unhide')
+            }, {
+                text: localize('menu.select.delete'),
+                icon: createSvg(selectDelete),
+                extra: shortcutManager.formatShortcut('select.delete'),
+                isEnabled: () => events.invoke('selection.splats'),
+                onSelect: () => events.fire('select.delete')
+            }, {
+                text: localize('menu.select.reset'),
+                onSelect: () => events.fire('scene.reset')
+            }, {
+            }, {
+                text: localize('menu.select.duplicate'),
+                icon: createSvg(selectDuplicate),
+                isEnabled: () => events.invoke('selection.splats'),
+                onSelect: () => events.fire('select.duplicate')
+            }, {
+                text: localize('menu.select.separate'),
+                icon: createSvg(selectSeparate),
+                isEnabled: () => events.invoke('selection.splats'),
+                onSelect: () => events.fire('select.separate')
+            }]);
+
+            renderMenuPanel.setItems([{
+                text: localize('menu.render.image', { ellipsis: true }),
+                icon: createSvg(sceneExport),
+                onSelect: async () => await events.invoke('show.imageSettingsDialog')
+            }, {
+                text: localize('menu.render.video', { ellipsis: true }),
+                icon: createSvg(sceneExport),
+                onSelect: async () => await events.invoke('show.videoSettingsDialog')
+            }]);
+
+            helpMenuPanel.setItems([{
+                text: localize('menu.help.shortcuts'),
+                icon: 'E136',
+                onSelect: () => events.fire('show.shortcuts')
+            }, {
+            }, {
+                text: localize('menu.help.about'),
+                icon: 'E138',
+                onSelect: () => events.fire('show.about')
+            }]);
+
+            fileMenuPanel.hidden = true;
+            openRecentMenuPanel.hidden = true;
+            exportMenuPanel.hidden = true;
+            selectionMenuPanel.hidden = true;
+            renderMenuPanel.hidden = true;
+            helpMenuPanel.hidden = true;
+        };
+
+        events.on('locale.changed', refreshLocalizedText);
+
         this.append(menubar);
         this.append(fileMenuPanel);
         this.append(openRecentMenuPanel);
@@ -331,9 +469,6 @@ class Menu extends Container {
         }, {
             dom: help.dom,
             menuPanel: helpMenuPanel
-        }, {
-            dom: exportAction.dom,
-            menuPanel: exportMenuPanel
         }];
 
         options.forEach((option) => {

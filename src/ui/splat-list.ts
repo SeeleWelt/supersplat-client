@@ -3,7 +3,9 @@ import { Container, Element as PcuiElement, TextInput } from '@playcanvas/pcui';
 import { SplatRenameOp } from '../edit-ops';
 import { Element, ElementType } from '../element';
 import { Events } from '../events';
+import { ModelElement } from '../model-element';
 import { Splat } from '../splat';
+import { localize } from './localization';
 import deleteSvg from './svg/delete.svg';
 import hiddenSvg from './svg/hidden.svg';
 import shownSvg from './svg/shown.svg';
@@ -12,6 +14,8 @@ const createSvg = (svgString: string) => {
     const decodedStr = decodeURIComponent(svgString.substring('data:image/svg+xml,'.length));
     return new DOMParser().parseFromString(decodedStr, 'image/svg+xml').documentElement;
 };
+
+type SceneListElement = Splat | ModelElement;
 
 class SplatItem extends Container {
     getName: () => string;
@@ -165,9 +169,9 @@ class SplatList extends Container {
 
         super(args);
 
-        const items = new Map<Splat, SplatItem>();
+        const items = new Map<SceneListElement, SplatItem>();
         let soloMode = false;
-        const savedVisibility = new Map<Splat, boolean>();
+        const savedVisibility = new Map<SceneListElement, boolean>();
 
         // edit input used during renames
         const edit = new TextInput({
@@ -175,47 +179,51 @@ class SplatList extends Container {
         });
 
         events.on('scene.elementAdded', (element: Element) => {
-            if (element.type === ElementType.splat) {
-                const splat = element as Splat;
-                const item = new SplatItem(splat.name, edit);
+            if (element.type === ElementType.splat || element.type === ElementType.model) {
+                const sceneElement = element as SceneListElement;
+                const item = new SplatItem(sceneElement.name, edit);
                 this.append(item);
-                items.set(splat, item);
+                items.set(sceneElement, item);
 
                 if (soloMode) {
-                    savedVisibility.set(splat, splat.visible);
-                    splat.visible = false;
+                    savedVisibility.set(sceneElement, sceneElement.visible);
+                    sceneElement.visible = false;
                 }
 
                 item.on('visible', () => {
-                    splat.visible = true;
+                    sceneElement.visible = true;
 
                     // also select it if there is no other selection
-                    if (!events.invoke('selection')) {
-                        events.fire('selection', splat);
+                    if (sceneElement.type === ElementType.splat && !events.invoke('selection')) {
+                        events.fire('selection', sceneElement);
                     }
                 });
                 item.on('invisible', () => {
-                    splat.visible = false;
+                    sceneElement.visible = false;
                 });
                 item.on('rename', (value: string) => {
-                    events.fire('edit.add', new SplatRenameOp(splat, value));
+                    if (sceneElement.type === ElementType.splat) {
+                        events.fire('edit.add', new SplatRenameOp(sceneElement as Splat, value));
+                    } else {
+                        sceneElement.name = value;
+                    }
                 });
             }
         });
 
         events.on('scene.elementRemoved', (element: Element) => {
-            if (element.type === ElementType.splat) {
-                const splat = element as Splat;
-                const item = items.get(splat);
+            if (element.type === ElementType.splat || element.type === ElementType.model) {
+                const sceneElement = element as SceneListElement;
+                const item = items.get(sceneElement);
                 if (item) {
                     this.remove(item);
-                    items.delete(splat);
+                    items.delete(sceneElement);
                 }
-                savedVisibility.delete(splat);
+                savedVisibility.delete(sceneElement);
             }
         });
 
-        events.on('selection.changed', (selection: Splat, prev: Splat) => {
+        events.on('selection.changed', (selection: SceneListElement, prev: SceneListElement) => {
             items.forEach((value, key) => {
                 value.selected = key === selection;
             });
@@ -255,10 +263,24 @@ class SplatList extends Container {
             }
         });
 
+        events.on('model.name', (model: ModelElement) => {
+            const item = items.get(model);
+            if (item) {
+                item.name = model.name;
+            }
+        });
+
         events.on('splat.visibility', (splat: Splat) => {
             const item = items.get(splat);
             if (item) {
                 item.visible = splat.visible;
+            }
+        });
+
+        events.on('model.visibility', (model: ModelElement) => {
+            const item = items.get(model);
+            if (item) {
+                item.visible = model.visible;
             }
         });
 
@@ -289,8 +311,8 @@ class SplatList extends Container {
 
             const result = await events.invoke('showPopup', {
                 type: 'yesno',
-                header: 'Remove Splat',
-                message: `Are you sure you want to remove '${splat.name}' from the scene? This operation can not be undone.`
+                header: localize('popup.remove-item.header'),
+                message: localize('popup.remove-item.message', { name: splat.name })
             });
 
             if (result?.action === 'yes') {

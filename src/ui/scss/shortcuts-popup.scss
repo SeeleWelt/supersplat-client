@@ -20,10 +20,11 @@
         flex-direction: column;
         overflow: hidden;
 
-        border-radius: 8px;
-        background-color: $bcg-primary;
+        border: 1px solid rgba($bcg-lighter, 0.22);
+        border-radius: 0;
+        background-color: rgba($bcg-primary, 0.96);
 
-        filter: drop-shadow(5px 5px 10px rgba(0, 0, 0, 0.8));
+        filter: drop-shadow(0 24px 56px rgba(0, 0, 0, 0.2));
 
         // the following is needed to get drop-shadow working on safari
         will-change: transform;
@@ -37,8 +38,8 @@
 
             font-weight: bold;
             color: $text-primary;
-            background-color: $bcg-darker;
-            text-transform: uppercase;
+            background-color: rgba($bcg-darker, 0.86);
+            text-transform: none;
         }
 
         #content {
@@ -51,7 +52,7 @@
     .shortcut-header {
         margin: 8px 0 4px 0;
         padding: 6px 8px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: 1px solid rgba($bcg-lighter, 0.18);
 
         &:first-child {
             margin-top: 0;
@@ -63,7 +64,7 @@
             font-size: 10px;
             color: $clr-hilight;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 0;
         }
     }
 
@@ -75,7 +76,7 @@
         border-radius: 4px;
 
         &:hover {
-            background-color: rgba(255, 255, 255, 0.04);
+            background-color: rgba($clr-hilight, 0.08);
         }
     }
 
@@ -84,8 +85,8 @@
         margin: 0;
         padding: 4px 8px;
 
-        background-color: $bcg-darker;
-        border-radius: 4px;
+        background-color: rgba($bcg-darker, 0.92);
+        border-radius: 999px;
 
         font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
         font-size: 11px;

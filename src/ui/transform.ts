@@ -2,8 +2,10 @@ import { Button, Container, ContainerArgs, Label, NumericInput, VectorInput } fr
 import { Quat, Vec3 } from 'playcanvas';
 
 import { Events } from '../events';
+import { ModelElement } from '../model-element';
 import { localize } from './localization';
 import { Pivot } from '../pivot';
+import { Splat } from '../splat';
 
 const v = new Vec3();
 
@@ -171,11 +173,31 @@ class Transform extends Container {
             input.on('slider:mouseup', mouseup);
         });
 
+        const canTransformSelection = (selection: unknown) => {
+            return selection instanceof ModelElement || (selection instanceof Splat && selection.numSelected > 0);
+        };
+
+        const updateAvailability = () => {
+            const selection = events.functions.has('selection') ? events.invoke('selection') : null;
+            const canTransform = canTransformSelection(selection);
+            positionVector.enabled = rotationVector.enabled = scaleInput.enabled = canTransform;
+            resetButton.enabled = canTransform;
+        };
+
         // toggle ui availability based on selection
         events.on('selection.changed', (selection) => {
-            positionVector.enabled = rotationVector.enabled = scaleInput.enabled = !!selection;
-            resetButton.enabled = !!selection;
+            const canTransform = selection instanceof ModelElement || (selection instanceof Splat && selection.numSelected > 0);
+            positionVector.enabled = rotationVector.enabled = scaleInput.enabled = canTransform;
+            resetButton.enabled = canTransform;
         });
+
+        events.on('splat.stateChanged', (selection: Splat) => {
+            if (events.invoke('selection') === selection) {
+                updateAvailability();
+            }
+        });
+
+        events.on('model.vertexSelection', updateAvailability);
 
         events.on('pivot.placed', (pivot: Pivot) => {
             updateUI(pivot);

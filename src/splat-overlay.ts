@@ -76,8 +76,8 @@ class SplatOverlay extends Element {
             layers: [scene.gizmoLayer.id]
         });
 
-        scene.events.on('selection.changed', (selection: Splat) => {
-            if (selection) {
+        scene.events.on('selection.changed', (selection: Element) => {
+            if (selection instanceof Splat) {
                 this.attach(selection);
             } else {
                 this.detach();

@@ -29,6 +29,7 @@ import {
 
 import { PointerController } from './controllers';
 import { Element, ElementType } from './element';
+import { ModelElement } from './model-element';
 import { Picker } from './picker';
 import { Serializer } from './serializer';
 import { vertexShader, fragmentShader } from './shaders/blit-shader';
@@ -629,19 +630,22 @@ class Camera extends Element {
     }
 
     focus(options?: { focalPoint: Vec3, radius: number, speed: number }) {
-        const getSplatFocalPoint = () => {
+        const sceneBound = this.scene.bound;
+        const getElementFocalPoint = () => {
+            const selected = this.scene.events.invoke('selection') as Element;
+            if (selected?.worldBound) {
+                return selected.worldBound.center;
+            }
             for (const element of this.scene.elements) {
-                if (element.type === ElementType.splat) {
-                    const focalPoint = (element as Splat).focalPoint?.();
-                    if (focalPoint) {
-                        return focalPoint;
-                    }
+                if ((element.type === ElementType.splat || element.type === ElementType.model) && element.worldBound) {
+                    return element.worldBound.center;
                 }
             }
         };
 
-        const focalPoint = options ? options.focalPoint : (getSplatFocalPoint() ?? this.scene.bound.center);
-        const focalRadius = options ? options.radius : this.scene.bound.halfExtents.length();
+        const selected = this.scene.events.invoke('selection') as Element;
+        const focalPoint = options ? options.focalPoint : (getElementFocalPoint() ?? sceneBound.center);
+        const focalRadius = options ? options.radius : (selected?.worldBound?.halfExtents.length() ?? sceneBound.halfExtents.length());
 
         const fdist = focalRadius / this.sceneRadius;
 
@@ -676,13 +680,24 @@ class Camera extends Element {
     async intersect(x: number, y: number) {
         const { scene } = this;
         const splats = scene.getElementsByType(ElementType.splat);
+        const models = scene.getElementsByType(ElementType.model) as ModelElement[];
 
         let closestDepth = Infinity;
         let closestSplat: Splat | null = null;
+        let closestModel: ModelElement | null = null;
+        let closestPosition: Vec3 | null = null;
+        let closestDistance = Infinity;
+
+        const screenX = x * scene.canvas.clientWidth;
+        const screenY = y * scene.canvas.clientHeight;
+        this.getRay(screenX, screenY, ray);
 
         // Find the splat with the smallest depth at this screen position
         for (let i = 0; i < splats.length; ++i) {
             const splat = splats[i] as Splat;
+            if (!splat.visible) {
+                continue;
+            }
 
             this.picker.prepareDepth(splat);
             const normalizedDepth = await this.picker.readDepth(x, y);
@@ -693,27 +708,42 @@ class Camera extends Element {
             }
         }
 
-        if (!closestSplat) {
+        if (closestSplat) {
+            // Convert normalized depth to linear depth
+            const linearDepth = closestDepth * (this.far - this.near) + this.near;
+            const t = linearDepth / ray.direction.dot(this.mainCamera.forward);
+            closestDistance = t;
+            closestPosition = new Vec3();
+            closestPosition.copy(ray.origin).add(vec.copy(ray.direction).mulScalar(t));
+        }
+
+        models.forEach((model) => {
+            if (!model.visible) {
+                return;
+            }
+
+            const point = new Vec3();
+            if (model.intersectsRay(ray, point)) {
+                const distance = point.distance(ray.origin);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestSplat = null;
+                    closestModel = model;
+                    closestPosition = point;
+                }
+            }
+        });
+
+        if (!closestPosition) {
             return null;
         }
 
-        // Convert normalized depth to linear depth
-        const linearDepth = closestDepth * (this.far - this.near) + this.near;
-
-        // Convert normalized coordinates to screen pixels for getRay
-        const screenX = x * scene.canvas.clientWidth;
-        const screenY = y * scene.canvas.clientHeight;
-
-        // Calculate world position from ray and depth
-        this.getRay(screenX, screenY, ray);
-        const t = linearDepth / ray.direction.dot(this.mainCamera.forward);
-        const position = new Vec3();
-        position.copy(ray.origin).add(vec.copy(ray.direction).mulScalar(t));
-
         return {
+            element: closestModel ?? closestSplat,
             splat: closestSplat,
-            position: position,
-            distance: t
+            model: closestModel,
+            position: closestPosition,
+            distance: closestDistance
         };
     }
 
@@ -727,7 +757,9 @@ class Camera extends Element {
             this.setDistance(result.distance / this.sceneRadius * this.fovFactor);
             scene.events.fire('camera.focalPointPicked', {
                 camera: this,
+                element: result.element,
                 splat: result.splat,
+                model: result.model,
                 position: result.position
             });
         }

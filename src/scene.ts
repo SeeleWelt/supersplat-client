@@ -21,6 +21,7 @@ import { DataProcessor } from './data-processor';
 import { Element, ElementType, ElementTypeList } from './element';
 import { Events } from './events';
 import { InfiniteGrid as Grid } from './infinite-grid';
+import { MeshVertexOverlay } from './mesh-vertex-overlay';
 import { Outline } from './outline';
 import { PCApp } from './pc-app';
 import { SceneConfig } from './scene-config';
@@ -96,9 +97,18 @@ class Scene {
     camera: Camera;
     cameraPoseGizmos: CameraPoseGizmos;
     splatOverlay: SplatOverlay;
+    meshVertexOverlay: MeshVertexOverlay;
     grid: Grid;
     outline: Outline;
     underlay: Underlay;
+    meshLight: Entity;
+    meshLighting = {
+        ambientIntensity: 0.28,
+        keyIntensity: 1.4,
+        keyYaw: -35,
+        keyPitch: 45,
+        keyColor: new Color(1, 0.94, 0.84)
+    };
 
     // shared queue for serialising async splat work. exposed so subsystems that
     // need to order their async work alongside edit-history operations can do so
@@ -219,6 +229,30 @@ class Scene {
         this.cameraRoot = new Entity('cameraRoot');
         this.app.root.addChild(this.cameraRoot);
 
+        this.meshLight = new Entity('meshKeyLight');
+        this.meshLight.addComponent('light', {
+            type: 'directional',
+            color: this.meshLighting.keyColor,
+            intensity: this.meshLighting.keyIntensity,
+            castShadows: false
+        });
+        this.app.root.addChild(this.meshLight);
+        this.applyMeshLighting();
+
+        events.function('mesh.lighting', () => {
+            return {
+                ambientIntensity: this.meshLighting.ambientIntensity,
+                keyIntensity: this.meshLighting.keyIntensity,
+                keyYaw: this.meshLighting.keyYaw,
+                keyPitch: this.meshLighting.keyPitch,
+                keyColor: this.meshLighting.keyColor.clone()
+            };
+        });
+
+        events.on('mesh.setLighting', (settings: Partial<typeof this.meshLighting>) => {
+            this.setMeshLighting(settings);
+        });
+
         // create elements
         this.camera = new Camera();
         this.add(this.camera);
@@ -228,6 +262,9 @@ class Scene {
 
         this.splatOverlay = new SplatOverlay();
         this.add(this.splatOverlay);
+
+        this.meshVertexOverlay = new MeshVertexOverlay();
+        this.add(this.meshVertexOverlay);
 
         this.grid = new Grid();
         this.add(this.grid);
@@ -244,10 +281,9 @@ class Scene {
     }
 
     clear() {
-        const splats = this.getElementsByType(ElementType.splat);
-        splats.forEach((splat) => {
-            this.remove(splat);
-            (splat as Splat).destroy();
+        const content = this.elements.filter(element => element.type === ElementType.splat || element.type === ElementType.model);
+        content.forEach((element) => {
+            element.destroy();
         });
     }
 
@@ -315,6 +351,21 @@ class Scene {
         return this.app.graphicsDevice;
     }
 
+    setMeshLighting(settings: Partial<typeof this.meshLighting>) {
+        Object.assign(this.meshLighting, settings);
+        this.applyMeshLighting();
+        this.forceRender = true;
+        this.events.fire('mesh.lighting', this.events.invoke('mesh.lighting'));
+    }
+
+    private applyMeshLighting() {
+        const { ambientIntensity, keyIntensity, keyYaw, keyPitch, keyColor } = this.meshLighting;
+        this.app.scene.ambientLight = new Color(ambientIntensity, ambientIntensity, ambientIntensity);
+        this.meshLight.setLocalEulerAngles(keyPitch, keyYaw, 0);
+        this.meshLight.light.color = keyColor;
+        this.meshLight.light.intensity = keyIntensity;
+    }
+
     private forEachElement(action: (e: Element) => void) {
         this.elements.forEach(action);
     }
@@ -378,19 +429,19 @@ class Scene {
         if (this.config.debug.showBound) {
             // draw element bounds
             this.forEachElement((e: Element) => {
-                if (e.type === ElementType.splat) {
-                    const splat = e as Splat;
+                if (e.type === ElementType.splat || e.type === ElementType.model) {
+                    const element = e as Splat;
 
-                    const local = splat.localBound;
+                    const local = element.localBound;
                     this.app.drawWireAlignedBox(
                         local.getMin(),
                         local.getMax(),
                         Color.RED,
                         true,
                         undefined,
-                        splat.entity.getWorldTransform());
+                        element.entity.getWorldTransform());
 
-                    const world = splat.worldBound;
+                    const world = element.worldBound;
                     this.app.drawWireAlignedBox(
                         world.getMin(),
                         world.getMax(),

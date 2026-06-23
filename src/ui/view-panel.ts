@@ -3,6 +3,7 @@ import { Color } from 'playcanvas';
 
 import { Events } from '../events';
 import { ShortcutManager } from '../shortcut-manager';
+import { Splat } from '../splat';
 import { localize, formatTooltipWithShortcut } from './localization';
 import { Tooltips } from './tooltips';
 
@@ -49,8 +50,9 @@ class ViewPanel extends Container {
 
         const updateCollapsedState = () => {
             const collapsed = document.body.classList.contains('right-panel-collapsed');
-            collapseToggle.dom.textContent = collapsed ? '<' : '>';
-            collapseToggle.dom.title = collapsed ? '展开右侧面板' : '折叠右侧面板';
+            collapseToggle.class[collapsed ? 'add' : 'remove']('is-collapsed');
+            collapseToggle.dom.title = collapsed ? localize('panel.view-options.expand') : localize('panel.view-options.collapse');
+            collapseToggle.dom.setAttribute('aria-label', collapseToggle.dom.title);
         };
 
         collapseToggle.on('click', () => {
@@ -383,6 +385,34 @@ class ViewPanel extends Container {
         this.append(showCameraPosesRow);
         this.append(actions);
 
+        let splatViewOptionsAvailable = false;
+        const splatOnlyRows = [
+            shBandsRow,
+            centersSizeRow,
+            centersColorRow,
+            outlineSelectionRow
+        ];
+        const splatOnlyControls = [
+            selectedClrPicker,
+            unselectedClrPicker,
+            lockedClrPicker,
+            shBandsSlider,
+            centersSizeSlider,
+            centersColorToggle,
+            outlineSelectionToggle
+        ];
+
+        const updateViewOptionAvailability = () => {
+            const selection = events.functions.has('selection') ? events.invoke('selection') : null;
+            splatViewOptionsAvailable = selection instanceof Splat;
+            splatOnlyRows.forEach((row) => {
+                row.enabled = splatViewOptionsAvailable;
+            });
+            splatOnlyControls.forEach((control) => {
+                control.enabled = splatViewOptionsAvailable;
+            });
+        };
+
         // handle panel visibility
 
         const setVisible = (visible: boolean) => {
@@ -415,6 +445,15 @@ class ViewPanel extends Container {
                 setVisible(false);
             }
         });
+
+        events.on('meshPanel.visible', (visible: boolean) => {
+            if (visible) {
+                setVisible(false);
+            }
+        });
+
+        events.on('selection.changed', updateViewOptionAvailability);
+        updateViewOptionAvailability();
 
         // sh bands
 
@@ -547,20 +586,23 @@ class ViewPanel extends Container {
 
         reset.on('click', () => {
             events.fire('setBgClr', new Color(0, 0, 0, 1));
-            events.fire('setSelectedClr', new Color(1, 1, 0, 1));
-            events.fire('setUnselectedClr', new Color(0, 0, 1, 0.5));
-            events.fire('setLockedClr', new Color(0, 0, 0, 0.05));
             events.fire('camera.setTonemapping', 'linear');
             events.fire('camera.setFov', 75);
-            events.fire('view.setBands', 3);
             events.fire('camera.setFlySpeed', 1);
-            events.fire('camera.setSplatSize', 2);
-            events.fire('view.setCentersUseGaussianColor', false);
-            events.fire('view.setOutlineSelection', false);
             events.fire('grid.setVisible', true);
             events.fire('camera.setBound', true);
             events.fire('camera.setBoundDimensions', false);
             events.fire('camera.setShowPoses', false);
+
+            if (splatViewOptionsAvailable) {
+                events.fire('setSelectedClr', new Color(1, 1, 0, 1));
+                events.fire('setUnselectedClr', new Color(0, 0, 1, 0.5));
+                events.fire('setLockedClr', new Color(0, 0, 0, 0.05));
+                events.fire('view.setBands', 3);
+                events.fire('camera.setSplatSize', 2);
+                events.fire('view.setCentersUseGaussianColor', false);
+                events.fire('view.setOutlineSelection', false);
+            }
         });
 
         // tooltips

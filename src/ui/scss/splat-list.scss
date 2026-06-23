@@ -2,22 +2,26 @@
 
 .splat-list {
     min-height: 80px;
-    padding: 4px 0px;
+    padding: 6px;
 
     .splat-item {
         display: flex;
         flex-direction: row;
         align-items: center;
-        min-height: 28px;
+        min-height: 30px;
         padding: 2px 6px;
         gap: 4px;
+        border-radius: 8px;
+        transition: background-color 0.12s ease, color 0.12s ease;
 
         &:hover:not(.selected).visible {
             cursor: pointer;
+            background-color: rgba($clr-hilight, 0.08);
         }
 
         &.selected {
-            background-color: $bcg-darker;
+            background-color: rgba($clr-hilight, 0.14);
+            box-shadow: inset 0 0 0 1px rgba($clr-hilight, 0.18);
         }
 
         #splat-edit {
@@ -45,7 +49,7 @@
             }
 
             .selected & {
-                color: $text-primary;
+                color: $clr-icon-hilight;
             }
         }
 
@@ -57,7 +61,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 3px;
+            border-radius: 999px;
             color: $text-secondary;
             cursor: pointer;
 
@@ -70,7 +74,7 @@
 
             &:hover {
                 color: $text-primary;
-                background-color: $bcg-dark;
+                background-color: rgba($bcg-dark, 0.8);
             }
         }
 
@@ -82,7 +86,7 @@
 
         .splat-item-delete {
             &:hover {
-                color: #ff6b57;
+                color: $error;
             }
         }
     }

@@ -76,6 +76,57 @@ const defaultShortcuts: Record<string, ShortcutBinding> = {
     'camera.modifier.slow': { codes: ['AltLeft', 'AltRight'], held: true, shift: 'optional' }
 };
 
+interface ShortcutConflict {
+    id: string;
+    binding: ShortcutBinding;
+}
+
+const modifierState = (state: ShortcutBinding['ctrl']) => state ?? 'forbidden';
+
+const modifiersOverlap = (a: ShortcutBinding['ctrl'], b: ShortcutBinding['ctrl']) => {
+    const left = modifierState(a);
+    const right = modifierState(b);
+
+    return left === 'optional' || right === 'optional' || left === right;
+};
+
+const keyTokens = (binding: ShortcutBinding) => {
+    const tokens = new Set<string>();
+
+    for (const key of binding.keys ?? []) {
+        const normalized = key.toLowerCase();
+        tokens.add(`key:${normalized}`);
+
+        if (/^[a-z]$/.test(normalized)) {
+            tokens.add(`code:key${normalized}`);
+        }
+    }
+
+    for (const code of binding.codes ?? []) {
+        const normalized = code.toLowerCase();
+        tokens.add(`code:${normalized}`);
+
+        if (normalized.startsWith('key') && normalized.length === 4) {
+            tokens.add(`key:${normalized.slice(3)}`);
+        }
+    }
+
+    return tokens;
+};
+
+const shortcutsOverlap = (a: ShortcutBinding, b: ShortcutBinding) => {
+    const left = keyTokens(a);
+    const right = keyTokens(b);
+
+    for (const token of left) {
+        if (right.has(token)) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
 class ShortcutManager {
     private bindings: Record<string, ShortcutBinding>;
     private shortcuts: Shortcuts;
@@ -176,11 +227,29 @@ class ShortcutManager {
         return defaultShortcuts[id] ? { ...defaultShortcuts[id] } : undefined;
     }
 
+    findConflict(id: string, binding: ShortcutBinding): ShortcutConflict | null {
+        for (const otherId in this.bindings) {
+            if (otherId === id) continue;
+
+            const otherBinding = this.bindings[otherId];
+            if (!shortcutsOverlap(binding, otherBinding)) continue;
+            if (!modifiersOverlap(binding.ctrl, otherBinding.ctrl)) continue;
+            if (!modifiersOverlap(binding.shift, otherBinding.shift)) continue;
+            if (!modifiersOverlap(binding.alt, otherBinding.alt)) continue;
+
+            return {
+                id: otherId,
+                binding: { ...otherBinding }
+            };
+        }
+
+        return null;
+    }
+
     /**
      * Format a shortcut for display (e.g., "Ctrl + Shift + Z" or "Cmd Shift Z" on Mac).
      */
-    formatShortcut(id: string): string {
-        const binding = this.bindings[id];
+    formatBinding(binding: ShortcutBinding): string {
         if (!binding) return '';
 
         const parts: string[] = [];
@@ -205,6 +274,10 @@ class ShortcutManager {
         parts.push(keyDisplay);
 
         return isMac ? parts.join(' ') : parts.join(' + ');
+    }
+
+    formatShortcut(id: string): string {
+        return this.formatBinding(this.bindings[id]);
     }
 }
 

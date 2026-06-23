@@ -1,5 +1,6 @@
 import { Events } from './events';
 import { Splat } from './splat';
+import { localize } from './ui/localization';
 
 const registerPlySequenceEvents = (events: Events) => {
     let sequenceFiles: File[] = [];
@@ -53,8 +54,8 @@ const registerPlySequenceEvents = (events: Events) => {
         if (events.invoke('scene.dirty')) {
             const result = await events.invoke('showPopup', {
                 type: 'yesno',
-                header: 'RESET SCENE',
-                message: 'You have unsaved changes. Are you sure you want to reset the scene?'
+                header: localize('doc.reset'),
+                message: localize('doc.unsaved-message')
             });
 
             if (result.action !== 'yes') {

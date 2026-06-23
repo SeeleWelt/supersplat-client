@@ -60,7 +60,14 @@
                 document.getElementById('desktop-titlebar-maximize')
                     ?.addEventListener('click', toggleMaximize);
                 document.getElementById('desktop-titlebar-close')
-                    ?.addEventListener('click', () => invoke('window_close'));
+                    ?.addEventListener('click', () => {
+                        const closeEvent = new Event('desktop-window-close-request', {
+                            cancelable: true
+                        });
+                        if (window.dispatchEvent(closeEvent)) {
+                            invoke('window_close');
+                        }
+                    });
 
                 let pendingDrag = null;
                 const clearPendingDrag = () => {

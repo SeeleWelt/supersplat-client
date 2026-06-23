@@ -2,10 +2,11 @@ import { MemoryFileSystem } from '@playcanvas/splat-transform';
 import { Color, Mat4, path, Texture, Vec3, Vec4 } from 'playcanvas';
 
 import { EditHistory } from './edit-history';
-import { SelectAllOp, SelectNoneOp, SelectInvertOp, SelectOp, HideSelectionOp, UnhideAllOp, DeleteSelectionOp, ResetOp, MultiOp, AddSplatOp } from './edit-ops';
+import { SelectAllOp, SelectNoneOp, SelectInvertOp, SelectOp, HideSelectionOp, UnhideAllOp, DeleteSelectionOp, ResetOp, MeshVertexSelectOp, MeshGeometryOp, MultiOp, AddSplatOp } from './edit-ops';
 import { Element, ElementType } from './element';
 import { Events } from './events';
 import { MappedReadFileSystem } from './io';
+import { ModelElement } from './model-element';
 import { Scene } from './scene';
 import { Splat } from './splat';
 import { serializePly } from './splat-serialize';
@@ -28,8 +29,41 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
 
     // get the list of selected splats (currently limited to just a single one)
     const selectedSplats = () => {
-        const selected = events.invoke('selection') as Splat;
-        return selected?.visible ? [selected] : [];
+        const selected = events.invoke('selection');
+        return selected instanceof Splat && selected.visible ? [selected] : [];
+    };
+
+    const selectedModel = () => {
+        const selected = events.invoke('selection');
+        return selected instanceof ModelElement && selected.visible ? selected : null;
+    };
+
+    const focusElement = (element: Element, speed = 1) => {
+        if (element instanceof Splat) {
+            const bound = element.numSelected > 0 ?
+                element.selectionBound :
+                element.localBound;
+            vec.copy(bound.center);
+
+            const worldTransform = element.worldTransform;
+            worldTransform.transformPoint(vec, vec);
+            worldTransform.getScale(vec2);
+
+            scene.camera.focus({
+                focalPoint: vec,
+                radius: bound.halfExtents.length() * vec2.x,
+                speed
+            });
+        } else if (element instanceof ModelElement) {
+            const bound = element.selectedVertexWorldBound ?? element.worldBound;
+            if (bound) {
+                scene.camera.focus({
+                    focalPoint: bound.center,
+                    radius: bound.halfExtents.length(),
+                    speed
+                });
+            }
+        }
     };
 
     let lastExportCursor = 0;
@@ -113,6 +147,10 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
         events.on(eventName, () => {
             scene.forceRender = true;
         });
+    });
+
+    events.on('model.geometry', () => {
+        scene.forceRender = true;
     });
 
     // grid.visible
@@ -239,20 +277,21 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
     events.on('camera.focus', () => {
         const splat = selectedSplats()[0];
         if (splat) {
-            // use current bounds (caller should have awaited the operation that changed data)
-            const bound = splat.numSelected > 0 ?
-                splat.selectionBound :
-                splat.localBound;
-            vec.copy(bound.center);
+            focusElement(splat, 1);
+            return;
+        }
 
-            const worldTransform = splat.worldTransform;
-            worldTransform.transformPoint(vec, vec);
-            worldTransform.getScale(vec2);
+        const model = selectedModel();
+        if (model) {
+            focusElement(model, 1);
+        }
+    });
 
-            scene.camera.focus({
-                focalPoint: vec,
-                radius: bound.halfExtents.length() * vec2.x,
-                speed: 1
+    events.on('scene.elementAdded', (element: Element) => {
+        if (element.type === ElementType.splat || element.type === ElementType.model) {
+            events.fire('selection', element);
+            requestAnimationFrame(() => {
+                focusElement(element, 0);
             });
         }
     });
@@ -284,32 +323,143 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
 
     // returns true if the selected splat has selected gaussians
     events.function('selection.splats', () => {
-        const splat = events.invoke('selection') as Splat;
+        const splat = events.invoke('selection');
         return splat?.numSelected > 0;
     });
 
+    events.function('selection.meshVertices', () => {
+        return selectedModel()?.selectedVertexCount ?? 0;
+    });
+
+    const meshTools = new Set(['rectSelection', 'brushSelection', 'lassoSelection', 'polygonSelection', 'move', 'rotate', 'scale']);
+    const splatTools = new Set([
+        'rectSelection',
+        'brushSelection',
+        'floodSelection',
+        'polygonSelection',
+        'lassoSelection',
+        'sphereSelection',
+        'boxSelection',
+        'eyedropperSelection',
+        'move',
+        'rotate',
+        'scale',
+        'measure'
+    ]);
+
+    const toolAllowed = (toolName: string) => {
+        const selection = events.invoke('selection');
+        if (selection instanceof ModelElement) {
+            return meshTools.has(toolName) && (selection.supportsVertexSelection || ['move', 'rotate', 'scale'].includes(toolName));
+        }
+        if (selection instanceof Splat) {
+            return splatTools.has(toolName);
+        }
+        return !toolName || toolName === 'measure';
+    };
+
+    events.function('tool.allowed', (toolName: string) => {
+        return toolAllowed(toolName);
+    });
+
+    events.on('selection.changed', () => {
+        const activeTool = events.invoke('tool.active');
+        if (activeTool && !toolAllowed(activeTool)) {
+            events.fire('tool.deactivate');
+        }
+    });
+
+    let selectionThrough = true;
+    events.function('selection.through', () => {
+        return selectionThrough;
+    });
+    events.on('selection.setThrough', (value: boolean) => {
+        if (value !== selectionThrough) {
+            selectionThrough = value;
+            events.fire('selection.through', selectionThrough);
+        }
+    });
+    events.on('selection.toggleThrough', () => {
+        events.fire('selection.setThrough', !selectionThrough);
+    });
+    events.function('mesh.vertexSelection.through', () => {
+        return selectionThrough;
+    });
+    events.on('mesh.vertexSelection.setThrough', (value: boolean) => {
+        events.fire('selection.setThrough', value);
+    });
+    events.on('mesh.vertexSelection.toggleThrough', () => {
+        events.fire('selection.toggleThrough');
+    });
+
+    const addMeshVertexSelectOp = (model: ModelElement, op: 'add'|'remove'|'set', hitMask: Uint8Array) => {
+        const { before, after } = model.applyVertexSelection(op, hitMask);
+        let changed = before.length !== after.length;
+        for (let i = 0; !changed && i < before.length; i++) {
+            changed = before[i] !== after[i];
+        }
+        if (changed) {
+            events.fire('edit.add', new MeshVertexSelectOp(model, before, after));
+        }
+    };
+
     events.on('select.all', () => {
-        selectedSplats().forEach((splat) => {
-            events.fire('edit.add', new SelectAllOp(splat));
-        });
+        const model = selectedModel();
+        if (model) {
+            addMeshVertexSelectOp(model, 'set', new Uint8Array(model.vertexCount).fill(255));
+        } else {
+            selectedSplats().forEach((splat) => {
+                events.fire('edit.add', new SelectAllOp(splat));
+            });
+        }
     });
 
     events.on('select.none', () => {
-        selectedSplats().forEach((splat) => {
-            events.fire('edit.add', new SelectNoneOp(splat));
-        });
+        const model = selectedModel();
+        if (model) {
+            addMeshVertexSelectOp(model, 'set', new Uint8Array(model.vertexCount));
+        } else {
+            selectedSplats().forEach((splat) => {
+                events.fire('edit.add', new SelectNoneOp(splat));
+            });
+        }
     });
 
     events.on('select.invert', () => {
-        selectedSplats().forEach((splat) => {
-            events.fire('edit.add', new SelectInvertOp(splat));
-        });
+        const model = selectedModel();
+        if (model) {
+            const before = model.getVertexSelectionSnapshot();
+            const after = before.slice();
+            for (let i = 0; i < after.length; i++) {
+                after[i] = after[i] ? 0 : 1;
+            }
+            events.fire('edit.add', new MeshVertexSelectOp(model, before, after));
+        } else {
+            selectedSplats().forEach((splat) => {
+                events.fire('edit.add', new SelectInvertOp(splat));
+            });
+        }
     });
 
     events.on('select.mask', (op: 'add'|'remove'|'set', mask: Uint8Array | Uint32Array) => {
         selectedSplats().forEach((splat) => {
             events.fire('edit.add', new SelectOp(splat, op, mask));
         });
+    });
+
+    events.on('select.meshDataRange', (
+        op: 'add' | 'remove' | 'set',
+        prop: string,
+        min: number,
+        max: number,
+        numBins: number,
+        rangeStart: number,
+        rangeEnd: number
+    ) => {
+        const model = selectedModel();
+        if (model) {
+            addMeshVertexSelectOp(model, op, model.hitTestDataRange(prop, min, max, numBins, rangeStart, rangeEnd));
+        }
     });
 
     const intersectCenters = (splat: Splat, op: 'add'|'remove'|'set', options: any) => {
@@ -324,6 +474,17 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
             events.fire('edit.add', new SelectOp(splat, op, data));
             scene.dataProcessor.releaseMask(data);
         });
+    };
+
+    const selectVisibleIds = (splat: Splat, op: 'add'|'remove'|'set', ids: Iterable<number>) => {
+        const validIds = new Set<number>();
+        const numSplats = splat.splatData.numSplats;
+        for (const id of ids) {
+            if (id >= 0 && id < numSplats) {
+                validIds.add(id);
+            }
+        }
+        events.fire('edit.add', new SelectOp(splat, op, Uint32Array.from(validIds).sort()));
     };
 
     events.on('select.bySphere', async (op: 'add'|'remove'|'set', sphere: number[]) => {
@@ -343,24 +504,25 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
     });
 
     events.function('select.rect', async (op: 'add'|'remove'|'set', rect: any) => {
-        const mode = events.invoke('camera.mode');
+        const model = selectedModel();
+        if (model) {
+            addMeshVertexSelectOp(model, op, model.hitTestRect(rect, { through: selectionThrough }));
+            return;
+        }
 
         for (const splat of selectedSplats()) {
-            if (mode === 'centers') {
+            if (selectionThrough) {
                 await intersectCenters(splat, op, {
                     rect: { x1: rect.start.x, y1: rect.start.y, x2: rect.end.x, y2: rect.end.y }
                 });
-            } else if (mode === 'rings') {
+            } else {
+                const x1 = Math.min(rect.start.x, rect.end.x);
+                const y1 = Math.min(rect.start.y, rect.end.y);
+                const x2 = Math.max(rect.start.x, rect.end.x);
+                const y2 = Math.max(rect.start.y, rect.end.y);
                 scene.camera.pickPrep(splat, op);
-                const pick = await scene.camera.pickRect(
-                    rect.start.x,
-                    rect.start.y,
-                    rect.end.x - rect.start.x,
-                    rect.end.y - rect.start.y
-                );
-
-                const sortedIds = new Uint32Array(new Set(pick)).sort();
-                events.fire('edit.add', new SelectOp(splat, op, sortedIds));
+                const pick = await scene.camera.pickRect(x1, y1, x2 - x1, y2 - y1);
+                selectVisibleIds(splat, op, pick);
             }
         }
     });
@@ -368,10 +530,14 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
     let maskTexture: Texture = null;
 
     events.function('select.byMask', async (op: 'add'|'remove'|'set', canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) => {
-        const mode = events.invoke('camera.mode');
+        const model = selectedModel();
+        if (model) {
+            addMeshVertexSelectOp(model, op, model.hitTestMask(canvas, context, { through: selectionThrough }));
+            return;
+        }
 
         for (const splat of selectedSplats()) {
-            if (mode === 'centers') {
+            if (selectionThrough) {
                 // create mask texture
                 if (!maskTexture || maskTexture.width !== canvas.width || maskTexture.height !== canvas.height) {
                     if (maskTexture) {
@@ -384,7 +550,7 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
                 await intersectCenters(splat, op, {
                     mask: maskTexture
                 });
-            } else if (mode === 'rings') {
+            } else {
                 const mask = context.getImageData(0, 0, canvas.width, canvas.height);
 
                 // calculate mask bound so we limit pixel operations
@@ -434,20 +600,24 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
                     }
                 }
 
-                const sortedIds = new Uint32Array(selected).sort();
-                events.fire('edit.add', new SelectOp(splat, op, sortedIds));
+                selectVisibleIds(splat, op, selected);
             }
         }
     });
 
     events.function('select.point', async (op: 'add'|'remove'|'set', point: { x: number, y: number }) => {
+        const model = selectedModel();
+        if (model) {
+            addMeshVertexSelectOp(model, op, model.hitTestPoint(point, { through: selectionThrough }));
+            return;
+        }
+
         const { width, height } = scene.targetSize;
-        const mode = events.invoke('camera.mode');
 
         for (const splat of selectedSplats()) {
             const splatData = splat.splatData;
 
-            if (mode === 'centers') {
+            if (selectionThrough) {
                 const x = splatData.getProp('x');
                 const y = splatData.getProp('y');
                 const z = splatData.getProp('z');
@@ -476,7 +646,7 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
                 }
 
                 events.fire('edit.add', new SelectOp(splat, op, mask));
-            } else if (mode === 'rings') {
+            } else {
                 scene.camera.pickPrep(splat, op);
 
                 // Use normalized coordinates with minimal size for single pixel pick
@@ -487,7 +657,7 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
                     1 / height
                 );
                 const pickId = pickResult[0];
-                events.fire('edit.add', new SelectOp(splat, op, new Uint32Array([pickId])));
+                selectVisibleIds(splat, op, [pickId]);
             }
         }
     });
@@ -568,6 +738,16 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
         if (events.invoke('tool.active') === 'measure') {
             return;
         }
+
+        const model = selectedModel();
+        if (model?.selectedVertexCount) {
+            const { before, after, deleted } = model.deleteSelectedVerticesFromSnapshot();
+            if (deleted) {
+                events.fire('edit.add', new MeshGeometryOp(model, before, after), true);
+            }
+            return;
+        }
+
         selectedSplats().forEach((splat) => {
             editHistory.add(new DeleteSelectionOp(splat));
         });
@@ -593,7 +773,7 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
             const filename = `${removeExtension(splat.filename)}.ply`;
             const fileSystem = new MappedReadFileSystem();
             fileSystem.addFile(filename, blob);
-            const copy = await scene.assetLoader.load(filename, fileSystem);
+            const copy = await scene.assetLoader.load(filename, fileSystem) as Splat;
 
             if (func === 'separate') {
                 editHistory.add(new MultiOp([
@@ -625,7 +805,20 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
 
     let activeMode = 'centers';
 
+    const cameraModeAvailable = () => {
+        const selected = events.functions.has('selection') ? events.invoke('selection') : null;
+        return selected instanceof Splat;
+    };
+
+    events.function('camera.mode.available', () => {
+        return cameraModeAvailable();
+    });
+
     const setCameraMode = (mode: string) => {
+        if (!cameraModeAvailable()) {
+            mode = 'centers';
+        }
+
         if (mode !== activeMode) {
             activeMode = mode;
             events.fire('camera.mode', activeMode);
@@ -641,7 +834,17 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
     });
 
     events.on('camera.toggleMode', () => {
-        setCameraMode(events.invoke('camera.mode') === 'centers' ? 'rings' : 'centers');
+        if (cameraModeAvailable()) {
+            setCameraMode(events.invoke('camera.mode') === 'centers' ? 'rings' : 'centers');
+        }
+    });
+
+    events.on('selection.changed', () => {
+        const available = cameraModeAvailable();
+        events.fire('camera.mode.available', available);
+        if (!available) {
+            setCameraMode('centers');
+        }
     });
 
     // camera control mode (orbit/fly)

@@ -4,7 +4,7 @@ import { localize } from './localization';
 import { Tooltips } from './tooltips';
 
 interface ShowOptions {
-    type: 'error' | 'info' | 'yesno' | 'okcancel';
+    type: 'error' | 'info' | 'yesno' | 'okcancel' | 'savecancel';
     message: string;
     header?: string;
     link?: string;
@@ -125,20 +125,30 @@ class Popup extends Container {
         });
 
         this.show = (options: ShowOptions) => {
+            okButton.text = localize('popup.ok');
+            cancelButton.text = localize('popup.cancel');
+            yesButton.text = localize('popup.yes');
+            noButton.text = localize('popup.no');
+            buttons.dom.classList.toggle('savecancel', options.type === 'savecancel');
+            if (options.type === 'savecancel') {
+                okButton.text = localize('doc.close-save');
+                noButton.text = localize('doc.close-discard');
+            }
+
             header.text = options.header;
             text.text = options.message;
 
             const { type, link } = options;
 
-            ['error', 'info', 'yesno', 'okcancel'].forEach((t) => {
+            ['error', 'info', 'yesno', 'okcancel', 'savecancel'].forEach((t) => {
                 text.class[t === type ? 'add' : 'remove'](t);
             });
 
             // configure based on message type
             okButton.hidden = type === 'yesno';
-            cancelButton.hidden = type !== 'okcancel';
+            cancelButton.hidden = type !== 'okcancel' && type !== 'savecancel';
             yesButton.hidden = type !== 'yesno';
-            noButton.hidden = type !== 'yesno';
+            noButton.hidden = type !== 'yesno' && type !== 'savecancel';
             this.hidden = false;
 
             linkRow.hidden = link === undefined;
@@ -154,7 +164,7 @@ class Popup extends Container {
                 okFn = () => {
                     this.hide();
                     resolve({
-                        action: 'ok'
+                        action: type === 'savecancel' ? 'save' : 'ok'
                     });
                 };
                 cancelFn = () => {
@@ -167,7 +177,7 @@ class Popup extends Container {
                 };
                 noFn = () => {
                     this.hide();
-                    resolve({ action: 'no' });
+                    resolve({ action: type === 'savecancel' ? 'discard' : 'no' });
                 };
                 containerFn = () => {
                     if (type === 'info' && link === undefined) {

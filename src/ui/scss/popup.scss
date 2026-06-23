@@ -19,10 +19,11 @@
         flex-direction: column;
         overflow: hidden;
 
-        border-radius: 8px;
-        background-color: $bcg-primary;
+        border: 1px solid $bcg-light;
+        border-radius: 0;
+        background-color: rgba($bcg-primary, 0.96);
 
-        filter: drop-shadow(5px 5px 10px rgba(0, 0, 0, 0.8));
+        filter: drop-shadow(0 24px 56px rgba(0, 0, 0, 0.48));
 
         // the following is needed to get drop-shadow working on safari
         will-change: transform;
@@ -31,12 +32,12 @@
             height: 32px;
             line-height: 32px;
             margin: 0px;
-            padding: 0px 8px;
+            padding: 0px 14px;
 
             font-weight: bold;
             color: $text-primary;
-            background-color: $bcg-darker;
-            text-transform: uppercase;
+            background-color: rgba($bcg-darker, 0.86);
+            text-transform: none;
         }
 
         #popup-text {
@@ -69,6 +70,10 @@
             &.okcancel::before {
                 content: '\E138';
             }
+
+            &.savecancel::before {
+                content: '\E138';
+            }
         }
 
         #popup-link-row {
@@ -83,7 +88,8 @@
                 height: 32px;
                 line-height: 32px;
 
-                background-color: $bcg-dark;
+                border-radius: 999px;
+                background-color: rgba($bcg-dark, 0.92);
                 text-align: center;
 
                 a {
@@ -108,15 +114,30 @@
             justify-content: center;
             margin: 6px;
 
+            &.savecancel {
+                .popup-button:nth-child(1) {
+                    order: 3;
+                }
+
+                .popup-button:nth-child(4) {
+                    order: 2;
+                }
+
+                .popup-button:nth-child(2) {
+                    order: 1;
+                }
+            }
+
             .popup-button {
                 height: 40px;
                 width: 120px;
-                border-radius: 4px;
-                background-color: $bcg-darker;
+                border-radius: 999px;
+                background-color: rgba($bcg-dark, 0.92);
 
                 &:hover {
-                    color: $text-primary;
-                    background-color: $clr-hilight;
+                    color: $clr-icon-hilight;
+                    background-color: rgba($clr-hilight, 0.16);
+                    box-shadow: inset 0 0 0 1px rgba($clr-hilight, 0.24);
                 }
             }
         }

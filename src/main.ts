@@ -34,7 +34,8 @@ import { registerTrackManagerEvents } from './track-manager';
 import { registerTransformHandlerEvents } from './transform-handler';
 import { BoundDimensionsOverlay } from './ui/bound-dimensions-overlay';
 import { EditorUI } from './ui/editor';
-import { localizeInit } from './ui/localization';
+import { localize, localizeInit } from './ui/localization';
+import { loadPreferences } from './ui/preferences-dialog';
 
 declare global {
     interface LaunchParams {
@@ -46,8 +47,15 @@ declare global {
             setConsumer: (callback: (launchParams: LaunchParams) => void) => void;
         };
         scene: Scene;
+        __supersplatNativeFileDrop?: (paths: string[]) => void;
+        __supersplatPendingNativeFileDrops?: string[][];
     }
 }
+
+type NativeDroppedFile = {
+    filename: string;
+    url: string;
+};
 
 const getURLArgs = () => {
     // extract settings from command line in non-prod builds only
@@ -94,7 +102,7 @@ const main = async () => {
     events.function('queue', (fn: () => Promise<void> | void) => commandQueue.enqueue(fn));
 
     // init localization
-    await localizeInit();
+    await localizeInit(loadPreferences().locale);
 
     // Configure WebP WASM for SOG format (used for both reading and writing)
     WebPCodec.wasmUrl = new URL('static/lib/webp/webp.wasm', document.baseURI).toString();
@@ -254,6 +262,43 @@ const main = async () => {
     registerDocEvents(scene, events);
     registerRenderEvents(scene, events);
     initFileHandler(scene, events, editorUI.appContainer.dom);
+
+    const tauriInvoke = (window as any).__TAURI_INTERNALS__?.invoke;
+    if (tauriInvoke) {
+        const importNativeDroppedPaths = async (paths: string[]) => {
+            if (!Array.isArray(paths) || paths.length === 0) {
+                return;
+            }
+
+            try {
+                const files = await tauriInvoke('resolve_native_dropped_files', { paths }) as NativeDroppedFile[];
+                const result = await events.invoke('import', files);
+                if (result !== false) {
+                    events.fire('scene.filesDropped');
+                }
+            } catch (error) {
+                console.error(error);
+                await events.invoke('showPopup', {
+                    type: 'error',
+                    header: localize('popup.error-loading'),
+                    message: localize('popup.file-load-error', {
+                        filename: paths[0] ?? 'drop',
+                        message: error.message ?? error
+                    })
+                });
+            }
+        };
+
+        window.__supersplatNativeFileDrop = (paths: string[]) => {
+            void importNativeDroppedPaths(paths);
+        };
+
+        const pendingDrops = window.__supersplatPendingNativeFileDrops ?? [];
+        window.__supersplatPendingNativeFileDrops = [];
+        pendingDrops.forEach((paths) => {
+            void importNativeDroppedPaths(paths);
+        });
+    }
 
     // load async models
     scene.start();

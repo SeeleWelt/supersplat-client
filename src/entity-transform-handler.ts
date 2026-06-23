@@ -1,9 +1,9 @@
 import { Mat4, Quat, Vec3 } from 'playcanvas';
 
 import { PlacePivotOp, EntityTransformOp, MultiOp } from './edit-ops';
+import { Element } from './element';
 import { Events } from './events';
 import { Pivot } from './pivot';
-import { Splat } from './splat';
 import { Transform } from './transform';
 import { TransformHandler } from './transform-handler';
 
@@ -11,9 +11,15 @@ const mat = new Mat4();
 const quat = new Quat();
 const transform = new Transform();
 
+type TransformableElement = Element & {
+    entity: any;
+    focalPoint: () => Vec3;
+    getPivot: (mode: 'center' | 'boundCenter', selection: boolean, result: Transform) => void;
+};
+
 class EntityTransformHandler implements TransformHandler {
     events: Events;
-    splat: Splat;
+    splat: TransformableElement;
     top: EntityTransformOp;
     pop: PlacePivotOp;
     bindMat = new Mat4();
@@ -45,8 +51,8 @@ class EntityTransformHandler implements TransformHandler {
             }
         });
 
-        events.on('camera.focalPointPicked', (details: { splat: Splat, position: Vec3 }) => {
-            if (this.splat && ['move', 'rotate', 'scale'].includes(this.events.invoke('tool.active'))) {
+        events.on('camera.focalPointPicked', (details: { element?: Element, position: Vec3 }) => {
+            if (this.splat && details.element === this.splat && ['move', 'rotate', 'scale'].includes(this.events.invoke('tool.active'))) {
                 const pivot = events.invoke('pivot') as Pivot;
                 const newt = new Transform(details.position, pivot.transform.rotation, pivot.transform.scale);
                 const op = new PlacePivotOp({ pivot, oldt: pivot.transform.clone(), newt });
@@ -56,14 +62,13 @@ class EntityTransformHandler implements TransformHandler {
     }
 
     placePivot() {
-        // Place the model-level gizmo at the same focal point used by camera focus.
-        this.splat.getPivot('center', false, transform);
-        transform.position.copy(this.splat.focalPoint());
+        const origin = this.events.invoke('pivot.origin');
+        this.splat.getPivot(origin === 'center' ? 'center' : 'boundCenter', false, transform);
         this.events.invoke('pivot').place(transform);
     }
 
     activate() {
-        this.splat = this.events.invoke('selection') as Splat;
+        this.splat = this.events.invoke('selection') as TransformableElement;
         if (this.splat) {
             this.placePivot();
         }

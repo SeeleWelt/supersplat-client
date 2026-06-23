@@ -3,6 +3,9 @@
 #timeline-panel {
     flex-direction: column;
     border-top: none;
+    background-color: rgba($bcg-primary, 0.82);
+    box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(16px);
 
     &:not(.pcui-hidden) {
         display: flex;
@@ -11,7 +14,7 @@
     > #controls-wrap {
         display: flex;
         flex-direction: row;
-        background-color: $bcg-primary;
+        background-color: transparent;
         justify-content: center;
         padding: 1px;
 
@@ -32,16 +35,16 @@
                 flex-grow: 0;
                 flex-shrink: 0;
 
-                border-radius: 4px;
+                border-radius: 999px;
 
                 text-align: center;
                 line-height: 24px;
 
                 &:hover {
-                    color: #ff9900;
+                    color: $clr-icon-hilight;
                     cursor: pointer;
                     box-shadow: none;
-                    border-color: #ff990088;
+                    border-color: rgba($clr-hilight, 0.42);
                 }
             }
 
@@ -88,7 +91,7 @@
                     height: 26px;
                     margin: 0;
                     padding: 0 12px;
-                    border-radius: 4px;
+                    border-radius: 999px;
                 }
             }
         }
@@ -110,7 +113,7 @@
 
     > #ticks {
         height: 38px;
-        background-color: $bcg-darkest;
+        background-color: rgba($bcg-darker, 0.82);
 
         > #ticks-area {
             width: 100%;
@@ -127,14 +130,14 @@
                 color: $clr-default;
 
                 &.cursor {
-                    color: $clr-active;
-                    background-color: $clr-hilight;
+                    color: $clr-icon-hilight;
+                    background-color: rgba($clr-hilight, 0.2);
                     padding: 2px 6px;
-                    border-radius: 4px;
+                    border-radius: 999px;
                 }
 
                 &.key {
-                    background-color: $clr-icon-hilight;
+                    background-color: rgba($clr-icon-hilight, 0.52);
                     bottom: 22px;
                     width: 8px;
                     height: 8px;

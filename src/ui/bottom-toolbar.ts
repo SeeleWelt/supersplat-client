@@ -1,9 +1,10 @@
 import { Button, Container, Element } from '@playcanvas/pcui';
 
 import { Events } from '../events';
+import { ModelElement } from '../model-element';
 import { ShortcutManager } from '../shortcut-manager';
+import { Splat } from '../splat';
 import { formatTooltipWithShortcut, localize } from './localization';
-import redoSvg from './svg/redo.svg';
 import brushSvg from './svg/select-brush.svg';
 import eyedropperSvg from './svg/select-eyedropper.svg';
 import floodSvg from './svg/select-flood.svg';
@@ -11,9 +12,10 @@ import lassoSvg from './svg/select-lasso.svg';
 import pickerSvg from './svg/select-picker.svg';
 import polygonSvg from './svg/select-poly.svg';
 import sphereSvg from './svg/select-sphere.svg';
+import throughSvg from './svg/select-through.svg';
 import boxSvg from './svg/show-hide-splats.svg';
 import transformPanelSvg from './svg/transform-panel.svg';
-import undoSvg from './svg/undo.svg';
+import undoRedoSvg from './svg/undo-redo.svg';
 import { Tooltips } from './tooltips';
 // import cropSvg from './svg/crop.svg';
 
@@ -82,6 +84,11 @@ class BottomToolbar extends Container {
             class: 'bottom-toolbar-tool'
         });
 
+        const throughSelection = new Button({
+            id: 'bottom-toolbar-through-selection',
+            class: 'bottom-toolbar-toggle'
+        });
+
         const transformPanel = new Button({
             id: 'bottom-toolbar-transform-panel',
             class: ['bottom-toolbar-toggle', 'active']
@@ -133,14 +140,20 @@ class BottomToolbar extends Container {
             icon: 'E189'
         });
 
-        undo.dom.appendChild(createSvg(undoSvg));
-        redo.dom.appendChild(createSvg(redoSvg));
+        const undoIcon = createSvg(undoRedoSvg);
+        undoIcon.classList.add('bottom-toolbar-undo-redo-icon', 'undo');
+        undo.dom.appendChild(undoIcon);
+
+        const redoIcon = createSvg(undoRedoSvg);
+        redoIcon.classList.add('bottom-toolbar-undo-redo-icon', 'redo');
+        redo.dom.appendChild(redoIcon);
         picker.dom.appendChild(createSvg(pickerSvg));
         polygon.dom.appendChild(createSvg(polygonSvg));
         brush.dom.appendChild(createSvg(brushSvg));
         flood.dom.appendChild(createSvg(floodSvg));
         sphere.dom.appendChild(createSvg(sphereSvg));
         box.dom.appendChild(createSvg(boxSvg));
+        throughSelection.dom.appendChild(createSvg(throughSvg));
         transformPanel.dom.appendChild(createSvg(transformPanelSvg));
         lasso.dom.appendChild(createSvg(lassoSvg));
         eyedropper.dom.appendChild(createSvg(eyedropperSvg));
@@ -158,6 +171,7 @@ class BottomToolbar extends Container {
         this.append(new Element({ class: 'bottom-toolbar-separator' }));
         this.append(sphere);
         this.append(box);
+        this.append(throughSelection);
         // this.append(crop);
         this.append(new Element({ class: 'bottom-toolbar-separator' }));
         this.append(transformPanel);
@@ -180,6 +194,7 @@ class BottomToolbar extends Container {
         eyedropper.dom.addEventListener('click', () => events.fire('tool.eyedropperSelection'));
         sphere.dom.addEventListener('click', () => events.fire('tool.sphereSelection'));
         box.dom.addEventListener('click', () => events.fire('tool.boxSelection'));
+        throughSelection.dom.addEventListener('click', () => events.fire('selection.toggleThrough'));
         transformPanel.dom.addEventListener('click', () => events.fire('transformPanel.toggleVisible'));
         translate.dom.addEventListener('click', () => events.fire('tool.move'));
         rotate.dom.addEventListener('click', () => events.fire('tool.rotate'));
@@ -211,9 +226,19 @@ class BottomToolbar extends Container {
             origin.dom.classList[o === 'boundCenter' ? 'add' : 'remove']('active');
         });
 
+        events.on('selection.through', (value: boolean) => {
+            throughSelection.class[value ? 'add' : 'remove']('active');
+        });
+        if (events.functions.has('selection.through')) {
+            throughSelection.class[events.invoke('selection.through') ? 'add' : 'remove']('active');
+        }
+
         events.on('transformPanel.visible', (visible: boolean) => {
             transformPanel.class[visible ? 'add' : 'remove']('active');
         });
+        if (events.functions.has('transformPanel.visible')) {
+            transformPanel.class[events.invoke('transformPanel.visible') ? 'add' : 'remove']('active');
+        }
 
         events.on('edit.canUndo', (value: boolean) => {
             undo.enabled = value;
@@ -222,6 +247,34 @@ class BottomToolbar extends Container {
         events.on('edit.canRedo', (value: boolean) => {
             redo.enabled = value;
         });
+
+        const updateToolAvailability = () => {
+            const selection = events.functions.has('selection') ? events.invoke('selection') : null;
+            const isMesh = selection instanceof ModelElement;
+            const supportsMeshVertexSelection = isMesh && selection.supportsVertexSelection;
+            const isSplat = selection instanceof Splat;
+            const hasTransformTarget = isMesh || isSplat;
+
+            picker.enabled = supportsMeshVertexSelection || isSplat;
+            lasso.enabled = supportsMeshVertexSelection || isSplat;
+            polygon.enabled = supportsMeshVertexSelection || isSplat;
+            brush.enabled = supportsMeshVertexSelection || isSplat;
+            flood.enabled = isSplat;
+            eyedropper.enabled = isSplat;
+            sphere.enabled = isSplat;
+            box.enabled = isSplat;
+            throughSelection.enabled = supportsMeshVertexSelection || isSplat;
+            translate.enabled = hasTransformTarget;
+            rotate.enabled = hasTransformTarget;
+            scale.enabled = hasTransformTarget;
+            measure.enabled = isSplat;
+            coordSpace.enabled = hasTransformTarget;
+            origin.enabled = hasTransformTarget;
+        };
+
+        events.on('selection.changed', updateToolAvailability);
+        events.on('splat.stateChanged', updateToolAvailability);
+        updateToolAvailability();
 
         // Helper to compose localized tooltip text with shortcut
         const shortcutManager: ShortcutManager = events.invoke('shortcutManager');
@@ -246,6 +299,7 @@ class BottomToolbar extends Container {
         tooltips.register(flood, tooltip('tooltip.bottom-toolbar.flood', 'tool.floodSelection'));
         tooltips.register(sphere, tooltip('tooltip.bottom-toolbar.sphere'));
         tooltips.register(box, tooltip('tooltip.bottom-toolbar.box'));
+        tooltips.register(throughSelection, tooltip('tooltip.bottom-toolbar.mesh-through'));
         tooltips.register(transformPanel, localize('panel.scene-manager.transform'));
         tooltips.register(translate, tooltip('tooltip.bottom-toolbar.translate', 'tool.move'));
         tooltips.register(rotate, tooltip('tooltip.bottom-toolbar.rotate', 'tool.rotate'));

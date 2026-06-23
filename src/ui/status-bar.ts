@@ -1,6 +1,7 @@
 import { Button, Container, Label } from '@playcanvas/pcui';
 
 import { Events } from '../events';
+import { ModelElement } from '../model-element';
 import { ShortcutManager } from '../shortcut-manager';
 import { Splat } from '../splat';
 import { localize, formatInteger, formatTooltipWithShortcut } from './localization';
@@ -85,10 +86,20 @@ class StatusBar extends Container {
             return value;
         };
 
-        const splatsValue = createStat(localize('status-bar.splats'));
-        const selectedValue = createStat(localize('status-bar.selected'));
-        const lockedValue = createStat(localize('status-bar.locked'));
-        const deletedValue = createStat(localize('status-bar.deleted'));
+        const splatsLabel = localize('status-bar.splats');
+        const verticesLabel = localize('status-bar.vertices');
+        const splatDataLabel = localize('status-bar.splat-data');
+        const meshDataLabel = localize('status-bar.mesh-data');
+        const selectedLabel = localize('status-bar.selected');
+        const lockedLabel = localize('status-bar.locked');
+        const modeLabel = localize('status-bar.mode');
+        const deletedLabel = localize('status-bar.deleted');
+        const editModeLabel = localize('status-bar.mode.edit');
+        const objectModeLabel = localize('status-bar.mode.object');
+        const splatsValue = createStat(splatsLabel);
+        const selectedValue = createStat(selectedLabel);
+        const lockedValue = createStat(lockedLabel);
+        const deletedValue = createStat(deletedLabel);
 
         this.append(timelineButton);
         this.append(splatDataButton);
@@ -137,29 +148,66 @@ class StatusBar extends Container {
         });
 
         // Update stats from splat state
-        let splat: Splat;
+        let currentSelection: unknown = null;
 
         const updateStats = () => {
-            if (!splat) return;
-            const state = splat.splatData.getProp('state') as Uint8Array;
-            if (state) {
-                splatsValue.text = formatInteger(state.length - splat.numDeleted);
-                selectedValue.text = formatInteger(splat.numSelected);
-                lockedValue.text = formatInteger(splat.numLocked);
-                deletedValue.text = formatInteger(splat.numDeleted);
+            const statLabels = statsContainer.dom.querySelectorAll('.status-bar-stat-label');
+
+            if (currentSelection instanceof Splat) {
+                const state = currentSelection.splatData.getProp('state') as Uint8Array;
+                if (state) {
+                    statLabels[0].textContent = splatsLabel;
+                    statLabels[1].textContent = selectedLabel;
+                    statLabels[2].textContent = lockedLabel;
+                    statLabels[3].textContent = deletedLabel;
+                    splatsValue.text = formatInteger(state.length - currentSelection.numDeleted);
+                    selectedValue.text = formatInteger(currentSelection.numSelected);
+                    lockedValue.text = formatInteger(currentSelection.numLocked);
+                    deletedValue.text = formatInteger(currentSelection.numDeleted);
+                }
+            } else if (currentSelection instanceof ModelElement) {
+                splatDataButton.text = meshDataLabel.toUpperCase();
+                statLabels[0].textContent = verticesLabel;
+                statLabels[1].textContent = selectedLabel;
+                statLabels[2].textContent = modeLabel;
+                statLabels[3].textContent = deletedLabel;
+                splatsValue.text = formatInteger(currentSelection.vertexCount);
+                selectedValue.text = formatInteger(currentSelection.selectedVertexCount);
+                lockedValue.text = currentSelection.supportsVertexSelection ? editModeLabel : objectModeLabel;
+                deletedValue.text = formatInteger(currentSelection.deletedVertexCount);
+            } else {
+                splatDataButton.text = splatDataLabel.toUpperCase();
+                splatsValue.text = '0';
+                selectedValue.text = '0';
+                lockedValue.text = '0';
+                deletedValue.text = '0';
             }
         };
 
         events.on('splat.stateChanged', (splat_: Splat) => {
-            splat = splat_;
-            updateStats();
-        });
-
-        events.on('selection.changed', (selection: Element) => {
-            if (selection instanceof Splat) {
-                splat = selection;
+            if (currentSelection === splat_) {
                 updateStats();
             }
+        });
+
+        events.on('model.vertexSelection', (model: ModelElement) => {
+            if (currentSelection === model) {
+                updateStats();
+            }
+        });
+
+        events.on('model.geometry', (model: ModelElement) => {
+            if (currentSelection === model) {
+                updateStats();
+            }
+        });
+
+        events.on('selection.changed', (selection: unknown) => {
+            currentSelection = selection;
+            if (selection instanceof Splat) {
+                splatDataButton.text = splatDataLabel.toUpperCase();
+            }
+            updateStats();
         });
     }
 }

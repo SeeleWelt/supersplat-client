@@ -8,6 +8,7 @@
 @use 'viewer-panel.scss';
 @use 'view-panel.scss';
 @use 'color-panel.scss';
+@use 'mesh-panel.scss';
 @use 'splat-list.scss';
 @use 'transform.scss';
 @use 'bottom-toolbar.scss';
@@ -31,7 +32,7 @@
 * {
     box-sizing: border-box;
     font-size: 12px;
-    font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', Arial, Helvetica, sans-serif;
+    font-family: var(--app-font-family, 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', sans-serif);
     user-select: none;
     overscroll-behavior: none;
 }
@@ -50,8 +51,8 @@
     font-weight: 700;
     letter-spacing: 0;
     line-height: 1;
-    border: 1px solid rgba($clr-hilight, 0.58);
-    border-radius: 3px;
+    border: 1px solid rgba($clr-hilight, 0.22);
+    border-radius: 999px;
     background:
         linear-gradient(180deg, rgba($clr-hilight, 0.16), rgba($clr-hilight, 0.06)),
         $bcg-darkest;
@@ -60,21 +61,21 @@
         0 0 0 1px rgba(0, 0, 0, 0.18);
 
     &:hover {
-        color: $clr-active;
-        border-color: $clr-hilight;
+        color: $clr-icon-hilight;
+        border-color: rgba($clr-hilight, 0.74);
         background:
-            linear-gradient(180deg, rgba($clr-hilight, 0.32), rgba($clr-hilight, 0.16)),
+            linear-gradient(180deg, rgba($clr-hilight, 0.22), rgba($clr-hilight, 0.08)),
             $bcg-dark;
         box-shadow:
-            inset 0 1px 0 rgba(255, 255, 255, 0.08),
-            0 0 0 1px rgba($clr-hilight, 0.12);
+            inset 0 1px 0 rgba(255, 255, 255, 0.22),
+            0 10px 24px rgba(0, 0, 0, 0.18);
         cursor: pointer;
     }
 
     &:active {
-        color: $clr-active;
-        background-color: $bcg-darkest;
-        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+        color: $clr-icon-hilight;
+        background-color: rgba($clr-hilight, 0.18);
+        box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.18);
     }
 
     &:focus-visible {
@@ -95,7 +96,7 @@
 .pcui-boolean-input-toggle.pcui-boolean-input-ticked:not(.pcui-disabled, .pcui-readonly):hover,
 .pcui-boolean-input-toggle.pcui-boolean-input-ticked:not(.pcui-disabled, .pcui-readonly):focus {
     border-color: $clr-hilight !important;
-    background-color: $clr-hilight !important;
+    background-color: rgba($clr-hilight, 0.22) !important;
 }
 
 .pcui-boolean-input-toggle.pcui-boolean-input-ticked:not(.pcui-disabled, .pcui-readonly)::after,
@@ -107,16 +108,29 @@
 body {
     --app-accent: #D7A85A;
     --app-accent-soft: #E6C27A;
-    --desktop-titlebar-height: 34px;
-    --desktop-titlebar-brand-width: 220px;
+    --app-font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', sans-serif;
+    --desktop-titlebar-height: 38px;
+    --desktop-titlebar-brand-width: 132px;
     --desktop-window-controls-width: 138px;
-    --desktop-rail-width: 48px;
-    --desktop-left-panel-width: 272px;
+    --desktop-rail-width: 58px;
+    --desktop-left-panel-width: 284px;
     --desktop-scene-panel-width: var(--desktop-left-panel-width);
-    --desktop-right-panel-width: 320px;
-    --desktop-right-rail-width: 48px;
+    --desktop-right-panel-width: 332px;
+    --desktop-right-rail-width: 58px;
     --desktop-left-dock-width: calc(var(--desktop-rail-width) + var(--desktop-left-panel-width));
     --desktop-right-dock-width: calc(var(--desktop-right-panel-width) + var(--desktop-right-rail-width));
+}
+
+body.app-font-system {
+    --app-font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body.app-font-chinese {
+    --app-font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', Arial, Helvetica, sans-serif;
+}
+
+body.app-font-proxima {
+    --app-font-family: 'Proxima Nova Regular', 'Helvetica Neue', Arial, Helvetica, sans-serif;
 }
 
 body.ui-density-compact {
@@ -601,13 +615,34 @@ body.app-theme-light {
 
         .preferences-shortcut-list {
             border-color: #c8ced6;
-            background-color: #ffffff;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(244, 247, 250, 0.76)),
+                #ffffff;
         }
 
         .preferences-shortcut-group-title {
             color: #68717d;
-            background-color: #eef2f6;
+            background:
+                linear-gradient(180deg, #f2f5f8, #e9edf2);
             border-color: #d1d6de;
+        }
+
+        .preferences-shortcut-intro {
+            color: #4b5562;
+        }
+
+        .preferences-shortcut-conflict {
+            color: #4b5562;
+            border-color: #c8ced6;
+            background:
+                linear-gradient(180deg, #ffffff, #f2f5f8);
+
+            &.active {
+                color: #7f1d1d;
+                border-color: #e29a9a;
+                background:
+                    linear-gradient(180deg, #fff5f5, #fdecec);
+            }
         }
 
         .preferences-shortcut-row {
@@ -620,6 +655,21 @@ body.app-theme-light {
 
         .preferences-shortcut-row.recording {
             background-color: #E8EFFC;
+        }
+
+        .preferences-shortcut-row.conflict-source {
+            background-color: #fff1f1;
+
+            .shortcut-binding-button {
+                color: #7f1d1d;
+                border-color: #e29a9a;
+                background:
+                    linear-gradient(180deg, #fffafa, #fdecec);
+            }
+        }
+
+        .preferences-shortcut-row.conflict-target {
+            box-shadow: inset 3px 0 0 #d33d3d;
         }
 
         .shortcut-binding-button {
@@ -688,6 +738,7 @@ body.app-theme-light {
     }
 }
 
+
 body.app-theme-dim {
     #desktop-titlebar,
     #desktop-titlebar-window-controls,
@@ -731,7 +782,6 @@ body.app-theme-contrast {
     }
 
     .menu-option,
-    .titlebar-action,
     .data-list-item,
     .viewer-panel-button,
     .viewer-panel-preset-button,
@@ -785,7 +835,6 @@ body.viewer-mode.scene-panel-collapsed {
 }
 
 body.viewer-mode #bottom-toolbar,
-body.viewer-mode #transform-panel,
 body.viewer-mode #mode-toggle,
 body.viewer-mode #timeline-panel,
 body.viewer-mode #data-panel,
@@ -809,10 +858,12 @@ body.viewer-mode #status-bar {
     flex-direction: row;
     align-items: center;
     background:
-        linear-gradient(180deg, rgba(215, 168, 90, 0.08), rgba(16, 14, 21, 0)),
+        linear-gradient(180deg, rgba($clr-hilight, 0.08), rgba(16, 14, 21, 0)),
         #100E15;
     border-bottom: 1px solid $bcg-light;
     color: $text-secondary;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(18px);
 }
 
 #desktop-titlebar-brand {
@@ -831,12 +882,12 @@ body.viewer-mode #status-bar {
     width: 20px;
     height: 20px;
     flex: 0 0 auto;
-    border-radius: 5px;
+    border-radius: 7px;
 }
 
 #desktop-titlebar-title {
     color: $text-primary;
-    font-weight: bold;
+    font-weight: 800;
     letter-spacing: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -856,19 +907,21 @@ body.viewer-mode #status-bar {
     flex-direction: row;
     align-items: center;
     justify-content: flex-end;
-    background-color: #100E15;
+    gap: 4px;
+    padding-right: 6px;
+    background-color: transparent;
 }
 
 .desktop-titlebar-window-button {
-    width: 46px;
-    height: var(--desktop-titlebar-height);
+    width: 38px;
+    height: 28px;
     padding: 0;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 0;
-    border-radius: 0;
+    border-radius: 999px;
     background: transparent;
     color: $text-secondary;
     cursor: pointer;
@@ -883,7 +936,7 @@ body.viewer-mode #status-bar {
 
     &:hover {
         color: $text-primary;
-        background-color: $bcg-dark;
+        background-color: rgba($clr-hilight, 0.12);
     }
 
     &.minimize::before {
@@ -915,8 +968,8 @@ body.viewer-mode #status-bar {
     }
 
     &.close:hover {
-        color: white;
-        background-color: #c42b1c;
+        color: $clr-active;
+        background-color: $error;
     }
 }
 
@@ -931,7 +984,7 @@ body.viewer-mode #status-bar {
         width: 9px;
         height: 9px;
         border: 1px solid currentColor;
-        background-color: #181818;
+        background-color: $bcg-darkest;
         transform: translate(2px, -2px);
     }
 }
@@ -948,7 +1001,7 @@ body.viewer-mode #status-bar {
     padding: 0;
     display: flex;
     flex-direction: row;
-    background-color: #101010;
+    background-color: $bcg-darkest;
 }
 
 #main-container {
@@ -970,12 +1023,12 @@ body.viewer-mode #status-bar {
 }
 
 #sep-container > span {
-    color: white;
+    color: $text-secondary;
 }
 
 #coord-space-toggle.active {
-    background-color: $bcg-dark !important;
-    color: $clr-hilight;
+    background-color: rgba($clr-hilight, 0.12) !important;
+    color: $clr-icon-hilight;
 }
 
 #file-selector {
@@ -999,16 +1052,19 @@ body.viewer-mode #status-bar {
     color: $text-primary;
     text-shadow: 1px 1px 4px black;
 
-    padding: 8px;
-    border-radius: 4px;
+    padding: 7px 10px;
+    border-radius: 999px;
     border: 1px solid transparent;
+    background-color: rgba($bcg-primary, 0.78);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(12px);
 
     cursor: pointer;
     z-index: 2;
 
     &:hover {
-        border: 1px solid $clr-hilight;
-        background-color: rgba(0, 0, 0, 0.25);
+        border-color: rgba($clr-hilight, 0.48);
+        background-color: rgba($bcg-dark, 0.86);
     }
 }
 
@@ -1044,7 +1100,8 @@ body.viewer-mode #status-bar {
     flex-grow: 1;
     overflow: hidden;
     background:
-        linear-gradient(90deg, transparent 0, transparent calc(100% - var(--desktop-right-dock-width)), $bcg-darker calc(100% - var(--desktop-right-dock-width))),
+        linear-gradient(90deg, transparent 0, transparent calc(100% - var(--desktop-right-dock-width)), rgba($bcg-darker, 0.84) calc(100% - var(--desktop-right-dock-width))),
+        radial-gradient(circle at 48% 34%, rgba($bcg-dark, 0.55), rgba($bcg-darkest, 0.86) 42%, $bcg-darkest 100%),
         $bcg-darkest;
 }
 
@@ -1056,7 +1113,7 @@ body.viewer-mode #status-bar {
     bottom: 0;
     width: var(--desktop-right-panel-width);
     border-left: 1px solid $bcg-light;
-    background-color: $bcg-primary;
+    background-color: rgba($bcg-primary, 0.9);
     pointer-events: none;
     z-index: 0;
 }
@@ -1110,7 +1167,7 @@ body.viewer-mode #status-bar {
 
 @media (max-width: 900px) {
     body {
-        --desktop-titlebar-brand-width: 160px;
+        --desktop-titlebar-brand-width: 112px;
         --desktop-left-panel-width: 0px;
         --desktop-scene-panel-width: 0px;
         --desktop-right-panel-width: 280px;
@@ -1160,25 +1217,25 @@ body.viewer-mode #status-bar {
 }
 
 .font-thin {
-    font-family: 'Proxima Nova Thin', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    font-family: var(--app-font-family, 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', Arial, Helvetica, sans-serif);
     font-weight: 100;
     font-style: normal;
 }
 
 .font-light {
-    font-family: 'Proxima Nova Light', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    font-family: var(--app-font-family, 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', Arial, Helvetica, sans-serif);
     font-weight: 200;
     font-style: normal;
 }
 
 .font-regular {
-    font-family: 'Proxima Nova Regular', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    font-family: var(--app-font-family, 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', Arial, Helvetica, sans-serif);
     font-weight: normal;
     font-style: normal;
 }
 
 .font-bold {
-    font-family: 'Proxima Nova Bold', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    font-family: var(--app-font-family, 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', Arial, Helvetica, sans-serif);
     font-weight: bold;
     font-style: normal;
 }

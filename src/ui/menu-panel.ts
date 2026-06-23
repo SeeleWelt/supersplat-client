@@ -91,6 +91,14 @@ class MenuPanel extends Container {
         this.setItems(menuItems);
     }
 
+    closeSubMenus(except?: MenuPanel) {
+        for (const menuItem of this.menuItems) {
+            if (menuItem.subMenu && menuItem.subMenu !== except) {
+                menuItem.subMenu.hidden = true;
+            }
+        }
+    }
+
     setItems(menuItems: MenuItem[]) {
         this.menuItems = menuItems;
         this.clear();
@@ -118,7 +126,7 @@ class MenuPanel extends Container {
                     row = new Container({ class: 'menu-row' });
                     const icon = createIcon(menuItem.icon);
                     const text = new Label({ class: 'menu-row-text', text: menuItem.text });
-                    const postscript = new Label({ class: 'menu-row-postscript', text: '\u232A' });
+                    const postscript = new Label({ class: ['menu-row-postscript', 'menu-row-submenu-indicator'] });
                     row.append(icon);
                     row.append(text);
                     row.append(postscript);
@@ -129,6 +137,7 @@ class MenuPanel extends Container {
                     const childPanel = menuItem.subMenu;
                     if (childPanel) {
                         activate = () => {
+                            this.closeSubMenus(childPanel);
                             if (childPanel.hidden) {
                                 childPanel.position(row.dom, 'right', 2);
                                 childPanel.hidden = !childPanel.hidden;
@@ -160,6 +169,8 @@ class MenuPanel extends Container {
                             }
                             if (activate) {
                                 activate();
+                            } else {
+                                this.closeSubMenus();
                             }
                         }, 250);
                     });
@@ -186,9 +197,7 @@ class MenuPanel extends Container {
                                 // On touch devices: tap to open/close submenu
                                 if (menuItem.subMenu.hidden) {
                                     // Close other submenus in this panel first
-                                    if (deactivate) {
-                                        deactivate();
-                                    }
+                                    this.closeSubMenus(menuItem.subMenu);
                                     if (activate) {
                                         activate();
                                     }

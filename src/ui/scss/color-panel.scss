@@ -8,9 +8,6 @@
     transform: none;
     flex-direction: column;
     z-index: 5;
-    border-top: 0;
-    border-right: 0;
-    border-bottom: 0;
     overflow-y: auto;
 
     &:not(.pcui-hidden) {
@@ -20,7 +17,7 @@
     & > .color-panel-row {
         display: flex;
         flex-direction: row;
-        padding: 2px 8px;
+        padding: 3px 12px;
         min-height: 30px;
 
         & > .color-panel-row-label {
@@ -51,17 +48,15 @@
     > .color-panel-control-row {
         display: flex;
         flex-direction: row;
-        background-color: $bcg-dark;
+        background-color: rgba($bcg-dark, 0.72);
     }
 
     > .color-panel-actions {
         display: flex;
         margin-top: auto;
-        padding: 10px 8px 12px;
-        border-top: 1px solid $bcg-darker;
-        background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.08)),
-            $bcg-primary;
+        padding: 12px;
+        border-top: 1px solid rgba($bcg-lighter, 0.2);
+        background: transparent;
 
         > .panel-reset-action {
             width: 100%;
@@ -92,7 +87,7 @@ body.right-panel-collapsed #color-panel {
 
         > .panel-collapse-button {
             position: fixed;
-            top: calc(var(--desktop-titlebar-height) + 8px);
+            top: var(--desktop-titlebar-height);
             right: var(--desktop-right-rail-width);
             z-index: 10;
             width: 28px;

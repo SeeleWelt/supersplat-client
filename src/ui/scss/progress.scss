@@ -15,9 +15,10 @@
         top: 50%;
         transform: translate(-50%, -50%);
 
-        border-radius: 8px;
-        background-color: $bcg-primary;
-        filter: drop-shadow(5px 5px 10px rgba(0, 0, 0, 0.8));
+        border: 1px solid rgba($bcg-lighter, 0.22);
+        border-radius: 0;
+        background-color: rgba($bcg-primary, 0.96);
+        filter: drop-shadow(0 24px 56px rgba(0, 0, 0, 0.2));
         will-change: transform;     // needed for drop-shadow to work on Safari
 
         display: flex;
@@ -31,8 +32,8 @@
             padding: 0px 8px;
 
             font-weight: bold;
-            color: $text-secondary;
-            background-color: $bcg-darker;
+            color: $text-primary;
+            background-color: rgba($bcg-darker, 0.86);
         }
 
         #content {
@@ -53,9 +54,9 @@
             #bar {
                 width: 100%;
                 height: 12px;
-                border: 1px solid $bcg-dark;
+                border: 1px solid rgba($clr-hilight, 0.18);
                 border-radius: 6px;
-                background-color: #505050;
+                background-color: rgba($clr-hilight, 0.18);
             }
 
             #cancel-button {
@@ -75,7 +76,7 @@
 
     @keyframes color {
         to {
-            background-color: #404040;
+            background-color: rgba($clr-hilight, 0.42);
         }
     }
 }

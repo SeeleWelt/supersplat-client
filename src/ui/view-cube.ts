@@ -43,7 +43,7 @@ class ViewCube extends Container {
             if (text) {
                 const t = document.createElementNS(svg.namespaceURI, 'text') as SVGTextElement;
                 t.setAttribute('font-size', '10');
-                t.setAttribute('font-family', 'Arial');
+                t.style.fontFamily = 'var(--app-font-family)';
                 t.setAttribute('font-weight', 'bold');
                 t.setAttribute('text-anchor', 'middle');
                 t.setAttribute('alignment-baseline', 'central');

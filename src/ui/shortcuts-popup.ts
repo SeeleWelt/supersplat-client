@@ -122,6 +122,10 @@ const popupConfig: Record<string, CategoryConfig> = {
 const categoryOrder = ['file', 'navigation', 'camera', 'show', 'selection', 'tools', 'playback', 'other'];
 
 class ShortcutsPopup extends Container {
+    private headerLabel: Label;
+    private content: Container;
+    private shortcutManager: ShortcutManager;
+
     constructor(events: Events, args = {}) {
         args = {
             ...args,
@@ -131,6 +135,7 @@ class ShortcutsPopup extends Container {
         };
 
         super(args);
+        this.shortcutManager = events.invoke('shortcutManager');
 
         // Handle keyboard events to prevent global shortcuts from firing
         this.dom.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -155,18 +160,35 @@ class ShortcutsPopup extends Container {
         });
 
         // Header
-        const header = new Label({
+        this.headerLabel = new Label({
             id: 'header',
             text: localize('popup.shortcuts.title').toUpperCase()
         });
 
         // Content
-        const content = new Container({
+        this.content = new Container({
             id: 'content'
         });
 
-        // Get the shortcut manager from events
-        const shortcutManager: ShortcutManager = events.invoke('shortcutManager');
+        this.rebuild();
+
+        events.on('shortcuts.changed', () => {
+            this.rebuild();
+        });
+
+        events.on('locale.changed', () => {
+            this.headerLabel.text = localize('popup.shortcuts.title').toUpperCase();
+            this.rebuild();
+        });
+
+        dialog.append(this.headerLabel);
+        dialog.append(this.content);
+
+        this.append(dialog);
+    }
+
+    private rebuild() {
+        this.content.clear();
 
         // Build the shortcut list from the popup display configuration
         for (const categoryId of categoryOrder) {
@@ -184,11 +206,11 @@ class ShortcutsPopup extends Container {
             });
 
             headerEntry.append(headerLabel);
-            content.append(headerEntry);
+            this.content.append(headerEntry);
 
             // Add shortcuts for this category
             for (const item of config.shortcuts) {
-                const keyText = shortcutManager.formatShortcut(item.id);
+                const keyText = this.shortcutManager.formatShortcut(item.id);
                 if (!keyText) continue;  // Skip if shortcut not found
 
                 const key = new Label({
@@ -207,7 +229,7 @@ class ShortcutsPopup extends Container {
 
                 entry.append(key);
                 entry.append(action);
-                content.append(entry);
+                this.content.append(entry);
             }
 
             // Add hints for this category (non-shortcut display items)
@@ -229,20 +251,16 @@ class ShortcutsPopup extends Container {
 
                     entry.append(key);
                     entry.append(action);
-                    content.append(entry);
+                    this.content.append(entry);
                 }
             }
         }
-
-        dialog.append(header);
-        dialog.append(content);
-
-        this.append(dialog);
     }
 
     set hidden(value: boolean) {
         super.hidden = value;
         if (!value) {
+            this.rebuild();
             // Take keyboard focus so shortcuts stop working
             this.dom.focus();
         }

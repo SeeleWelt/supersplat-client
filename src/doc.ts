@@ -12,10 +12,15 @@ import { localize } from './ui/localization';
 // ts compiler and vscode find this type, but eslint does not
 type FilePickerAcceptType = unknown;
 
+const PROJECT_EXTENSION = '.metop';
+const LEGACY_PROJECT_EXTENSION = '.ssproj';
+const PROJECT_FILENAME = `scene${PROJECT_EXTENSION}`;
+
 const SuperFileType: FilePickerAcceptType[] = [{
-    description: 'Ningjing document',
+    description: 'Metop scene',
     accept: {
-        'application/x-ningjing': ['.ssproj']
+        'application/x-metop': [PROJECT_EXTENSION],
+        'application/x-ningjing': [LEGACY_PROJECT_EXTENSION]
     }
 }];
 
@@ -30,7 +35,7 @@ class FileSelector {
         const fileSelector = document.createElement('input');
         fileSelector.setAttribute('id', 'document-file-selector');
         fileSelector.setAttribute('type', 'file');
-        fileSelector.setAttribute('accept', '.ssproj');
+        fileSelector.setAttribute('accept', `${PROJECT_EXTENSION},${LEGACY_PROJECT_EXTENSION}`);
         fileSelector.setAttribute('multiple', 'false');
 
         document.body.append(fileSelector);
@@ -74,6 +79,25 @@ const registerDocEvents = (scene: Scene, events: Events) => {
         return true;
     };
 
+    const getNewSceneConfirmation = async () => {
+        if (!events.invoke('scene.dirty')) {
+            return true;
+        }
+
+        const result = await events.invoke('showPopup', {
+            type: 'savecancel',
+            header: localize('doc.new-unsaved-title'),
+            message: localize('doc.new-unsaved-message')
+        });
+
+        if (result.action === 'save') {
+            const saved = await events.invoke('doc.save');
+            return saved && !events.invoke('scene.dirty');
+        }
+
+        return result.action === 'discard';
+    };
+
     // reset the scene
     const resetScene = () => {
         events.fire('scene.clear');
@@ -106,8 +130,8 @@ const registerDocEvents = (scene: Scene, events: Events) => {
                 const splatSettings = document.splats[i];
 
                 // load splat directly from the zip filesystem (streams on-demand)
-                // skipReorder=true because ssproj PLY files are already in morton order
-                const splat = await scene.assetLoader.load(filename, zipFs, false, true);
+                // skipReorder=true because project PLY files are already in morton order
+                const splat = await scene.assetLoader.load(filename, zipFs, false, true) as Splat;
 
                 await scene.add(splat);
 
@@ -134,12 +158,14 @@ const registerDocEvents = (scene: Scene, events: Events) => {
                 currentSelection.getPivot(pivotOrigin, false, transform);
                 pivot.place(transform);
             }
+            return true;
         } catch (error) {
             await events.invoke('showPopup', {
                 type: 'error',
                 header: localize('doc.load-failed'),
                 message: `'${error.message ?? error}'`
             });
+            return false;
         } finally {
             // Clean up resources
             zipFs.close();
@@ -188,12 +214,14 @@ const registerDocEvents = (scene: Scene, events: Events) => {
 
             // Close zip (also closes underlying browser writer)
             await zipFs.close();
+            return true;
         } catch (error) {
             await events.invoke('showPopup', {
                 type: 'error',
                 header: localize('doc.save-failed'),
                 message: `'${error.message ?? error}'`
             });
+            return false;
         } finally {
             events.fire('stopSpinner');
         }
@@ -201,7 +229,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
 
     // handle user requesting a new document
     events.function('doc.new', async () => {
-        if ((!events.invoke('scene.empty') || events.invoke('scene.dirty')) && !await getResetConfirmation()) {
+        if (!await getNewSceneConfirmation()) {
             return false;
         }
         resetScene();
@@ -218,7 +246,9 @@ const registerDocEvents = (scene: Scene, events: Events) => {
             return false;
         }
 
-        await loadDocument(file);
+        if (!await loadDocument(file)) {
+            return false;
+        }
 
         events.fire('doc.setName', file.name);
 
@@ -240,7 +270,10 @@ const registerDocEvents = (scene: Scene, events: Events) => {
             return new Promise<boolean>((resolve) => {
                 fileSelector.show(async (file?: File) => {
                     if (file) {
-                        await loadDocument(file);
+                        if (!await loadDocument(file)) {
+                            resolve(false);
+                            return;
+                        }
                         events.fire('doc.setName', file.name);
                         events.fire('doc.saved');
                         resolve(true);
@@ -262,7 +295,9 @@ const registerDocEvents = (scene: Scene, events: Events) => {
                 const fileHandle = fileHandles[0];
 
                 // null file handle incase loadDocument fails
-                await loadDocument(await fileHandle.getFile());
+                if (!await loadDocument(await fileHandle.getFile())) {
+                    return false;
+                }
 
                 // store file handle for subsequent saves
                 documentFileHandle = fileHandle;
@@ -292,7 +327,9 @@ const registerDocEvents = (scene: Scene, events: Events) => {
                 }
             }
 
-            await loadDocument(await fileHandle.getFile());
+            if (!await loadDocument(await fileHandle.getFile())) {
+                return false;
+            }
 
             // store file handle for subsequent saves
             documentFileHandle = fileHandle;
@@ -317,17 +354,21 @@ const registerDocEvents = (scene: Scene, events: Events) => {
     events.function('doc.save', async () => {
         if (documentFileHandle) {
             try {
-                await saveDocument({
+                const saved = await saveDocument({
                     stream: await documentFileHandle.createWritable()
                 });
-                events.fire('doc.saved');
+                if (saved) {
+                    events.fire('doc.saved');
+                }
+                return saved;
             } catch (error) {
                 if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
                     console.error(error);
                 }
+                return false;
             }
         } else {
-            await events.invoke('doc.saveAs');
+            return await events.invoke('doc.saveAs');
         }
     });
 
@@ -337,23 +378,31 @@ const registerDocEvents = (scene: Scene, events: Events) => {
                 const handle = await window.showSaveFilePicker({
                     id: 'NingjingDocumentSave',
                     types: SuperFileType,
-                    suggestedName: 'scene.ssproj'
+                    suggestedName: PROJECT_FILENAME
                 });
-                await saveDocument({ stream: await handle.createWritable() });
+                const saved = await saveDocument({ stream: await handle.createWritable() });
+                if (!saved) {
+                    return false;
+                }
                 documentFileHandle = handle;
                 events.fire('doc.setName', handle.name);
                 events.fire('doc.saved');
                 recentFiles.add(handle);
+                return true;
             } catch (error) {
                 if (error.name !== 'AbortError') {
                     console.error(error);
                 }
+                return false;
             }
         } else {
-            await saveDocument({
-                filename: 'scene.ssproj'
+            const saved = await saveDocument({
+                filename: PROJECT_FILENAME
             });
-            events.fire('doc.saved');
+            if (saved) {
+                events.fire('doc.saved');
+            }
+            return saved;
         }
     });
 

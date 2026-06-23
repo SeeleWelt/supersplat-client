@@ -11,8 +11,9 @@ import { DataPanel } from './data-panel';
 import { EmptyState } from './empty-state';
 import { ExportPopup } from './export-popup';
 import { ImageSettingsDialog } from './image-settings-dialog';
-import { localize, localizeInit } from './localization';
+import { localize } from './localization';
 import { Menu } from './menu';
+import { MeshPanel } from './mesh-panel';
 import { ModeToggle } from './mode-toggle';
 import { Popup, ShowOptions } from './popup';
 import { PreferencesDialog, applyPreferences, loadPreferences } from './preferences-dialog';
@@ -20,6 +21,7 @@ import { Progress } from './progress';
 import { PublishSettingsDialog } from './publish-settings-dialog';
 import { RightToolbar } from './right-toolbar';
 import { ScenePanel } from './scene-panel';
+import { initFloatingComponentBehavior } from './floating-component-behavior';
 import { ShortcutsPopup } from './shortcuts-popup';
 import { Spinner } from './spinner';
 import { StatusBar } from './status-bar';
@@ -48,6 +50,8 @@ class EditorUI {
     popup: Popup;
 
     constructor(events: Events) {
+        initFloatingComponentBehavior();
+
         const preferences = loadPreferences();
         applyPreferences(preferences);
 
@@ -127,6 +131,7 @@ class EditorUI {
         const viewerPanel = new ViewerPanel(events, tooltips);
         const viewPanel = new ViewPanel(events, tooltips);
         const colorPanel = new ColorPanel(events, tooltips);
+        const meshPanel = new MeshPanel(events, tooltips);
         const bottomToolbar = new BottomToolbar(events, tooltips);
         const rightToolbar = new RightToolbar(events, tooltips);
         const modeToggle = new ModeToggle(events, tooltips);
@@ -161,6 +166,10 @@ class EditorUI {
             refreshTitle();
         };
 
+        events.on('locale.changed', () => {
+            refreshTitle();
+        });
+
         const enterWorkspace = () => {
             if (!workspaceActive) {
                 workspaceActive = true;
@@ -189,6 +198,7 @@ class EditorUI {
         canvasContainer.append(viewerPanel);
         canvasContainer.append(viewPanel);
         canvasContainer.append(colorPanel);
+        canvasContainer.append(meshPanel);
         canvasContainer.append(bottomToolbar);
         canvasContainer.append(rightToolbar);
         canvasContainer.append(modeToggle);
@@ -325,8 +335,13 @@ class EditorUI {
             refreshDirty();
         });
 
+        events.on('scene.filesDropped', () => {
+            enterWorkspace();
+            refreshDirty();
+        });
+
         events.on('scene.elementAdded', (element: { type: ElementType }) => {
-            if (element.type === ElementType.splat) {
+            if (element.type === ElementType.splat || element.type === ElementType.model) {
                 sceneEmpty = false;
                 emptyStateDismissed = false;
                 enterWorkspace();
@@ -374,7 +389,41 @@ class EditorUI {
             const imageSettings = await imageSettingsDialog.show();
 
             if (imageSettings) {
-                await events.invoke('render.image', imageSettings);
+                try {
+                    const docName = events.invoke('doc.name');
+                    const suggested = `${removeExtension(docName ?? 'ningjing')}-image.png`;
+
+                    let writable: FileSystemWritableFileStream | undefined;
+                    let fileHandle: FileSystemFileHandle | undefined;
+
+                    if (window.showSaveFilePicker) {
+                        fileHandle = await window.showSaveFilePicker({
+                            id: 'NingjingImageFileExport',
+                            types: [{
+                                description: 'PNG Image',
+                                accept: { 'image/png': ['.png'] }
+                            }],
+                            suggestedName: suggested
+                        });
+
+                        writable = await fileHandle.createWritable();
+                    }
+
+                    const result = await events.invoke('render.image', imageSettings, writable);
+                    if (result === false && fileHandle?.remove) {
+                        await fileHandle.remove();
+                    }
+                } catch (error) {
+                    if (error instanceof DOMException && error.name === 'AbortError') {
+                        return;
+                    }
+
+                    await events.invoke('showPopup', {
+                        type: 'error',
+                        header: localize('panel.render.failed'),
+                        message: `'${error.message ?? error}'`
+                    });
+                }
             }
         });
 
@@ -454,7 +503,7 @@ class EditorUI {
 
                     await events.invoke('showPopup', {
                         type: 'error',
-                        header: 'Failed to render video',
+                        header: localize('popup.render-video.failed'),
                         message: `'${error.message ?? error}'`
                     });
                 }
@@ -467,14 +516,64 @@ class EditorUI {
 
         events.on('show.preferences', () => {
             preferencesDialog.hidden = false;
+            void preferencesDialog.loadLocalFonts();
         });
 
         events.on('preferences.open', () => {
             preferencesDialog.hidden = false;
+            void preferencesDialog.loadLocalFonts();
         });
 
         events.function('showPopup', (options: ShowOptions) => {
             return this.popup.show(options);
+        });
+
+        let closePromptActive = false;
+        const closeDesktopWindow = async () => {
+            const tauriInvoke = (window as any).__TAURI_INTERNALS__?.invoke;
+            if (tauriInvoke) {
+                await tauriInvoke('window_close');
+            } else {
+                window.close();
+            }
+        };
+
+        const requestClose = async () => {
+            if (closePromptActive) {
+                return;
+            }
+
+            if (!events.functions.has('scene.dirty') || !events.invoke('scene.dirty')) {
+                await closeDesktopWindow();
+                return;
+            }
+
+            closePromptActive = true;
+            try {
+                const result = await events.invoke('showPopup', {
+                    type: 'savecancel',
+                    header: localize('doc.close-unsaved-title'),
+                    message: localize('doc.close-unsaved-message')
+                });
+
+                if (result.action === 'save') {
+                    const saved = await events.invoke('doc.save');
+                    if (saved && !events.invoke('scene.dirty')) {
+                        await closeDesktopWindow();
+                    }
+                } else if (result.action === 'discard') {
+                    await closeDesktopWindow();
+                }
+            } finally {
+                closePromptActive = false;
+            }
+        };
+
+        window.addEventListener('desktop-window-close-request', (event) => {
+            if (events.functions.has('scene.dirty') && events.invoke('scene.dirty')) {
+                event.preventDefault();
+                void requestClose();
+            }
         });
 
         // spinner with reference counting to handle nested operations

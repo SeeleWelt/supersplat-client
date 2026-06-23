@@ -18,10 +18,11 @@
         flex-direction: column;
         overflow: hidden;
 
-        border-radius: 8px;
-        background-color: $bcg-primary;
+        border: 1px solid rgba($bcg-lighter, 0.22);
+        border-radius: 0;
+        background-color: rgba($bcg-primary, 0.96);
 
-        filter: drop-shadow(5px 5px 10px rgba(0, 0, 0, 0.8));
+        filter: drop-shadow(0 24px 56px rgba(0, 0, 0, 0.2));
 
         // the following is needed to get drop-shadow working on safari
         will-change: transform;
@@ -31,12 +32,12 @@
         height: 32px;
         line-height: 32px;
         margin: 0;
-        padding: 0 8px;
+        padding: 0 14px;
 
         font-weight: bold;
         color: $text-primary;
-        background-color: $bcg-darker;
-        text-transform: uppercase;
+        background-color: rgba($bcg-darker, 0.86);
+        text-transform: none;
     }
 
     #about-content {
@@ -52,7 +53,7 @@
         height: 64px;
         border-radius: 14px;
         overflow: hidden;
-        box-shadow: 0 10px 24px rgba(215, 168, 90, 0.18);
+        box-shadow: 0 10px 24px rgba($clr-hilight, 0.18);
 
         img {
             display: block;
@@ -70,7 +71,7 @@
 
     #about-app-name {
         margin: 0;
-        font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        font-family: var(--app-font-family, 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', Arial, Helvetica, sans-serif);
         font-size: 18px;
         font-weight: 700;
         color: $text-primary;
@@ -97,13 +98,13 @@
         flex-direction: row;
         align-items: center;
         padding: 6px 10px;
-        border-radius: 4px;
-        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        background-color: rgba($bcg-dark, 0.78);
         cursor: pointer;
         transition: background-color 0.15s ease;
 
         &:hover {
-            background-color: rgba(215, 168, 90, 0.14);
+            background-color: rgba($clr-hilight, 0.1);
 
             .about-dep-name {
                 color: $clr-hilight;

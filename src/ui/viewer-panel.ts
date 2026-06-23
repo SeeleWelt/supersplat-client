@@ -24,7 +24,7 @@ class ViewerPanel extends Container {
             this.dom.addEventListener(eventName, (event: Event) => event.stopPropagation());
         });
 
-        let advancedMode = false;
+        let advancedMode = true;
 
         const makeSection = (title: string) => {
             const section = new Container({
@@ -65,8 +65,9 @@ class ViewerPanel extends Container {
 
         const updateCollapsedState = () => {
             const collapsed = document.body.classList.contains('right-panel-collapsed');
-            collapseToggle.dom.textContent = collapsed ? '<' : '>';
+            collapseToggle.class[collapsed ? 'add' : 'remove']('is-collapsed');
             collapseToggle.dom.title = collapsed ? localize('panel.viewer.expand') : localize('panel.viewer.collapse');
+            collapseToggle.dom.setAttribute('aria-label', collapseToggle.dom.title);
         };
 
         collapseToggle.on('click', () => {
@@ -170,7 +171,7 @@ class ViewerPanel extends Container {
         const advancedToggle = new BooleanInput({
             type: 'toggle',
             class: 'viewer-panel-toggle',
-            value: false
+            value: true
         });
         advancedRow.append(advancedLabel);
         advancedRow.append(advancedToggle);
@@ -185,6 +186,7 @@ class ViewerPanel extends Container {
             if (visible) {
                 events.fire('viewPanel.setVisible', false);
                 events.fire('colorPanel.setVisible', false);
+                events.fire('meshPanel.setVisible', false);
             }
         };
 
@@ -196,7 +198,6 @@ class ViewerPanel extends Container {
 
             if (!value) {
                 setVisible(true);
-                events.fire('transformPanel.setVisible', false);
                 events.fire('statusBar.panelChanged', null);
             }
         };
@@ -254,7 +255,7 @@ class ViewerPanel extends Container {
         events.on('viewPanel.visible', (visible: boolean) => {
             if (visible) {
                 setVisible(false);
-            } else if (!events.invoke('colorPanel.visible')) {
+            } else if (!events.invoke('colorPanel.visible') && !events.invoke('meshPanel.visible')) {
                 setVisible(true);
             }
         });
@@ -262,7 +263,15 @@ class ViewerPanel extends Container {
         events.on('colorPanel.visible', (visible: boolean) => {
             if (visible) {
                 setVisible(false);
-            } else if (!events.invoke('viewPanel.visible')) {
+            } else if (!events.invoke('viewPanel.visible') && !events.invoke('meshPanel.visible')) {
+                setVisible(true);
+            }
+        });
+
+        events.on('meshPanel.visible', (visible: boolean) => {
+            if (visible) {
+                setVisible(false);
+            } else if (!events.invoke('viewPanel.visible') && !events.invoke('colorPanel.visible')) {
                 setVisible(true);
             }
         });
@@ -275,7 +284,7 @@ class ViewerPanel extends Container {
         tooltips.register(focusButton, localize('tooltip.right-toolbar.frame-selection'), 'left');
         tooltips.register(resetButton, localize('tooltip.right-toolbar.reset-camera'), 'left');
 
-        setAdvancedMode(false);
+        setAdvancedMode(true);
         setVisible(true);
     }
 }

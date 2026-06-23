@@ -1,7 +1,9 @@
 import { Color, Mat4 } from 'playcanvas';
 
 import { AnimTrack } from './anim-track';
+import { Element } from './element';
 import { IndexRanges, sortedPredicate } from './index-ranges';
+import { ModelElement, MeshGeometrySnapshot } from './model-element';
 import { Pivot } from './pivot';
 import { Scene } from './scene';
 import { Splat } from './splat';
@@ -173,11 +175,11 @@ class ResetOp extends StateOp {
 // op for modifying a splat transform
 class EntityTransformOp {
     name = 'entityTransform';
-    splat: Splat;
+    splat: Element;
     oldt: Transform;
     newt: Transform;
 
-    constructor(options: { splat: Splat, oldt: Transform, newt: Transform }) {
+    constructor(options: { splat: Element, oldt: Transform, newt: Transform }) {
         this.splat = options.splat;
         this.oldt = options.oldt;
         this.newt = options.newt;
@@ -195,6 +197,60 @@ class EntityTransformOp {
         this.splat = null;
         this.oldt = null;
         this.newt = null;
+    }
+}
+
+class MeshVertexSelectOp {
+    name = 'meshVertexSelect';
+    model: ModelElement;
+    oldSelection: Uint8Array;
+    newSelection: Uint8Array;
+
+    constructor(model: ModelElement, oldSelection: Uint8Array, newSelection: Uint8Array) {
+        this.model = model;
+        this.oldSelection = oldSelection;
+        this.newSelection = newSelection;
+    }
+
+    do() {
+        this.model.setVertexSelectionSnapshot(this.newSelection);
+    }
+
+    undo() {
+        this.model.setVertexSelectionSnapshot(this.oldSelection);
+    }
+
+    destroy() {
+        this.model = null;
+        this.oldSelection = null;
+        this.newSelection = null;
+    }
+}
+
+class MeshGeometryOp {
+    name = 'meshGeometry';
+    model: ModelElement;
+    oldGeometry: MeshGeometrySnapshot;
+    newGeometry: MeshGeometrySnapshot;
+
+    constructor(model: ModelElement, oldGeometry: MeshGeometrySnapshot, newGeometry: MeshGeometrySnapshot) {
+        this.model = model;
+        this.oldGeometry = oldGeometry;
+        this.newGeometry = newGeometry;
+    }
+
+    do() {
+        this.model.setGeometrySnapshot(this.newGeometry);
+    }
+
+    undo() {
+        this.model.setGeometrySnapshot(this.oldGeometry);
+    }
+
+    destroy() {
+        this.model = null;
+        this.oldGeometry = null;
+        this.newGeometry = null;
     }
 }
 
@@ -443,6 +499,8 @@ export {
     DeleteSelectionOp,
     ResetOp,
     EntityTransformOp,
+    MeshVertexSelectOp,
+    MeshGeometryOp,
     SplatsTransformOp,
     PlacePivotOp,
     ColorAdjustment,

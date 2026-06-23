@@ -22,10 +22,11 @@
         flex-direction: column;
         overflow: hidden;
 
-        border-radius: 8px;
-        background-color: $bcg-primary;
+        border: 1px solid $bcg-light;
+        border-radius: 0;
+        background-color: rgba($bcg-primary, 0.96);
 
-        filter: drop-shadow(5px 5px 10px rgba(0, 0, 0, 0.8));
+        filter: drop-shadow(0 24px 56px rgba(0, 0, 0, 0.48));
 
         // the following is needed to get drop-shadow working on safari
         will-change: transform;
@@ -35,14 +36,14 @@
             margin: 0;
             padding: 0px 12px;
 
-            background-color: $bcg-darker;
+            background-color: rgba($bcg-darker, 0.86);
 
             #icon {
                 vertical-align: middle;
                 color: $clr-icon-hilight;
             }
 
-            text-transform: uppercase;
+            text-transform: none;
 
             #text {
                 margin: 0;
@@ -116,11 +117,12 @@
             .button {
                 width: 104px;
                 height: 30px;
-                border-radius: 4px;
+                border-radius: 999px;
 
                 &:hover {
-                    color: $text-primary;
-                    background-color: $clr-hilight;
+                    color: $clr-icon-hilight;
+                    background-color: rgba($clr-hilight, 0.16);
+                    box-shadow: inset 0 0 0 1px rgba($clr-hilight, 0.24);
                 }
             }
 

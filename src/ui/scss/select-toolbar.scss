@@ -6,11 +6,13 @@
     bottom: 24px;
     height: 48px;
     transform: translate(-50%, 0);
-    padding: 0px 8px;
-    border-radius: 4px;
-    border: 1px solid $bcg-light;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba($bcg-lighter, 0.22);
 
-    background-color: $bcg-primary;
+    background-color: rgba($bcg-primary, 0.86);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(16px);
     z-index: 4;
 
     &:not(.pcui-hidden) {
@@ -23,7 +25,7 @@
     .select-toolbar-button {
         height: 34px;
         padding: 0px 16px;
-        border-radius: 2px;
+        border-radius: 999px;
     }
 
     .select-toolbar-reset-button {

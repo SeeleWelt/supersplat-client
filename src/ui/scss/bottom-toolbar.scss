@@ -1,7 +1,7 @@
 @use 'colors.scss' as *;
 
 #bottom-toolbar {
-    --bottom-toolbar-button-size: 36px;
+    --bottom-toolbar-button-size: 40px;
     --bottom-toolbar-icon-canvas: 36px;
     --bottom-toolbar-font-icon-size: 18px;
     --bottom-toolbar-wide-icon-size: 22px;
@@ -13,11 +13,15 @@
     width: var(--desktop-rail-width);
     height: auto;
     transform: none;
-    padding: 6px 0;
+    padding: 10px 8px;
     border-radius: 0;
     border-right: 1px solid $bcg-light;
 
-    background-color: $bcg-darkest;
+    background:
+        linear-gradient(180deg, rgba($bcg-dark, 0.94), rgba($bcg-primary, 0.92)),
+        rgba($bcg-primary, 0.94);
+    box-shadow: 8px 0 28px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(18px);
 
     display: flex;
     flex-direction: column;
@@ -32,10 +36,12 @@
         justify-content: center;
         width: var(--bottom-toolbar-button-size);
         height: var(--bottom-toolbar-button-size);
-        margin: 1px 0;
+        margin: 2px 0;
         padding: 0px;
         border: 0px;
-        border-radius: 2px;
+        border-radius: 13px;
+        background-color: transparent;
+        transition: background-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 
         &::before {
             display: flex;
@@ -54,6 +60,22 @@
             height: var(--bottom-toolbar-icon-canvas);
             color: $clr-default;
         }
+
+        .bottom-toolbar-undo-redo-icon {
+            display: block;
+            width: 32px;
+            height: 32px;
+            opacity: 0.9;
+            pointer-events: none;
+
+            &.redo {
+                transform: scaleX(-1);
+            }
+        }
+
+        &:hover:not(.pcui-disabled) {
+            transform: translateY(-1px);
+        }
     }
 
     #bottom-toolbar-transform-panel {
@@ -62,18 +84,37 @@
             height: var(--bottom-toolbar-wide-icon-size);
         }
     }
+
+    #bottom-toolbar-through-selection {
+        svg {
+            width: var(--bottom-toolbar-wide-icon-size);
+            height: var(--bottom-toolbar-wide-icon-size);
+        }
+    }
 }
 
 .bottom-toolbar-separator {
-    width: 28px;
+    width: 30px;
     height: 1px;
-    margin: 6px 0;
-    background-color: $bcg-primary;
+    margin: 8px 0;
+    background-color: $bcg-lighter;
 }
 
 .bottom-toolbar-button {
     svg {
         color: $clr-default;
+    }
+
+    &.pcui-disabled {
+        .bottom-toolbar-undo-redo-icon {
+            opacity: 0.34;
+        }
+    }
+
+    &:hover:not(.pcui-disabled) {
+        .bottom-toolbar-undo-redo-icon {
+            opacity: 1;
+        }
     }
 }
 
@@ -91,23 +132,25 @@
 }
 
 .bottom-toolbar-tool {
-    background-color: $bcg-primary;
+    background-color: transparent;
 
     svg {
         color: $clr-default
     }
 
     &.active {
-        color: $clr-active;
-        background-color: $clr-hilight !important;
+        color: $clr-icon-hilight;
+        background:
+            linear-gradient(180deg, rgba($clr-hilight, 0.22), rgba($clr-hilight, 0.1)) !important;
+        box-shadow: inset 0 0 0 1px rgba($clr-hilight, 0.28);
 
         svg {
-            color: $clr-active;
+            color: $clr-icon-hilight;
         }
     }
 
     &.disabled {
-        background-color: $bcg-dark;
+        background-color: transparent;
 
         svg {
             color: $clr-disabled;
@@ -116,11 +159,15 @@
 }
 
 .bottom-toolbar-toggle.active {
+    background:
+        linear-gradient(180deg, rgba($clr-hilight, 0.22), rgba($clr-hilight, 0.1)) !important;
+    box-shadow: inset 0 0 0 1px rgba($clr-hilight, 0.28);
+
     &::before {
-        color: $clr-hilight;
+        color: $clr-icon-hilight;
     }
 
     svg {
-        color: $clr-hilight;
+        color: $clr-icon-hilight;
     }
 }

@@ -9,12 +9,14 @@
     }
     flex-direction: column;
 
-    border-radius: 0 0 4px 4px;
+    border-radius: 0 0 12px 12px;
     overflow: hidden;
 
-    background-color: $bcg-dark;
+    color: $text-primary;
+    background-color: rgba($bcg-primary, 0.96);
     border: 1px solid $bcg-light;
-    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.55));
+    filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.38));
+    backdrop-filter: blur(18px);
 
     // the following is needed to get drop-shadow working on safari
     will-change: transform;
@@ -25,19 +27,19 @@
     flex-direction: row;
     min-width: 180px;
     align-items: center;
-    height: 32px;
-    padding: 0px 8px;
+    height: 34px;
+    padding: 0px 10px;
 
     svg {
         color: $text-secondary;
     }
 
     &:hover:not(.pcui-disabled) {
-        background-color: $bcg-darkest;
+        background-color: rgba($clr-hilight, 0.1);
         cursor: pointer;
 
         & > .menu-row-text, .menu-row-postscript, .menu-row-icon {
-            color: $text-primary;
+            color: $clr-icon-hilight;
         }
 
         svg {
@@ -57,10 +59,10 @@
 
     // tweaks for attached boolean toggles
     > .pcui-boolean-input {
-        background-color: $bcg-darkest;
-        border-radius: 2px;
+        background-color: $bcg-dark;
+        border-radius: 999px;
         &.pcui-boolean-input-ticked {
-            background-color: $clr-hilight;
+            background-color: rgba($clr-hilight, 0.28);
             &::after {
                 color: $text-primary;
             }
@@ -78,6 +80,24 @@
 
 .menu-row-postscript {
     color: $text-dark;
+}
+
+.menu-row-submenu-indicator {
+    width: 12px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0;
+
+    &::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border: solid currentColor;
+        border-width: 0 1.5px 1.5px 0;
+        transform: rotate(-45deg);
+    }
 }
 
 .menu-row-separator {

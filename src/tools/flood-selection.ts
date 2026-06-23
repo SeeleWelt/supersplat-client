@@ -11,6 +11,8 @@ const GREEN = 1;
 const BLUE = 2;
 const ALPHA = 3;
 const PIXEL = 4;
+const VISITED = 1;
+const EMPTY_ALPHA = 8;
 
 class FloodSelection {
     activate: () => void;
@@ -75,29 +77,54 @@ class FloodSelection {
                 ...point
             };
 
-            const start = (current.y * width + current.x) * PIXEL;
-            let idx = start;
-            const pickedOpacity = data[idx + ALPHA];
+            let idx = (current.y * width + current.x) * PIXEL;
+            const pickedRed = data[idx + RED];
+            const pickedGreen = data[idx + GREEN];
+            const pickedBlue = data[idx + BLUE];
+            const pickedAlpha = data[idx + ALPHA];
 
             const testPixels: Pt[] = [current];
             const d = imageData.data;
 
-            d.fill(102);
+            d.fill(0);
+
+            if (pickedAlpha < EMPTY_ALPHA) {
+                context.putImageData(imageData, 0, 0);
+                return;
+            }
+
+            const visited = new Uint8Array(width * height);
+            const colorThreshold = threshold * 255;
+
+            const isColorMatch = (pixel: number) => {
+                if (data[pixel + ALPHA] < EMPTY_ALPHA) {
+                    return false;
+                }
+
+                return Math.abs(data[pixel + RED] - pickedRed) <= colorThreshold &&
+                    Math.abs(data[pixel + GREEN] - pickedGreen) <= colorThreshold &&
+                    Math.abs(data[pixel + BLUE] - pickedBlue) <= colorThreshold;
+            };
 
             while (testPixels.length > 0) {
                 current = testPixels.pop();
+                const pixelIndex = current.y * width + current.x;
+                if (visited[pixelIndex] === VISITED) {
+                    continue;
+                }
+                visited[pixelIndex] = VISITED;
+
                 idx = (current.y * width + current.x) * PIXEL;
-                if (Math.abs(data[idx + 3] - pickedOpacity) < threshold * 255) {
+                if (isColorMatch(idx)) {
                     d[idx + RED] = 255;
+                    d[idx + GREEN] = 0;
                     d[idx + BLUE] = 0;
                     d[idx + ALPHA] = 255;
 
-                    if (current.x > 0 && d[idx - PIXEL + ALPHA] === 102) testPixels.push({ x: current.x - 1, y: current.y });
-                    if (current.x < width - 1 && d[idx + PIXEL + ALPHA] === 102) testPixels.push({ x: current.x + 1, y: current.y });
-                    if (current.y > 0 && d[idx - width * PIXEL + ALPHA] === 102) testPixels.push({ x: current.x, y: current.y - 1 });
-                    if (current.y < height - 1 && d[idx + width * PIXEL + ALPHA] === 102) testPixels.push({ x: current.x, y: current.y + 1 });
-                } else {
-                    d[idx + ALPHA] = 0;
+                    if (current.x > 0 && visited[pixelIndex - 1] !== VISITED) testPixels.push({ x: current.x - 1, y: current.y });
+                    if (current.x < width - 1 && visited[pixelIndex + 1] !== VISITED) testPixels.push({ x: current.x + 1, y: current.y });
+                    if (current.y > 0 && visited[pixelIndex - width] !== VISITED) testPixels.push({ x: current.x, y: current.y - 1 });
+                    if (current.y < height - 1 && visited[pixelIndex + width] !== VISITED) testPixels.push({ x: current.x, y: current.y + 1 });
                 }
             }
 

@@ -8,9 +8,6 @@
     transform: none;
     flex-direction: column;
     z-index: 5;
-    border-top: 0;
-    border-right: 0;
-    border-bottom: 0;
     overflow-y: auto;
 
     &:not(.pcui-hidden) {
@@ -27,7 +24,7 @@
         svg {
             width: 24px;
             height: 24px;
-            color: $clr-hilight;
+            color: $clr-icon-hilight;
         }
     }
 }
@@ -37,7 +34,7 @@
     flex-direction: column;
     gap: 6px;
     padding: 10px 10px 8px;
-    border-bottom: 1px solid $bcg-darker;
+    border-bottom: 1px solid rgba($bcg-lighter, 0.2);
 }
 
 .viewer-panel-section-title {
@@ -69,8 +66,8 @@
     min-width: 0;
     margin: 0;
     padding: 0 8px;
-    border: 1px solid $bcg-light;
-    border-radius: 3px;
+    border: 1px solid rgba($bcg-lighter, 0.28);
+    border-radius: 999px;
     background-color: $bcg-dark;
     color: $text-secondary;
     font-weight: 600;
@@ -80,9 +77,9 @@
     white-space: nowrap;
 
     &:hover {
-        border-color: $bcg-lighter;
-        background-color: $bcg-light;
-        color: $text-primary;
+        border-color: rgba($clr-hilight, 0.45);
+        background-color: rgba($clr-hilight, 0.1);
+        color: $clr-icon-hilight;
         cursor: pointer;
     }
 
@@ -94,8 +91,8 @@
 
 .viewer-panel-mode-button.active {
     border-color: $clr-hilight;
-    background-color: $clr-hilight;
-    color: $clr-active;
+    background-color: rgba($clr-hilight, 0.18);
+    color: $clr-icon-hilight;
 }
 
 .viewer-panel-toggle-row {
@@ -123,10 +120,10 @@
     }
 
     &.pcui-boolean-input-ticked {
-        background-color: $clr-hilight;
+        background-color: rgba($clr-hilight, 0.28);
 
         &::after {
-            background-color: $clr-active;
+            background-color: $clr-icon-hilight;
         }
     }
 }
@@ -166,7 +163,7 @@ body.right-panel-collapsed #viewer-panel {
 
         > .panel-collapse-button {
             position: fixed;
-            top: calc(var(--desktop-titlebar-height) + 8px);
+            top: var(--desktop-titlebar-height);
             right: var(--desktop-right-rail-width);
             z-index: 10;
             width: 28px;

@@ -76,17 +76,12 @@ class WelcomeScreen extends Container {
             }
         }));
 
-        const dropZone = new Container({
-            class: 'welcome-dropzone'
-        });
-        dropZone.append(new Label({
-            class: 'welcome-dropzone-title',
-            text: localize('workspace.welcome.drop-title')
-        }));
-        dropZone.append(new Label({
-            class: 'welcome-dropzone-text',
-            text: localize('workspace.welcome.drop-text')
-        }));
+        const dragPanel = document.createElement('div');
+        dragPanel.className = 'welcome-drag-panel';
+        const dragHint = document.createElement('p');
+        dragHint.className = 'welcome-drag-panel-text';
+        dragHint.textContent = localize('workspace.welcome.drag-hint');
+        dragPanel.appendChild(dragHint);
 
         const recent = new Container({
             class: 'welcome-recent'
@@ -114,7 +109,7 @@ class WelcomeScreen extends Container {
 
         shell.append(heading);
         shell.append(actions);
-        shell.append(dropZone);
+        shell.dom.appendChild(dragPanel);
         shell.append(recent);
         this.append(shell);
 
@@ -132,7 +127,8 @@ class WelcomeScreen extends Container {
         });
 
         this.dom.addEventListener('dragleave', (event) => {
-            if (event.target === this.dom) {
+            const nextTarget = event.relatedTarget;
+            if (!nextTarget || !this.dom.contains(nextTarget as Node)) {
                 setDragActive(false);
             }
         });
@@ -141,15 +137,19 @@ class WelcomeScreen extends Container {
             event.preventDefault();
             setDragActive(false);
 
+            if ((event as any).__supersplatDropHandled) {
+                return;
+            }
+
             const files = Array.from(event.dataTransfer?.files ?? []).map((file): ImportFile => {
                 return {
-                    filename: file.name,
+                    filename: file.webkitRelativePath || file.name,
                     contents: file
                 };
             });
 
-            if (files.length) {
-                await events.invoke('import', files);
+            const result = await events.invoke('import', files);
+            if (result !== false) {
                 this.onEnterWorkspace();
             }
         });

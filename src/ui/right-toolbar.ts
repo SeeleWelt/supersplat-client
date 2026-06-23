@@ -1,7 +1,10 @@
 import { Button, Container, Element, Label } from '@playcanvas/pcui';
 
+import { Element as SceneElement } from '../element';
 import { Events } from '../events';
+import { ModelElement } from '../model-element';
 import { ShortcutManager } from '../shortcut-manager';
+import { Splat } from '../splat';
 import { localize, formatTooltipWithShortcut } from './localization';
 import cameraFrameSelectionSvg from './svg/camera-frame-selection.svg';
 import cameraResetSvg from './svg/camera-reset.svg';
@@ -72,6 +75,12 @@ class RightToolbar extends Container {
             class: 'right-toolbar-toggle'
         });
 
+        const meshPanel = new Button({
+            id: 'right-toolbar-mesh-panel',
+            class: 'right-toolbar-toggle',
+            icon: 'E220'
+        });
+
         const options = new Button({
             id: 'right-toolbar-options',
             class: 'right-toolbar-toggle',
@@ -103,6 +112,7 @@ class RightToolbar extends Container {
         this.append(new Element({ class: 'right-toolbar-separator' }));
         this.append(viewerPanel);
         this.append(colorPanel);
+        this.append(meshPanel);
         this.append(options);
 
         // Helper to compose localized tooltip text with shortcut
@@ -126,6 +136,7 @@ class RightToolbar extends Container {
         tooltips.register(cameraReset, tooltip('tooltip.right-toolbar.reset-camera', 'camera.reset'), 'left');
         tooltips.register(viewerPanel, tooltip('tooltip.right-toolbar.viewer'), 'left');
         tooltips.register(colorPanel, tooltip('tooltip.right-toolbar.colors'), 'left');
+        tooltips.register(meshPanel, tooltip('tooltip.right-toolbar.mesh'), 'left');
         tooltips.register(options, tooltip('tooltip.right-toolbar.view-options'), 'left');
 
         // add event handlers
@@ -141,6 +152,7 @@ class RightToolbar extends Container {
         cameraReset.on('click', () => events.fire('camera.reset'));
         viewerPanel.on('click', () => events.fire('viewerPanel.toggleVisible'));
         colorPanel.on('click', () => events.fire('colorPanel.toggleVisible'));
+        meshPanel.on('click', () => events.fire('meshPanel.toggleVisible'));
         options.on('click', () => events.fire('viewPanel.toggleVisible'));
 
         events.on('camera.mode', (mode: string) => {
@@ -166,9 +178,25 @@ class RightToolbar extends Container {
             colorPanel.class[visible ? 'add' : 'remove']('active');
         });
 
+        events.on('meshPanel.visible', (visible: boolean) => {
+            meshPanel.class[visible ? 'add' : 'remove']('active');
+        });
+
         events.on('viewPanel.visible', (visible: boolean) => {
             options.class[visible ? 'add' : 'remove']('active');
         });
+
+        events.on('selection.changed', (selection: SceneElement) => {
+            ringsModeToggle.enabled = selection instanceof Splat;
+            showHideSplats.enabled = selection instanceof Splat;
+            colorPanel.enabled = selection instanceof Splat;
+            meshPanel.enabled = selection instanceof ModelElement;
+        });
+
+        ringsModeToggle.enabled = false;
+        showHideSplats.enabled = false;
+        colorPanel.enabled = false;
+        meshPanel.enabled = false;
     }
 }
 

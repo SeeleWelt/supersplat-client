@@ -59,6 +59,21 @@ const downloadFile = (arrayBuffer: ArrayBuffer, filename: string) => {
     window.URL.revokeObjectURL(url);
 };
 
+const savePngFile = async (arrayBuffer: ArrayBuffer, filename: string, fileStream?: FileSystemWritableFileStream) => {
+    if (!fileStream) {
+        downloadFile(arrayBuffer, filename);
+        return;
+    }
+
+    try {
+        await fileStream.write(new Uint8Array(arrayBuffer));
+        await fileStream.close();
+    } catch (error) {
+        await fileStream.abort().catch(() => {});
+        throw error;
+    }
+};
+
 const registerRenderEvents = (scene: Scene, events: Events) => {
     let compressor: PngCompressor;
 
@@ -116,7 +131,7 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
         }
     });
 
-    events.function('render.image', async (imageSettings: ImageSettings) => {
+    events.function('render.image', async (imageSettings: ImageSettings, fileStream?: FileSystemWritableFileStream) => {
         events.fire('startSpinner');
 
         try {
@@ -159,19 +174,22 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
             );
 
             // construct filename
-            const selected = events.invoke('selection') as Splat;
+            const selected = events.invoke('selection') as { name?: string } | null;
             const filename = `${removeExtension(selected?.name ?? 'Ningjing')}-image.png`;
 
-            // download
-            downloadFile(arrayBuffer, filename);
+            await savePngFile(arrayBuffer, filename, fileStream);
 
             return true;
         } catch (error) {
+            if (fileStream) {
+                await fileStream.abort().catch(() => {});
+            }
             await events.invoke('showPopup', {
                 type: 'error',
                 header: localize('panel.render.failed'),
                 message: `'${error.message ?? error}'`
             });
+            return false;
         } finally {
             scene.camera.endOffscreenMode();
             scene.camera.renderOverlays = true;

@@ -1,7 +1,7 @@
 import { path, Quat, Vec3 } from 'playcanvas';
 
 import { CreateDropHandler } from './drop-handler';
-import { ElementType } from './element';
+import { Element, ElementType } from './element';
 import { Events } from './events';
 import { BrowserFileSystem, MappedReadFileSystem } from './io';
 import { Scene } from './scene';
@@ -15,6 +15,8 @@ type FilePickerAcceptType = unknown;
 type ExportType = 'ply' | 'splat' | 'sog' | 'viewer';
 
 type FileType = 'ply' | 'compressedPly' | 'splat' | 'sog' | 'htmlViewer' | 'packageViewer';
+
+const projectFileExtensions = ['.metop', '.ssproj'];
 
 interface SceneExportOptions {
     filename: string;
@@ -82,6 +84,16 @@ const filePickerTypes: { [key: string]: FilePickerAcceptType } = {
             'text/plain': ['.txt']
         }
     },
+    'model3d': {
+        description: '3D Model Files',
+        accept: {
+            'model/gltf-binary': ['.glb'],
+            'model/gltf+json': ['.gltf'],
+            'model/obj': ['.obj'],
+            'model/stl': ['.stl'],
+            'application/octet-stream': ['.fbx', '.dae', '.3ds', '.blend', '.usdz', '.usd', '.usda', '.usdc', '.abc']
+        }
+    },
     'htmlViewer': {
         description: 'Viewer HTML',
         accept: {
@@ -100,13 +112,23 @@ const allImportTypes = {
     description: 'Supported Files',
     accept: {
         'application/ply': ['.ply'],
+        'model/gltf-binary': ['.glb'],
+        'model/gltf+json': ['.gltf'],
+        'model/obj': ['.obj'],
+        'model/stl': ['.stl'],
         'application/x-gaussian-splat': ['.json', '.sog', '.splat', '.ksplat', '.spz'],
         'image/webp': ['.webp'],
+        'image/png': ['.png'],
+        'image/jpeg': ['.jpg', '.jpeg'],
         'application/json': ['.lcc'],
-        'application/octet-stream': ['.bin'],
+        'application/octet-stream': ['.bin', '.fbx', '.dae', '.3ds', '.blend', '.usdz', '.usd', '.usda', '.usdc', '.abc'],
         'text/plain': ['.txt']
     }
 };
+
+const directModelExtensions = ['.glb', '.gltf', '.obj', '.stl'];
+const conversionOnlyModelExtensions = ['.fbx', '.dae', '.3ds', '.blend', '.usdz', '.usd', '.usda', '.usdc', '.abc'];
+const dependencyExtensions = ['.bin', '.png', '.jpg', '.jpeg', '.webp', '.ktx2', '.basis'];
 
 // determine if all files share a common filename prefix followed by
 // a frame number, e.g. "frame0001.ply", "frame0002.ply", etc.
@@ -198,6 +220,17 @@ const removeExtension = (filename: string) => {
     return filename.substring(0, filename.length - path.getExtension(filename).length);
 };
 
+const isProjectFile = (filename: string) => {
+    return projectFileExtensions.some(ext => filename.endsWith(ext));
+};
+
+const isImportableModelFile = (filename: string) => {
+    return [
+        '.ply', '.splat', '.sog', '.ksplat', '.spz',
+        ...directModelExtensions
+    ].some(ext => filename.endsWith(ext));
+};
+
 // https://colmap.github.io/format.html#images-txt
 const loadImagesTxt = async (file: ImportFile, events: Events) => {
     const response = new Response(file.contents);
@@ -259,7 +292,7 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
         await events.invoke('showPopup', {
             type: 'error',
             header: localize('popup.error-loading'),
-            message: `${message} while loading '${filename}'`
+            message: localize('popup.file-load-error', { message, filename })
         });
     };
 
@@ -292,7 +325,7 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
                 mainFile.url :
                 mainFile.filename;
 
-            const model = await scene.assetLoader.load(filename, fileSystem, animationFrame);
+            const model = await scene.assetLoader.load(filename, fileSystem, animationFrame, false, files);
             await scene.add(model);
             return model;
         } catch (error) {
@@ -302,15 +335,21 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
     };
 
     // figure out what the set of files are (ply sequence, document, sog set, ply) and then import them
-    const importFiles = async (files: ImportFile[], animationFrame = false) => {
+    const importFiles = async (files: ImportFile[], animationFrame = false, allowProjectFiles = true) => {
         const filenames = files.map(f => f.filename.toLowerCase());
 
-        const result: Splat[] = [];
+        const result: Element[] = [];
+        let handled = false;
+        if (!files.length) {
+            await showLoadError(localize('popup.no-importable-file'), 'drop');
+            return false;
+        }
 
         if (isPlySequence(filenames)) {
             // handle ply sequence
             events.fire('plysequence.setFrames', files.map(f => f.contents));
             events.fire('timeline.frame', 0);
+            handled = true;
         } else if (isSog(filenames) || isLcc(filenames)) {
             if (isLcc(filenames)) {
                 const response = await events.invoke('showPopup', {
@@ -320,49 +359,93 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
                     link: `${window.location.origin}/upload`
                 });
                 if (response.action === 'cancel') {
-                    return result;
+                    return false;
                 }
             }
             const model = await importSplatModel(files, animationFrame);
             if (model) {
                 result.push(model);
+                handled = true;
                 events.fire('scene.contentImported');
+            }
+        } else if (filenames.some(f => f.endsWith('.gltf'))) {
+            const gltfFiles = files.filter(file => file.filename.toLowerCase().endsWith('.gltf'));
+            for (const file of gltfFiles) {
+                const model = await importSplatModel([file, ...files.filter(f => f !== file)], animationFrame);
+                if (model) {
+                    result.push(model);
+                    handled = true;
+                    events.fire('scene.contentImported');
+                }
             }
         } else {
             // check for unrecognized file types
             for (let i = 0; i < filenames.length; i++) {
                 const filename = filenames[i].toLowerCase();
-                if (['.ssproj', '.ply', '.splat', '.sog', '.webp', 'images.txt', '.json', '.ksplat', '.spz'].every(ext => !filename.endsWith(ext))) {
-                    await showLoadError('Unrecognized file type', filename);
-                    return;
+                if (conversionOnlyModelExtensions.some(ext => filename.endsWith(ext))) {
+                    await showLoadError(localize('popup.browser-import-conversion-required'), filename);
+                    return false;
                 }
+
+                const recognized = [
+                    ...(allowProjectFiles ? projectFileExtensions : []), '.ply', '.splat', '.sog', '.webp', 'images.txt', '.json', '.ksplat', '.spz',
+                    ...directModelExtensions,
+                    ...dependencyExtensions
+                ];
+                if (recognized.every(ext => !filename.endsWith(ext))) {
+                    await showLoadError(localize('popup.unrecognized-file-type'), filename);
+                    return false;
+                }
+            }
+
+            const hasImportablePrimary = filenames.some((filename) => {
+                return [
+                    ...(allowProjectFiles ? projectFileExtensions : [])
+                ].some(ext => filename.endsWith(ext)) ||
+                isImportableModelFile(filename) ||
+                filename.endsWith('images.txt') ||
+                filename.endsWith('.json');
+            });
+
+            if (!hasImportablePrimary) {
+                await showLoadError(localize('popup.no-importable-file'), filenames[0] ?? 'drop');
+                return false;
             }
 
             // handle multiple files as independent imports
             for (let i = 0; i < files.length; i++) {
                 const filename = filenames[i].toLowerCase();
 
-                if (filename.endsWith('.ssproj')) {
-                    // load ssproj document
-                    await events.invoke('doc.load', files[i].contents ?? (await fetch(files[i].url)).arrayBuffer(), files[i].handle);
-                } else if (['.ply', '.splat', '.sog', '.ksplat', '.spz'].some(ext => filename.endsWith(ext))) {
-                    // load gaussian splat model
+                if (allowProjectFiles && isProjectFile(filename)) {
+                    // load project document
+                    const loaded = await events.invoke('doc.load', files[i].contents ?? (await fetch(files[i].url)).arrayBuffer(), files[i].handle);
+                    if (!loaded) {
+                        return false;
+                    }
+                    handled = true;
+                } else if (isImportableModelFile(filename)) {
+                    // load gaussian splat or regular mesh model
                     const model = await importSplatModel([files[i]], animationFrame);
                     if (model) {
                         result.push(model);
+                        handled = true;
                         events.fire('scene.contentImported');
                     }
+                } else if (dependencyExtensions.some(ext => filename.endsWith(ext))) {
+                    // dependency files are consumed by glTF package imports.
                 } else if (filename.endsWith('images.txt')) {
                     // load colmap frames
                     await loadImagesTxt(files[i], events);
+                    handled = true;
                 } else if (filename.endsWith('.json')) {
                     // load inria camera poses
                     await loadCameraPoses(files[i], events);
+                    handled = true;
                 }
             }
         }
 
-        return result;
+        return handled ? result : false;
     };
 
     events.function('import', (files: ImportFile[], animationFrame = false) => {
@@ -375,7 +458,7 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
         fileSelector = document.createElement('input');
         fileSelector.setAttribute('id', 'file-selector');
         fileSelector.setAttribute('type', 'file');
-        fileSelector.setAttribute('accept', '.ply,.splat,meta.json,.json,.webp,.ssproj,.sog,.lcc,.bin,.txt,.ksplat,.spz');
+        fileSelector.setAttribute('accept', '.ply,.splat,meta.json,.json,.webp,.sog,.lcc,.bin,.txt,.ksplat,.spz,.glb,.gltf,.obj,.stl,.fbx,.dae,.3ds,.blend,.usdz,.usd,.usda,.usdc,.abc,.png,.jpg,.jpeg,.ktx2,.basis');
         fileSelector.setAttribute('multiple', 'true');
 
         fileSelector.onchange = () => {
@@ -387,21 +470,24 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
                     contents: file
                 });
             }
-            importFiles(files);
+            importFiles(files, false, false);
             fileSelector.value = '';
         };
         document.body.append(fileSelector);
     }
 
     // create the file drag & drop handler
-    CreateDropHandler(dropTarget, (entries, shift) => {
-        importFiles(entries.map((e) => {
+    CreateDropHandler(dropTarget.ownerDocument, async (entries, shift) => {
+        const result = await importFiles(entries.map((e) => {
             return {
                 filename: e.filename,
                 contents: e.file,
                 handle: e.handle
             };
         }));
+        if (result !== false) {
+            events.fire('scene.filesDropped');
+        }
     });
 
     // get the list of visible splats containing gaussians
@@ -420,7 +506,9 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
     });
 
     events.function('scene.empty', () => {
-        return getSplats().length === 0;
+        const visibleModels = scene.getElementsByType(ElementType.model)
+        .filter((model: any) => model.visible);
+        return getSplats().length === 0 && visibleModels.length === 0;
     });
 
     const fireEmptyChanged = () => {
@@ -450,7 +538,8 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
                     filePickerTypes.lcc,
                     filePickerTypes.ksplat,
                     filePickerTypes.spz,
-                    filePickerTypes.indexTxt
+                    filePickerTypes.indexTxt,
+                    filePickerTypes.model3d
                 ]
             });
 
@@ -462,7 +551,7 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
                 });
             }
 
-            return await importFiles(files);
+            return await importFiles(files, false, false);
 
         } catch (error) {
             if (error.name !== 'AbortError') {
@@ -595,7 +684,7 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
             await events.invoke('showPopup', {
                 type: 'error',
                 header: localize('popup.error-loading'),
-                message: `${error.message ?? error} while saving file`
+                message: localize('popup.file-save-error', { message: error.message ?? error })
             });
         } finally {
             if (useSpinner) {

@@ -1,6 +1,7 @@
 import { Button, ColorPicker, Container, Label, SliderInput } from '@playcanvas/pcui';
 import { Color } from 'playcanvas';
 
+import { Element } from '../element';
 import { Events } from '../events';
 import { localize } from './localization';
 import { Tooltips } from './tooltips';
@@ -62,8 +63,9 @@ class ColorPanel extends Container {
 
         const updateCollapsedState = () => {
             const collapsed = document.body.classList.contains('right-panel-collapsed');
-            collapseToggle.dom.textContent = collapsed ? '<' : '>';
-            collapseToggle.dom.title = collapsed ? '展开颜色面板' : '折叠颜色面板';
+            collapseToggle.class[collapsed ? 'add' : 'remove']('is-collapsed');
+            collapseToggle.dom.title = collapsed ? localize('panel.colors.expand') : localize('panel.colors.collapse');
+            collapseToggle.dom.setAttribute('aria-label', collapseToggle.dom.title);
         };
 
         collapseToggle.on('click', () => {
@@ -403,11 +405,6 @@ class ColorPanel extends Container {
             }
         });
 
-        events.on('selection.changed', (splat) => {
-            selected = splat;
-            updateUIFromState(splat);
-        });
-
         events.on('splat.tintClr', updateUIFromState);
         events.on('splat.temperature', updateUIFromState);
         events.on('splat.saturation', updateUIFromState);
@@ -422,6 +419,9 @@ class ColorPanel extends Container {
         // handle panel visibility
 
         const setVisible = (visible: boolean) => {
+            if (visible && !selected) {
+                return;
+            }
             if (visible === this.hidden) {
                 this.hidden = !visible;
                 events.fire('colorPanel.visible', visible);
@@ -440,6 +440,14 @@ class ColorPanel extends Container {
             setVisible(this.hidden);
         });
 
+        events.on('selection.changed', (selection: Element) => {
+            selected = selection instanceof Splat ? selection : null;
+            updateUIFromState(selected);
+            if (!selected) {
+                setVisible(false);
+            }
+        });
+
         events.on('viewPanel.visible', (visible: boolean) => {
             if (visible) {
                 setVisible(false);
@@ -447,6 +455,12 @@ class ColorPanel extends Container {
         });
 
         events.on('viewerPanel.visible', (visible: boolean) => {
+            if (visible) {
+                setVisible(false);
+            }
+        });
+
+        events.on('meshPanel.visible', (visible: boolean) => {
             if (visible) {
                 setVisible(false);
             }

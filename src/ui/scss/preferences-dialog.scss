@@ -23,6 +23,12 @@
         }
     }
 
+    .preferences-keyboard-section {
+        display: grid;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        min-height: 330px;
+    }
+
     .preferences-section-title {
         height: 22px;
         margin: 2px 0 6px;
@@ -49,31 +55,88 @@
         }
     }
 
+    .preferences-font-controls {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 84px;
+        gap: 8px;
+        min-width: 0;
+        align-items: center;
+
+        .select {
+            width: 100%;
+        }
+    }
+
+    .preferences-load-fonts-button {
+        width: 84px !important;
+        height: 24px;
+        padding: 0 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .preferences-shortcut-intro {
+        margin: 0 0 8px;
+        color: $text-secondary;
+        line-height: 18px;
+    }
+
+    .preferences-shortcut-conflict {
+        display: flex !important;
+        align-items: center;
+        min-height: 30px;
+        margin: 0 0 8px;
+        padding: 0 12px;
+        color: $text-secondary;
+        border: 1px solid rgba($bcg-lighter, 0.42);
+        border-radius: 8px;
+        background:
+            linear-gradient(180deg, rgba($bcg-lighter, 0.2), rgba($bcg-darkest, 0.24)),
+            rgba($bcg-dark, 0.64);
+
+        &.active {
+            color: $clr-active;
+            border-color: rgba($error, 0.62);
+            background:
+                linear-gradient(180deg, rgba($error, 0.18), rgba($error, 0.08)),
+                rgba($bcg-darkest, 0.8);
+        }
+    }
+
     .preferences-shortcut-list {
         display: flex;
         flex-direction: column;
-        max-height: 260px;
+        max-height: 292px;
         margin: 2px 0 8px;
         overflow-y: auto;
         border: 1px solid $bcg-darker;
-        border-radius: 4px;
-        background-color: $bcg-darkest;
+        border-radius: 8px;
+        background:
+            linear-gradient(180deg, rgba($bcg-lighter, 0.14), rgba($bcg-darkest, 0.08)),
+            rgba($bcg-dark, 0.78);
+        box-shadow: inset 0 1px 0 rgba($bcg-lighter, 0.18);
     }
 
     .preferences-shortcut-group-title {
+        position: sticky;
+        top: 0;
+        z-index: 1;
         display: flex !important;
         align-items: center;
-        height: 28px !important;
-        min-height: 28px;
-        padding: 0 12px;
+        height: 30px !important;
+        min-height: 30px;
+        padding: 0 14px;
         color: $clr-hilight;
         font-size: 10px;
         font-weight: 700;
-        line-height: 28px;
+        line-height: 30px;
         text-transform: uppercase;
         letter-spacing: 0;
-        background-color: rgba(255, 255, 255, 0.02);
-        border-top: 1px solid rgba(255, 255, 255, 0.04);
+        background:
+            linear-gradient(180deg, rgba($bcg-darker, 0.98), rgba($bcg-darkest, 0.94));
+        border-top: 1px solid rgba($bcg-lighter, 0.16);
+        border-bottom: 1px solid rgba($bcg-lighter, 0.12);
 
         &:first-child {
             border-top: 0;
@@ -81,13 +144,13 @@
     }
 
     .preferences-shortcut-row {
-        min-height: 34px;
+        min-height: 38px;
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 148px 52px;
+        grid-template-columns: minmax(0, 1fr) 154px 58px;
         align-items: center;
-        column-gap: 8px;
-        padding: 4px 8px 4px 12px;
-        border-top: 1px solid rgba(255, 255, 255, 0.035);
+        column-gap: 10px;
+        padding: 5px 10px 5px 14px;
+        border-top: 1px solid rgba($bcg-lighter, 0.14);
 
         &:last-child {
             border-bottom: 0;
@@ -107,6 +170,22 @@
             }
         }
 
+        &.conflict-source {
+            background-color: rgba($error, 0.13);
+
+            .shortcut-binding-button {
+                color: $clr-active;
+                border-color: rgba($error, 0.78);
+                background:
+                    linear-gradient(180deg, rgba($error, 0.24), rgba($error, 0.12)),
+                    $bcg-darkest;
+            }
+        }
+
+        &.conflict-target {
+            box-shadow: inset 3px 0 0 rgba($error, 0.8);
+        }
+
     }
 
     .shortcut-action-label {
@@ -119,44 +198,43 @@
     }
 
     .shortcut-binding-button {
-        width: 148px !important;
-        height: 24px;
+        width: 154px !important;
+        height: 26px;
         margin: 0;
         padding: 0 10px;
         color: $clr-icon-hilight;
         font-variant-numeric: tabular-nums;
         font-weight: 700;
         border: 1px solid $bcg-lighter;
-        border-radius: 5px;
+        border-radius: 6px;
         background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(0, 0, 0, 0.05)),
+            linear-gradient(180deg, rgba($bcg-lighter, 0.22), rgba($bcg-darkest, 0.12)),
             $bcg-dark;
         box-shadow:
-            inset 0 1px 0 rgba(255, 255, 255, 0.08),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.32);
+            inset 0 1px 0 rgba($bcg-lighter, 0.32),
+            0 4px 10px rgba(0, 0, 0, 0.06);
 
         &:hover {
-            color: $clr-active;
+            color: $clr-icon-hilight;
             border-color: $clr-hilight;
-            background:
-                linear-gradient(180deg, rgba($clr-hilight, 0.16), rgba($clr-hilight, 0.06)),
-                $bcg-dark;
+            background: rgba($clr-hilight, 0.16);
         }
     }
 
     .shortcut-reset-button {
-        width: 52px !important;
-        height: 24px;
+        width: 58px !important;
+        height: 26px;
         margin: 0;
         padding: 0;
         color: $text-secondary;
-        border: 0;
-        border-radius: 4px;
-        background-color: transparent;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        background-color: rgba($bcg-darkest, 0.2);
         font-size: 11px;
 
         &:hover {
             color: $clr-hilight;
+            border-color: rgba($clr-hilight, 0.28);
             background-color: rgba($clr-hilight, 0.1);
         }
     }

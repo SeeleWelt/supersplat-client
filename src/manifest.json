@@ -36,6 +36,7 @@
         {
             "action": "./",
             "accept": {
+                "application/x-metop": [".metop"],
                 "application/ply": [".ply"]
             }
         }
