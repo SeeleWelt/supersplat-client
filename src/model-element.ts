@@ -23,7 +23,6 @@ import {
     Vec3,
     Vec4,
     calculateNormals,
-    createMesh
 } from 'playcanvas';
 
 import { Element, ElementType } from './element';
@@ -336,18 +335,24 @@ class ModelElement extends Element {
         if (data) {
             const vertexCount = data.positions.length / 3;
             const colors = normalizeParsedVertexColors(data.colors, vertexCount);
-            const opts = {
-                normals: data.normals ?? (data.indices ? calculateNormals(data.positions, data.indices) : undefined),
-                colors,
-                uvs: data.uvs,
-                indices: data.indices
-            };
+            const normals = data.normals ?? (data.indices ? calculateNormals(data.positions, data.indices) : undefined);
 
             this.hasVertexColors = !!colors;
-            this.mesh = createMesh(scene.graphicsDevice, data.positions, opts);
-            this.mesh.primitive[0].type = data.primitiveType;
-            this.mesh.primitive[0].indexed = !!data.indices;
-            this.mesh.primitive[0].count = data.indices ? data.indices.length : data.positions.length / 3;
+            this.mesh = new Mesh(scene.graphicsDevice);
+            this.mesh.setPositions(data.positions, 3, vertexCount);
+            if (normals) {
+                this.mesh.setNormals(normals, 3, vertexCount);
+            }
+            if (data.uvs) {
+                this.mesh.setUvs(0, data.uvs, 2, vertexCount);
+            }
+            if (colors) {
+                this.mesh.setColors(colors, 4, vertexCount);
+            }
+            if (data.indices) {
+                this.mesh.setIndices(data.indices);
+            }
+            this.mesh.update(data.primitiveType);
 
             this.material = new StandardMaterial();
             this.material.name = 'Mesh Material';
