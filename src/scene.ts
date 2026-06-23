@@ -102,12 +102,14 @@ class Scene {
     outline: Outline;
     underlay: Underlay;
     meshLight: Entity;
+    meshFillLight: Entity;
+    meshRimLight: Entity;
     meshLighting = {
-        ambientIntensity: 0.28,
-        keyIntensity: 1.4,
+        ambientIntensity: 0.16,
+        keyIntensity: 2.35,
         keyYaw: -35,
-        keyPitch: 45,
-        keyColor: new Color(1, 0.94, 0.84)
+        keyPitch: 55,
+        keyColor: new Color(1, 1, 1)
     };
 
     // shared queue for serialising async splat work. exposed so subsystems that
@@ -237,6 +239,25 @@ class Scene {
             castShadows: false
         });
         this.app.root.addChild(this.meshLight);
+
+        this.meshFillLight = new Entity('meshFillLight');
+        this.meshFillLight.addComponent('light', {
+            type: 'directional',
+            color: new Color(0.7, 0.78, 1),
+            intensity: this.meshLighting.keyIntensity * 0.18,
+            castShadows: false
+        });
+        this.app.root.addChild(this.meshFillLight);
+
+        this.meshRimLight = new Entity('meshRimLight');
+        this.meshRimLight.addComponent('light', {
+            type: 'directional',
+            color: new Color(1, 0.95, 0.86),
+            intensity: this.meshLighting.keyIntensity * 0.22,
+            castShadows: false
+        });
+        this.app.root.addChild(this.meshRimLight);
+
         this.applyMeshLighting();
 
         events.function('mesh.lighting', () => {
@@ -364,6 +385,12 @@ class Scene {
         this.meshLight.setLocalEulerAngles(keyPitch, keyYaw, 0);
         this.meshLight.light.color = keyColor;
         this.meshLight.light.intensity = keyIntensity;
+
+        this.meshFillLight.setLocalEulerAngles(18, keyYaw + 145, 0);
+        this.meshFillLight.light.intensity = keyIntensity * 0.18;
+
+        this.meshRimLight.setLocalEulerAngles(25, keyYaw - 145, 0);
+        this.meshRimLight.light.intensity = keyIntensity * 0.22;
     }
 
     private forEachElement(action: (e: Element) => void) {

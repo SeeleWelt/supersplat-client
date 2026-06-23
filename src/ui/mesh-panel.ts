@@ -228,14 +228,14 @@ class MeshPanel extends Container {
         const diffuseTextureView = createTextureSlotView('diffuse', localize('panel.mesh.texture.diffuse-map'));
         const normalTextureView = createTextureSlotView('normal', localize('panel.mesh.texture.normal-map'));
 
-        const ambient = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 2, precision: 2, value: 0.28 });
-        const keyIntensity = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 8, precision: 2, value: 1.4 });
+        const ambient = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 2, precision: 2, value: 0.16 });
+        const keyIntensity = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 8, precision: 2, value: 2.35 });
         const keyYaw = new SliderInput({ class: 'mesh-panel-row-slider', min: -180, max: 180, precision: 0, value: -35 });
-        const keyPitch = new SliderInput({ class: 'mesh-panel-row-slider', min: -90, max: 90, precision: 0, value: 45 });
+        const keyPitch = new SliderInput({ class: 'mesh-panel-row-slider', min: -90, max: 90, precision: 0, value: 55 });
         const keyColor = new ColorPicker({
             class: 'mesh-panel-row-picker',
             channels: 3,
-            value: [1, 0.94, 0.84]
+            value: [1, 1, 1]
         });
 
         this.append(header);
@@ -354,7 +354,7 @@ class MeshPanel extends Container {
         };
 
         const updateViewportModeUI = () => {
-            const mode = selected?.viewportMode ?? 'material';
+            const mode = selected?.viewportMode ?? 'rendered';
             viewportModeButtons.forEach((button, buttonMode) => {
                 button.class[buttonMode === mode ? 'add' : 'remove']('active');
             });
@@ -498,11 +498,11 @@ class MeshPanel extends Container {
 
         const updateLightingUI = () => {
             const lighting = events.functions.has('mesh.lighting') ? events.invoke('mesh.lighting') : {
-                ambientIntensity: 0.28,
-                keyIntensity: 1.4,
+                ambientIntensity: 0.16,
+                keyIntensity: 2.35,
                 keyYaw: -35,
-                keyPitch: 45,
-                keyColor: new Color(1, 0.94, 0.84)
+                keyPitch: 55,
+                keyColor: new Color(1, 1, 1)
             };
             suppress = true;
             ambient.value = lighting.ambientIntensity;
@@ -535,19 +535,20 @@ class MeshPanel extends Container {
                     gloss: 0.5,
                     emissive: new Color(0, 0, 0),
                     emissiveIntensity: 0,
+                    useLighting: true,
                     useVertexColors: selected.hasVertexColors,
                     cull: CULLFACE_NONE
                 });
-                selected.applyViewportMode('material');
+                selected.applyViewportMode('rendered');
                 selected.resetTexture('diffuse');
                 selected.resetTexture('normal');
             }
             events.fire('mesh.setLighting', {
-                ambientIntensity: 0.28,
-                keyIntensity: 1.4,
+                ambientIntensity: 0.16,
+                keyIntensity: 2.35,
                 keyYaw: -35,
-                keyPitch: 45,
-                keyColor: new Color(1, 0.94, 0.84)
+                keyPitch: 55,
+                keyColor: new Color(1, 1, 1)
             });
         });
 

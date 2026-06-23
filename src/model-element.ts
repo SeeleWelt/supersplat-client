@@ -127,7 +127,7 @@ const defaultMaterialState = (): ModelElementMaterialState => ({
     gloss: 0.5,
     emissive: new Color(0, 0, 0),
     emissiveIntensity: 0,
-    useLighting: false,
+    useLighting: true,
     useVertexColors: false,
     cull: CULLFACE_NONE,
     renderStyle: RENDERSTYLE_SOLID,
@@ -138,11 +138,11 @@ const defaultMaterialState = (): ModelElementMaterialState => ({
 const applyVertexColorMaterial = (material: StandardMaterial) => {
     material.diffuseVertexColor = true;
     material.diffuseVertexColorChannel = 'rgb';
-    material.emissiveVertexColor = true;
+    material.emissiveVertexColor = false;
     material.emissiveVertexColorChannel = 'rgb';
     material.diffuse = new Color(1, 1, 1);
-    material.emissive = new Color(1, 1, 1);
-    material.emissiveIntensity = 1;
+    material.emissive = new Color(0, 0, 0);
+    material.emissiveIntensity = 0;
 };
 
 const vertexColorElement = (mesh: Mesh) => {
@@ -180,6 +180,30 @@ const normalizeParsedVertexColors = (colors: number[] | undefined, vertexCount: 
 
     const componentCount = colors.length === vertexCount * 3 ? 3 : 4;
     return normalizeVertexColors(colors, vertexCount, componentCount);
+};
+
+const getParsedMeshNormals = (data: ParsedMeshData, vertexCount: number) => {
+    if (data.normals) {
+        return data.normals;
+    }
+
+    if (data.primitiveType !== PRIMITIVE_TRIANGLES) {
+        return undefined;
+    }
+
+    if (data.indices) {
+        return calculateNormals(data.positions, data.indices);
+    }
+
+    if (vertexCount % 3 !== 0) {
+        return undefined;
+    }
+
+    const indices = new Array(vertexCount);
+    for (let i = 0; i < vertexCount; i++) {
+        indices[i] = i;
+    }
+    return calculateNormals(data.positions, indices);
 };
 
 const worldToLocal = new Mat4();
@@ -291,7 +315,7 @@ class ModelElement extends Element {
     private vertexCaches: MeshVertexCache[] = [];
     private sourceMaterials = new Map<MeshInstance, StandardMaterial>();
     private viewportMaterials = new Map<MeshViewportMode, StandardMaterial>();
-    private _viewportMode: MeshViewportMode = 'material';
+    private _viewportMode: MeshViewportMode = 'rendered';
     private vertexSelectionPreview = new Map<StandardMaterial, {
         opacity: number;
         blendType: number;
@@ -335,7 +359,7 @@ class ModelElement extends Element {
         if (data) {
             const vertexCount = data.positions.length / 3;
             const colors = normalizeParsedVertexColors(data.colors, vertexCount);
-            const normals = data.normals ?? (data.indices ? calculateNormals(data.positions, data.indices) : undefined);
+            const normals = getParsedMeshNormals(data, vertexCount);
 
             this.hasVertexColors = !!colors;
             this.mesh = new Mesh(scene.graphicsDevice);
@@ -357,7 +381,7 @@ class ModelElement extends Element {
             this.material = new StandardMaterial();
             this.material.name = 'Mesh Material';
             this.material.diffuse = new Color(0.85, 0.85, 0.85);
-            this.material.useLighting = false;
+            this.material.useLighting = true;
             this.material.cull = CULLFACE_NONE;
             this.material.blendType = BLEND_NONE;
             if (colors) {
@@ -588,7 +612,6 @@ class ModelElement extends Element {
         this.standardMaterials.forEach((material) => {
             if (!material.diffuseMap) {
                 applyVertexColorMaterial(material);
-                material.useLighting = false;
                 material.update();
             }
         });
@@ -1632,14 +1655,11 @@ class ModelElement extends Element {
         });
 
         if (mode === 'material' || mode === 'rendered') {
-            const useLighting = mode === 'rendered';
             this.standardMaterials.forEach((material) => {
                 if (this.hasVertexColors && !material.diffuseMap) {
                     applyVertexColorMaterial(material);
-                    material.useLighting = false;
-                } else {
-                    material.useLighting = useLighting;
                 }
+                material.useLighting = true;
                 material.update();
             });
         }
@@ -1750,7 +1770,6 @@ class ModelElement extends Element {
                 material.emissiveVertexColorChannel = enabled ? 'rgb' : material.emissiveVertexColorChannel;
                 if (enabled && !material.diffuseMap) {
                     applyVertexColorMaterial(material);
-                    material.useLighting = false;
                 }
             }
             if (state.cull !== undefined) material.cull = state.cull;
