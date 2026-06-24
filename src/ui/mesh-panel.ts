@@ -1,4 +1,4 @@
-import { BooleanInput, Button, ColorPicker, Container, Label, SelectInput, SliderInput } from '@playcanvas/pcui';
+import { Button, ColorPicker, Container, Label, SelectInput, SliderInput } from '@playcanvas/pcui';
 import {
     Color,
     CULLFACE_BACK,
@@ -52,6 +52,10 @@ type TextureSlotView = {
     previewUrl: string | null;
     updateId: number;
 };
+
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+const BLENDER_DEFAULT_BASE_COLOR = 0.8;
+const BLENDER_DEFAULT_ROUGHNESS = 0.5;
 
 class MeshPanel extends Container {
     constructor(events: Events, tooltips: Tooltips, args = {}) {
@@ -111,7 +115,7 @@ class MeshPanel extends Container {
         const diffuse = new ColorPicker({
             class: 'mesh-panel-row-picker',
             channels: 3,
-            value: [0.85, 0.85, 0.85]
+            value: [BLENDER_DEFAULT_BASE_COLOR, BLENDER_DEFAULT_BASE_COLOR, BLENDER_DEFAULT_BASE_COLOR]
         });
 
         const emissive = new ColorPicker({
@@ -122,14 +126,8 @@ class MeshPanel extends Container {
 
         const opacity = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 1, precision: 2, value: 1 });
         const metalness = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 1, precision: 2, value: 0 });
-        const gloss = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 1, precision: 2, value: 0.5 });
+        const roughness = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 1, precision: 2, value: BLENDER_DEFAULT_ROUGHNESS });
         const emissiveIntensity = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 8, precision: 2, value: 0 });
-
-        const useVertexColors = new BooleanInput({
-            type: 'toggle',
-            class: 'mesh-panel-row-toggle',
-            value: false
-        });
 
         const cull = new SelectInput({
             class: 'mesh-panel-row-select',
@@ -228,8 +226,8 @@ class MeshPanel extends Container {
         const diffuseTextureView = createTextureSlotView('diffuse', localize('panel.mesh.texture.diffuse-map'));
         const normalTextureView = createTextureSlotView('normal', localize('panel.mesh.texture.normal-map'));
 
-        const ambient = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 2, precision: 2, value: 0.16 });
-        const keyIntensity = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 8, precision: 2, value: 2.35 });
+        const ambient = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 2, precision: 2, value: 0.8 });
+        const keyIntensity = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 3, precision: 2, value: 0.85 });
         const keyYaw = new SliderInput({ class: 'mesh-panel-row-slider', min: -180, max: 180, precision: 0, value: -35 });
         const keyPitch = new SliderInput({ class: 'mesh-panel-row-slider', min: -90, max: 90, precision: 0, value: 55 });
         const keyColor = new ColorPicker({
@@ -237,6 +235,56 @@ class MeshPanel extends Container {
             channels: 3,
             value: [1, 1, 1]
         });
+
+        const lightDirection = new Container({ class: 'mesh-panel-light-direction' });
+        const lightPad = document.createElement('div');
+        const lightHandle = document.createElement('div');
+        lightPad.className = 'mesh-panel-light-direction-pad';
+        lightHandle.className = 'mesh-panel-light-direction-handle';
+        lightPad.appendChild(lightHandle);
+        lightDirection.dom.appendChild(lightPad);
+        lightDirection.dom.title = localize('panel.mesh.light-direction');
+        let lightDirectionDragging = false;
+
+        const updateLightDirectionHandle = (yaw: number, pitch: number) => {
+            lightHandle.style.left = `${((yaw + 180) / 360) * 100}%`;
+            lightHandle.style.top = `${((90 - pitch) / 180) * 100}%`;
+        };
+
+        const applyLightDirectionPointer = (event: PointerEvent) => {
+            const rect = lightPad.getBoundingClientRect();
+            const x = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+            const y = clamp((event.clientY - rect.top) / rect.height, 0, 1);
+            applyLighting({
+                keyYaw: Math.round(x * 360 - 180),
+                keyPitch: Math.round(90 - y * 180)
+            });
+        };
+
+        lightPad.addEventListener('pointerdown', (event) => {
+            if (!lightDirection.enabled) {
+                return;
+            }
+            lightDirectionDragging = true;
+            lightPad.setPointerCapture(event.pointerId);
+            applyLightDirectionPointer(event);
+        });
+
+        lightPad.addEventListener('pointermove', (event) => {
+            if (lightDirectionDragging) {
+                applyLightDirectionPointer(event);
+            }
+        });
+
+        const stopLightDirectionDrag = (event: PointerEvent) => {
+            lightDirectionDragging = false;
+            if (lightPad.hasPointerCapture(event.pointerId)) {
+                lightPad.releasePointerCapture(event.pointerId);
+            }
+        };
+
+        lightPad.addEventListener('pointerup', stopLightDirectionDrag);
+        lightPad.addEventListener('pointercancel', stopLightDirectionDrag);
 
         this.append(header);
         this.append(section(localize('panel.mesh.viewport'), [
@@ -246,10 +294,9 @@ class MeshPanel extends Container {
             row(localize('panel.mesh.diffuse'), diffuse),
             row(localize('panel.mesh.opacity'), opacity),
             row(localize('panel.mesh.metalness'), metalness),
-            row(localize('panel.mesh.gloss'), gloss),
+            row(localize('panel.mesh.roughness'), roughness),
             row(localize('panel.mesh.emissive'), emissive),
             row(localize('panel.mesh.glow'), emissiveIntensity),
-            row(localize('panel.mesh.vertex-color'), useVertexColors),
             row(localize('panel.mesh.cull'), cull)
         ]));
         this.append(section(localize('panel.mesh.vertex-selection'), [
@@ -261,6 +308,7 @@ class MeshPanel extends Container {
             normalTextureView.container
         ]));
         this.append(section(localize('panel.mesh.scene-light'), [
+            row(localize('panel.mesh.light-direction'), lightDirection),
             row(localize('panel.mesh.ambient'), ambient),
             row(localize('panel.mesh.key-light'), keyIntensity),
             row(localize('panel.mesh.key-color'), keyColor),
@@ -284,17 +332,33 @@ class MeshPanel extends Container {
         let suppress = false;
 
         const controls = [
-            diffuse, emissive, opacity, metalness, gloss, emissiveIntensity,
-            useVertexColors, cull, ...viewportModeButtons.values(),
+            diffuse, emissive, opacity, metalness, roughness, emissiveIntensity,
+            cull, ...viewportModeButtons.values(),
             diffuseTextureView.replace, diffuseTextureView.save, diffuseTextureView.clear, diffuseTextureView.reset,
             normalTextureView.replace, normalTextureView.save, normalTextureView.clear, normalTextureView.reset,
-            selectAllVertices, clearVertices, invertVertices, deleteVertices
+            selectAllVertices, clearVertices, invertVertices, deleteVertices,
+            ambient, keyIntensity, keyColor, keyYaw, keyPitch, lightDirection
         ];
 
         const setControlsEnabled = (enabled: boolean) => {
             controls.forEach((control) => {
                 control.enabled = enabled;
             });
+        };
+
+        const setEnabled = (controls: any[], enabled: boolean) => {
+            controls.forEach((control) => {
+                control.enabled = enabled;
+            });
+        };
+
+        const setTextureActionsEnabled = (view: TextureSlotView, enabled: boolean) => {
+            const info = selected?.getTextureInfo(view.slot);
+            const hasTexture = !!info?.hasTexture;
+            view.replace.enabled = enabled && !!selected;
+            view.save.enabled = enabled && hasTexture;
+            view.clear.enabled = enabled && hasTexture;
+            view.reset.enabled = enabled && !!info?.hasInitialTexture;
         };
 
         const releaseTexturePreview = (view: TextureSlotView) => {
@@ -360,16 +424,37 @@ class MeshPanel extends Container {
             });
         };
 
+        const updateControlAvailability = () => {
+            const mode = selected?.viewportMode ?? 'rendered';
+            const hasSelection = !!selected;
+            const sourceMaterialVisible = mode === 'material' || mode === 'rendered';
+            const litMaterialVisible = sourceMaterialVisible;
+            const lightingVisible = mode === 'solid' || mode === 'material' || mode === 'rendered';
+
+            setControlsEnabled(hasSelection);
+            setEnabled([...viewportModeButtons.values()], hasSelection);
+            setEnabled([diffuse, opacity, emissive, emissiveIntensity, cull], hasSelection && sourceMaterialVisible);
+            setEnabled([metalness, roughness], hasSelection && litMaterialVisible);
+            setEnabled([ambient, keyIntensity, keyColor, keyYaw, keyPitch, lightDirection], hasSelection && lightingVisible);
+
+            setTextureActionsEnabled(diffuseTextureView, hasSelection && sourceMaterialVisible);
+            setTextureActionsEnabled(normalTextureView, hasSelection && litMaterialVisible);
+
+            selectAllVertices.enabled = !!selected?.supportsVertexSelection;
+            clearVertices.enabled = !!selected?.supportsVertexSelection;
+            invertVertices.enabled = !!selected?.supportsVertexSelection;
+            deleteVertices.enabled = !!selected?.selectedVertexCount;
+        };
+
         const updateMaterialUI = () => {
             suppress = true;
             if (!selected) {
-                diffuse.value = [0.85, 0.85, 0.85];
+                diffuse.value = [BLENDER_DEFAULT_BASE_COLOR, BLENDER_DEFAULT_BASE_COLOR, BLENDER_DEFAULT_BASE_COLOR];
                 emissive.value = [0, 0, 0];
                 opacity.value = 1;
                 metalness.value = 0;
-                gloss.value = 0.5;
+                roughness.value = BLENDER_DEFAULT_ROUGHNESS;
                 emissiveIntensity.value = 0;
-                useVertexColors.value = false;
                 cull.value = `${CULLFACE_NONE}`;
                 vertexSelectionCount.text = '0 / 0';
             } else {
@@ -378,20 +463,14 @@ class MeshPanel extends Container {
                 emissive.value = [state.emissive.r, state.emissive.g, state.emissive.b];
                 opacity.value = state.opacity;
                 metalness.value = state.metalness;
-                gloss.value = state.gloss;
+                roughness.value = 1 - state.gloss;
                 emissiveIntensity.value = state.emissiveIntensity;
-                useVertexColors.value = state.useVertexColors;
                 cull.value = `${state.cull}`;
                 vertexSelectionCount.text = `${selected.selectedVertexCount} / ${selected.vertexCount}`;
             }
-            setControlsEnabled(!!selected);
             updateViewportModeUI();
             updateTextureUI();
-            selectAllVertices.enabled = !!selected?.supportsVertexSelection;
-            clearVertices.enabled = !!selected?.supportsVertexSelection;
-            invertVertices.enabled = !!selected?.supportsVertexSelection;
-            deleteVertices.enabled = !!selected?.selectedVertexCount;
-            useVertexColors.enabled = !!selected?.hasVertexColors;
+            updateControlAvailability();
             suppress = false;
         };
 
@@ -405,9 +484,8 @@ class MeshPanel extends Container {
         emissive.on('change', (value: number[]) => apply({ emissive: new Color(value[0], value[1], value[2]) }));
         opacity.on('change', (value: number) => apply({ opacity: value }));
         metalness.on('change', (value: number) => apply({ metalness: value }));
-        gloss.on('change', (value: number) => apply({ gloss: value }));
+        roughness.on('change', (value: number) => apply({ gloss: 1 - value }));
         emissiveIntensity.on('change', (value: number) => apply({ emissiveIntensity: value }));
-        useVertexColors.on('change', (value: boolean) => apply({ useVertexColors: value }));
         cull.on('change', (value: string) => apply({ cull: parseInt(value, 10) }));
         viewportModeButtons.forEach((button, mode) => {
             button.on('click', () => selected?.applyViewportMode(mode));
@@ -498,8 +576,8 @@ class MeshPanel extends Container {
 
         const updateLightingUI = () => {
             const lighting = events.functions.has('mesh.lighting') ? events.invoke('mesh.lighting') : {
-                ambientIntensity: 0.16,
-                keyIntensity: 2.35,
+                ambientIntensity: 0.8,
+                keyIntensity: 0.85,
                 keyYaw: -35,
                 keyPitch: 55,
                 keyColor: new Color(1, 1, 1)
@@ -510,6 +588,8 @@ class MeshPanel extends Container {
             keyYaw.value = lighting.keyYaw;
             keyPitch.value = lighting.keyPitch;
             keyColor.value = [lighting.keyColor.r, lighting.keyColor.g, lighting.keyColor.b];
+            updateLightDirectionHandle(lighting.keyYaw, lighting.keyPitch);
+            updateControlAvailability();
             suppress = false;
         };
 
@@ -529,14 +609,13 @@ class MeshPanel extends Container {
         reset.on('click', () => {
             if (selected) {
                 selected.applyMaterialState({
-                    diffuse: new Color(0.85, 0.85, 0.85),
+                    diffuse: new Color(BLENDER_DEFAULT_BASE_COLOR, BLENDER_DEFAULT_BASE_COLOR, BLENDER_DEFAULT_BASE_COLOR),
                     opacity: 1,
                     metalness: 0,
-                    gloss: 0.5,
+                    gloss: 1 - BLENDER_DEFAULT_ROUGHNESS,
                     emissive: new Color(0, 0, 0),
                     emissiveIntensity: 0,
                     useLighting: true,
-                    useVertexColors: selected.hasVertexColors,
                     cull: CULLFACE_NONE
                 });
                 selected.applyViewportMode('rendered');
@@ -544,8 +623,8 @@ class MeshPanel extends Container {
                 selected.resetTexture('normal');
             }
             events.fire('mesh.setLighting', {
-                ambientIntensity: 0.16,
-                keyIntensity: 2.35,
+                ambientIntensity: 0.8,
+                keyIntensity: 0.85,
                 keyYaw: -35,
                 keyPitch: 55,
                 keyColor: new Color(1, 1, 1)

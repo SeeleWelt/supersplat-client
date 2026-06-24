@@ -10,6 +10,7 @@ import {
     Layer,
     GraphicsDevice,
     MeshInstance,
+    Texture,
     Vec3
 } from 'playcanvas';
 
@@ -32,6 +33,8 @@ import { Underlay } from './underlay';
 
 // sort meshInstances by the aabb corner furthest from the camera
 const corner = new Vec3();
+const DEFAULT_ENV_ATLAS_URL = 'static/env/VertebraeHDRI_v1_512.png';
+
 const specialSort = (instances: MeshInstance[], numInstances: number, cameraPos: Vec3, cameraDir: Vec3) => {
     const distances = new Map<MeshInstance, number>();
 
@@ -104,9 +107,10 @@ class Scene {
     meshLight: Entity;
     meshFillLight: Entity;
     meshRimLight: Entity;
+    meshEnvironmentAtlas: Texture | null = null;
     meshLighting = {
-        ambientIntensity: 0.16,
-        keyIntensity: 2.35,
+        ambientIntensity: 0.8,
+        keyIntensity: 0.85,
         keyYaw: -35,
         keyPitch: 55,
         keyColor: new Color(1, 1, 1)
@@ -223,6 +227,7 @@ class Scene {
 
         this.dataProcessor = new DataProcessor(this.app.graphicsDevice);
         this.assetLoader = new AssetLoader(this.app, events);
+        this.loadDefaultEnvironmentAtlas();
 
         // create root entities
         this.contentRoot = new Entity('contentRoot');
@@ -244,7 +249,7 @@ class Scene {
         this.meshFillLight.addComponent('light', {
             type: 'directional',
             color: new Color(0.7, 0.78, 1),
-            intensity: this.meshLighting.keyIntensity * 0.18,
+            intensity: this.meshLighting.keyIntensity * 0.08,
             castShadows: false
         });
         this.app.root.addChild(this.meshFillLight);
@@ -253,7 +258,7 @@ class Scene {
         this.meshRimLight.addComponent('light', {
             type: 'directional',
             color: new Color(1, 0.95, 0.86),
-            intensity: this.meshLighting.keyIntensity * 0.22,
+            intensity: this.meshLighting.keyIntensity * 0.08,
             castShadows: false
         });
         this.app.root.addChild(this.meshRimLight);
@@ -381,16 +386,32 @@ class Scene {
 
     private applyMeshLighting() {
         const { ambientIntensity, keyIntensity, keyYaw, keyPitch, keyColor } = this.meshLighting;
-        this.app.scene.ambientLight = new Color(ambientIntensity, ambientIntensity, ambientIntensity);
+        this.app.scene.ambientLight = new Color(0, 0, 0);
+        this.app.scene.skyboxIntensity = ambientIntensity;
         this.meshLight.setLocalEulerAngles(keyPitch, keyYaw, 0);
         this.meshLight.light.color = keyColor;
         this.meshLight.light.intensity = keyIntensity;
 
         this.meshFillLight.setLocalEulerAngles(18, keyYaw + 145, 0);
-        this.meshFillLight.light.intensity = keyIntensity * 0.18;
+        this.meshFillLight.light.intensity = keyIntensity * 0.08;
 
         this.meshRimLight.setLocalEulerAngles(25, keyYaw - 145, 0);
-        this.meshRimLight.light.intensity = keyIntensity * 0.22;
+        this.meshRimLight.light.intensity = keyIntensity * 0.08;
+    }
+
+    private loadDefaultEnvironmentAtlas() {
+        const url = new URL(DEFAULT_ENV_ATLAS_URL, document.baseURI).toString();
+        this.app.assets.loadFromUrlAndFilename(url, 'VertebraeHDRI_v1_512.png', 'texture', (error, asset) => {
+            if (error || !asset?.resource) {
+                console.warn(`Failed to load default mesh environment atlas: ${error ?? DEFAULT_ENV_ATLAS_URL}`);
+                return;
+            }
+
+            this.meshEnvironmentAtlas = asset.resource as Texture;
+            this.app.scene.envAtlas = this.meshEnvironmentAtlas;
+            this.forceRender = true;
+            this.events.fire('scene.environmentChanged');
+        });
     }
 
     private forEachElement(action: (e: Element) => void) {

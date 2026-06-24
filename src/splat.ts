@@ -16,6 +16,7 @@ import {
 } from 'playcanvas';
 
 import { Element, ElementType } from './element';
+import { displayNameForFile } from './file-name';
 import { Serializer } from './serializer';
 import { vertexShader, fragmentShader, gsplatCenter } from './shaders/splat-shader';
 import { State, SplatState } from './splat-state';
@@ -83,7 +84,7 @@ class Splat extends Element {
         const splatData = splatResource.gsplatData;
         const { device } = splatResource;
 
-        this._name = (asset.file as any).filename;
+        this._name = displayNameForFile((asset.file as any).filename);
         this.asset = asset;
         this.splatData = splatData as GSplatData;
         this.numSplats = splatData.numSplats;

@@ -414,6 +414,11 @@ class Camera extends Element {
         }
     }
 
+    setBackgroundColor(color: Color) {
+        this.clearPass?.setClearColor(color);
+        this.scene.forceRender = true;
+    }
+
     remove() {
         const { scene } = this;
 
@@ -524,7 +529,9 @@ class Camera extends Element {
 
             // clear all targets
             this.clearPass.init(this.splatTarget);
-            this.clearPass.setClearColor(new Color(0, 0, 0, 0));
+            this.clearPass.setClearColor(
+                scene.events.functions.has('bgClr') ? scene.events.invoke('bgClr') : new Color(0, 0, 0, 0)
+            );
             this.clearPass.setClearDepth(1);
             this.clearPass.setClearStencil(0);
 

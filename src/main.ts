@@ -204,6 +204,7 @@ const main = async () => {
     events.on('bgClr', (clr: Color) => {
         const cnv = (v: number) => `${Math.max(0, Math.min(255, (v * 255))).toFixed(0)}`;
         document.body.style.backgroundColor = `rgba(${cnv(clr.r)},${cnv(clr.g)},${cnv(clr.b)},1)`;
+        scene.camera.setBackgroundColor(clr);
     });
     events.on('selectedClr', (clr: Color) => {
         scene.forceRender = true;

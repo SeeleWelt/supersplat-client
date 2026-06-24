@@ -2,6 +2,7 @@ import { ReadFileSystem } from '@playcanvas/splat-transform';
 import { AppBase, Asset, GSplatResource, Quat } from 'playcanvas';
 
 import { Events } from './events';
+import { displayNameForFile } from './file-name';
 import { loadGSplatData, validateGSplatData } from './io';
 import { ModelElement } from './model-element';
 import { parseObjModel } from './obj-parser';
@@ -60,6 +61,10 @@ const basename = (uri: string) => {
     return normalized.substring(normalized.lastIndexOf('/') + 1);
 };
 
+const displayNameForSource = (filename: string, sourceFiles?: SourceFile[]) => {
+    return displayNameForFile(sourceFiles?.[0]?.filename ?? filename);
+};
+
 // handles loading gsplat assets using splat-transform
 class AssetLoader {
     app: AppBase;
@@ -83,12 +88,13 @@ class AssetLoader {
 
         try {
             const lowerFilename = filename.toLowerCase();
+            const displayName = displayNameForSource(filename, sourceFiles);
             if (conversionOnlyModelExtensions.some(ext => lowerFilename.endsWith(ext))) {
                 throw new Error(localize('popup.browser-import-conversion-required'));
             }
 
             if (endsWithAny(lowerFilename, directModelExtensions)) {
-                return await this.loadModel(filename, fileSystem, sourceFiles);
+                return await this.loadModel(filename, fileSystem, sourceFiles, displayName);
             }
 
             try {
@@ -96,7 +102,7 @@ class AssetLoader {
                 const { gsplatData } = await loadGSplatData(filename, fileSystem, skipReorder || animationFrame);
                 validateGSplatData(gsplatData);
 
-                const asset = new Asset(filename, 'gsplat', { url: `local-asset-${Date.now()}`, filename });
+                const asset = new Asset(displayName, 'gsplat', { url: `local-asset-${Date.now()}`, filename: displayName });
                 this.app.assets.add(asset);
                 asset.resource = new GSplatResource(this.app.graphicsDevice, gsplatData);
 
@@ -107,7 +113,7 @@ class AssetLoader {
                 }
 
                 const data = parsePlyModel(await readAllBytes(filename, fileSystem));
-                return new ModelElement(filename, data);
+                return new ModelElement(filename, data, displayName);
             }
         } finally {
             if (!animationFrame) {
@@ -116,21 +122,21 @@ class AssetLoader {
         }
     }
 
-    private async loadModel(filename: string, fileSystem: ReadFileSystem, sourceFiles?: SourceFile[]) {
+    private async loadModel(filename: string, fileSystem: ReadFileSystem, sourceFiles?: SourceFile[], displayName = displayNameForSource(filename, sourceFiles)) {
         const lowerFilename = filename.toLowerCase();
 
         if (lowerFilename.endsWith('.obj')) {
-            return new ModelElement(filename, parseObjModel(await readText(filename, fileSystem)));
+            return new ModelElement(filename, parseObjModel(await readText(filename, fileSystem)), displayName);
         }
 
         if (lowerFilename.endsWith('.stl')) {
-            return new ModelElement(filename, parseStlModel(await readAllBytes(filename, fileSystem)));
+            return new ModelElement(filename, parseStlModel(await readAllBytes(filename, fileSystem)), displayName);
         }
 
-        return await this.loadContainerModel(filename, fileSystem, sourceFiles);
+        return await this.loadContainerModel(filename, fileSystem, sourceFiles, displayName);
     }
 
-    private async loadContainerModel(filename: string, fileSystem: ReadFileSystem, sourceFiles?: SourceFile[]) {
+    private async loadContainerModel(filename: string, fileSystem: ReadFileSystem, sourceFiles?: SourceFile[], displayName = displayNameForSource(filename, sourceFiles)) {
         const createdUrls: string[] = [];
         const lowerFilename = filename.toLowerCase();
         let blob: Blob = new Blob([await readAllBytes(filename, fileSystem)]);
@@ -172,7 +178,7 @@ class AssetLoader {
 
         try {
             const asset = await new Promise<Asset>((resolve, reject) => {
-                this.app.assets.loadFromUrlAndFilename(url, filename, 'container', (error, asset) => {
+                this.app.assets.loadFromUrlAndFilename(url, displayName, 'container', (error, asset) => {
                     if (error) {
                         reject(error);
                     } else {
@@ -184,8 +190,8 @@ class AssetLoader {
                 castShadows: false,
                 receiveShadows: false
             });
-            entity.name = filename;
-            return new ModelElement(filename, entity);
+            entity.name = displayName;
+            return new ModelElement(filename, entity, displayName);
         } finally {
             createdUrls.forEach(objectUrl => URL.revokeObjectURL(objectUrl));
         }

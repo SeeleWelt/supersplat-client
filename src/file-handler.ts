@@ -325,7 +325,8 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
                 mainFile.url :
                 mainFile.filename;
 
-            const model = await scene.assetLoader.load(filename, fileSystem, animationFrame, false, files);
+            const sourceFiles = [mainFile, ...files.filter(file => file !== mainFile)];
+            const model = await scene.assetLoader.load(filename, fileSystem, animationFrame, false, sourceFiles);
             await scene.add(model);
             return model;
         } catch (error) {
