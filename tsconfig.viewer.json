@@ -1,0 +1,14 @@
+{
+    "extends": "./tsconfig.json",
+    "include": [
+        "./viewer-client/**/*.ts",
+        "./src/**/*.ts",
+        "global.d.ts"
+    ],
+    "exclude": [
+        "src/debug.ts",
+        "dist",
+        "dist-viewer",
+        "node_modules"
+    ]
+}

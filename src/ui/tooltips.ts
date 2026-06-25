@@ -28,14 +28,25 @@ class Tooltips extends Container {
         let activeTarget: Element | null = null;
 
         this.register = (target: Element, textString: string, direction: Direction = 'bottom') => {
-            if (!target.dom.getAttribute('title')) {
-                target.dom.setAttribute('title', textString);
-            }
+            let currentText = target.dom.getAttribute('title') || textString;
             if (!target.dom.getAttribute('aria-label')) {
-                target.dom.setAttribute('aria-label', textString);
+                target.dom.setAttribute('aria-label', currentText);
             }
 
+            const syncText = () => {
+                const title = target.dom.getAttribute('title');
+                if (title) {
+                    currentText = title;
+                    target.dom.setAttribute('aria-label', currentText);
+                    target.dom.removeAttribute('title');
+                }
+                return currentText;
+            };
+
+            syncText();
+
             const activate = () => {
+                const tooltipText = syncText();
                 activeTarget = target;
                 const rect = target.dom.getBoundingClientRect();
                 const midx = Math.floor((rect.left + rect.right) * 0.5);
@@ -64,7 +75,7 @@ class Tooltips extends Container {
                         break;
                 }
 
-                text.text = textString;
+                text.text = tooltipText;
                 this.hidden = false;
                 // inline-block so max-width / wrapping in SCSS apply (inline
                 // would stay one long line).

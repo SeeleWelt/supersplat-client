@@ -147,8 +147,8 @@ const vertexShader = /* glsl */ `
                 gaussianClr = unselectedClr.xyz;
             }
 
-            // choose between selection colors and gaussian color
-            varying_color = vec4(mix(gaussianClr, selectedClr.xyz, (splatState == 1u) ? selectedClr.w : 0.0), unselectedClr.w);
+            // Keep center/selection overlays independent from the viewport background.
+            varying_color = vec4(mix(gaussianClr, selectedClr.xyz, (splatState == 1u) ? selectedClr.w : 0.0), 1.0);
 
             gl_Position = matrix_viewProjection * model * vec4(center, 1.0);
 

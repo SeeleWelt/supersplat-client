@@ -116,6 +116,7 @@ pub fn run() {
       }
     })
     .invoke_handler(tauri::generate_handler![
+      open_native_file_dialog,
       resolve_native_dropped_files,
       window_minimize,
       window_toggle_maximize,
@@ -135,6 +136,38 @@ pub fn run() {
     })
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
+}
+
+#[tauri::command]
+fn open_native_file_dialog() -> Vec<String> {
+    rfd::FileDialog::new()
+        .add_filter(
+            "Supported scene files",
+            &[
+                "ply",
+                "splat",
+                "json",
+                "webp",
+                "sog",
+                "lcc",
+                "bin",
+                "txt",
+                "ksplat",
+                "spz",
+                "glb",
+                "gltf",
+                "obj",
+                "stl",
+                "png",
+                "jpg",
+                "jpeg",
+            ],
+        )
+        .pick_files()
+        .unwrap_or_default()
+        .into_iter()
+        .map(|path| path.to_string_lossy().to_string())
+        .collect()
 }
 
 fn normalize_relative_path(path: &Path) -> String {

@@ -1,9 +1,10 @@
-import { BooleanInput, Button, Container, Element, Label } from '@playcanvas/pcui';
+import { BooleanInput, Button, Container, Label } from '@playcanvas/pcui';
 
 import { Events } from '../events';
 import { localize } from './localization';
 import viewerPanelSvg from './svg/viewer-panel.svg';
 import { Tooltips } from './tooltips';
+import { ViewPanel } from './view-panel';
 
 const createSvg = (svgString: string) => {
     const decodedStr = decodeURIComponent(svgString.substring('data:image/svg+xml,'.length));
@@ -23,8 +24,6 @@ class ViewerPanel extends Container {
         ['pointerdown', 'pointerup', 'pointermove', 'wheel', 'dblclick'].forEach((eventName) => {
             this.dom.addEventListener(eventName, (event: Event) => event.stopPropagation());
         });
-
-        let advancedMode = true;
 
         const makeSection = (title: string) => {
             const section = new Container({
@@ -160,22 +159,8 @@ class ViewerPanel extends Container {
         displaySection.append(makeToggleRow(localize('panel.view-options.show-grid'), gridToggle));
         displaySection.append(makeToggleRow(localize('panel.view-options.show-bound'), boundToggle));
 
-        const advancedSection = makeSection(localize('panel.viewer.advanced'));
-        const advancedRow = new Container({
-            class: ['viewer-panel-toggle-row', 'viewer-panel-advanced-row']
-        });
-        const advancedLabel = new Label({
-            class: 'viewer-panel-toggle-label',
-            text: localize('panel.viewer.advanced-editing')
-        });
-        const advancedToggle = new BooleanInput({
-            type: 'toggle',
-            class: 'viewer-panel-toggle',
-            value: true
-        });
-        advancedRow.append(advancedLabel);
-        advancedRow.append(advancedToggle);
-        advancedSection.append(advancedRow);
+        const viewOptionsSection = makeSection(localize('panel.view-options'));
+        viewOptionsSection.append(new ViewPanel(events, tooltips, {}, { embedded: true }));
 
         const setVisible = (visible: boolean) => {
             if (visible === this.hidden) {
@@ -184,34 +169,22 @@ class ViewerPanel extends Container {
             }
 
             if (visible) {
-                events.fire('viewPanel.setVisible', false);
                 events.fire('colorPanel.setVisible', false);
                 events.fire('meshPanel.setVisible', false);
             }
         };
 
-        const setAdvancedMode = (value: boolean) => {
-            advancedMode = value;
-            advancedToggle.value = value;
-            document.body.classList.toggle('viewer-mode', !value);
-            events.fire('viewer.advancedMode', value);
-
-            if (!value) {
-                setVisible(true);
-                events.fire('statusBar.panelChanged', null);
-            }
+        const setAdvancedMode = () => {
+            document.body.classList.remove('viewer-mode');
+            events.fire('viewer.advancedMode', true);
         };
 
-        advancedToggle.on('change', (value: boolean) => {
-            setAdvancedMode(value);
-        });
-
         events.function('viewer.advancedMode', () => {
-            return advancedMode;
+            return true;
         });
 
-        events.on('viewer.setAdvancedMode', (value: boolean) => {
-            setAdvancedMode(value);
+        events.on('viewer.setAdvancedMode', () => {
+            setAdvancedMode();
         });
 
         events.function('viewerPanel.visible', () => {
@@ -252,18 +225,10 @@ class ViewerPanel extends Container {
             events.fire('camera.setBound', value);
         });
 
-        events.on('viewPanel.visible', (visible: boolean) => {
-            if (visible) {
-                setVisible(false);
-            } else if (!events.invoke('colorPanel.visible') && !events.invoke('meshPanel.visible')) {
-                setVisible(true);
-            }
-        });
-
         events.on('colorPanel.visible', (visible: boolean) => {
             if (visible) {
                 setVisible(false);
-            } else if (!events.invoke('viewPanel.visible') && !events.invoke('meshPanel.visible')) {
+            } else if (!events.invoke('meshPanel.visible')) {
                 setVisible(true);
             }
         });
@@ -271,7 +236,7 @@ class ViewerPanel extends Container {
         events.on('meshPanel.visible', (visible: boolean) => {
             if (visible) {
                 setVisible(false);
-            } else if (!events.invoke('viewPanel.visible') && !events.invoke('colorPanel.visible')) {
+            } else if (!events.invoke('colorPanel.visible')) {
                 setVisible(true);
             }
         });
@@ -280,11 +245,12 @@ class ViewerPanel extends Container {
         this.append(presetSection);
         this.append(cameraSection);
         this.append(displaySection);
+        this.append(viewOptionsSection);
 
         tooltips.register(focusButton, localize('tooltip.right-toolbar.frame-selection'), 'left');
         tooltips.register(resetButton, localize('tooltip.right-toolbar.reset-camera'), 'left');
 
-        setAdvancedMode(true);
+        setAdvancedMode();
         setVisible(true);
     }
 }

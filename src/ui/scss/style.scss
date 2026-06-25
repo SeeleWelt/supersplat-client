@@ -111,7 +111,7 @@ body {
     --app-font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', sans-serif;
     --desktop-titlebar-height: 38px;
     --desktop-titlebar-brand-width: 132px;
-    --desktop-window-controls-width: 138px;
+    --desktop-window-controls-width: 180px;
     --desktop-rail-width: 58px;
     --desktop-left-panel-width: 284px;
     --desktop-scene-panel-width: var(--desktop-left-panel-width);
@@ -939,6 +939,20 @@ body.viewer-mode #status-bar {
         background-color: rgba($clr-hilight, 0.12);
     }
 
+    &.settings {
+        margin-right: 2px;
+
+        svg {
+            width: 15px;
+            height: 15px;
+            fill: currentColor;
+        }
+
+        &:hover {
+            color: $clr-icon-hilight;
+        }
+    }
+
     &.minimize::before {
         width: 10px;
         height: 1px;
@@ -1238,4 +1252,2010 @@ body.viewer-mode #status-bar {
     font-family: var(--app-font-family, 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', Arial, Helvetica, sans-serif);
     font-weight: bold;
     font-style: normal;
+}
+
+/* Dialog skin layer. Kept at the end so it wins over legacy popup styles. */
+body {
+    --dialog-overlay: rgba(10, 8, 12, 0.62);
+    --dialog-surface: #17131D;
+    --dialog-surface-soft: #211A25;
+    --dialog-surface-strong: #100E15;
+    --dialog-surface-glow: rgba(255, 255, 255, 0.055);
+    --dialog-header: #221A25;
+    --dialog-control: #120F17;
+    --dialog-control-hover: #28202C;
+    --dialog-control-active: #30283A;
+    --dialog-control-muted: #2A2430;
+    --dialog-text: #F6F1E8;
+    --dialog-muted: #BDB4A8;
+    --dialog-faint: #817970;
+    --dialog-border: rgba(230, 194, 122, 0.24);
+    --dialog-border-strong: rgba(230, 194, 122, 0.48);
+    --dialog-accent: #E6C27A;
+    --dialog-accent-2: #61C6BA;
+    --dialog-accent-ink: #17110A;
+    --dialog-danger: #FF6B6B;
+    --dialog-shadow: rgba(0, 0, 0, 0.46);
+}
+
+body.app-theme-light {
+    --dialog-overlay: rgba(39, 49, 65, 0.34);
+    --dialog-surface: #FFFDF8;
+    --dialog-surface-soft: #F4F7FB;
+    --dialog-surface-strong: #E8EEF5;
+    --dialog-surface-glow: rgba(36, 95, 214, 0.055);
+    --dialog-header: #FFFFFF;
+    --dialog-control: #FFFFFF;
+    --dialog-control-hover: #EAF1FB;
+    --dialog-control-active: #DDE8F8;
+    --dialog-control-muted: #EDF2F7;
+    --dialog-text: #18212E;
+    --dialog-muted: #4F5C6B;
+    --dialog-faint: #7C8794;
+    --dialog-border: rgba(42, 59, 81, 0.18);
+    --dialog-border-strong: rgba(36, 95, 214, 0.48);
+    --dialog-accent: #245FD6;
+    --dialog-accent-2: #C77D32;
+    --dialog-accent-ink: #FFFFFF;
+    --dialog-danger: #C73939;
+    --dialog-shadow: rgba(27, 39, 56, 0.20);
+}
+
+#popup,
+#export-popup,
+#shortcuts-popup,
+#about-popup,
+.settings-dialog,
+#progress-container,
+#spinner-container {
+    background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent),
+        var(--dialog-overlay) !important;
+    backdrop-filter: blur(7px) saturate(0.92);
+}
+
+#popup-dialog,
+#export-popup > #dialog,
+#shortcuts-popup > #dialog,
+#about-popup #about-dialog,
+.settings-dialog > #dialog,
+#progress-container #dialog,
+#spinner-container .spinner-panel {
+    position: absolute;
+    overflow: hidden;
+    isolation: isolate;
+    color: var(--dialog-text) !important;
+    border: 1px solid var(--dialog-border) !important;
+    border-radius: 8px !important;
+    background:
+        linear-gradient(180deg, var(--dialog-surface-glow), transparent 42%),
+        var(--dialog-surface) !important;
+    box-shadow:
+        0 28px 64px var(--dialog-shadow),
+        0 0 0 1px rgba(255, 255, 255, 0.025) inset !important;
+    filter: none !important;
+}
+
+#popup-dialog::before,
+#export-popup > #dialog::before,
+#shortcuts-popup > #dialog::before,
+#about-popup #about-dialog::before,
+.settings-dialog > #dialog::before,
+#progress-container #dialog::before,
+#spinner-container .spinner-panel::before {
+    content: '';
+    position: absolute;
+    z-index: 2;
+    left: 0;
+    top: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--dialog-accent), var(--dialog-accent-2));
+    pointer-events: none;
+}
+
+#popup-dialog::after,
+#export-popup > #dialog::after,
+#shortcuts-popup > #dialog::after,
+#about-popup #about-dialog::after,
+.settings-dialog > #dialog::after,
+#progress-container #dialog::after {
+    content: '';
+    position: absolute;
+    z-index: 2;
+    left: 0;
+    top: 3px;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--dialog-accent), transparent 62%);
+    opacity: 0.62;
+    pointer-events: none;
+}
+
+#popup-header,
+#export-popup #header,
+#shortcuts-popup #header,
+#about-popup #about-header,
+.settings-dialog #dialog #header,
+#progress-container #dialog #header {
+    min-height: 40px !important;
+    height: auto !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 16px 0 18px !important;
+    color: var(--dialog-text) !important;
+    border-bottom: 1px solid var(--dialog-border) !important;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent),
+        var(--dialog-header) !important;
+    text-transform: none !important;
+}
+
+#popup-header,
+#export-popup #header,
+#shortcuts-popup #header,
+#about-popup #about-header,
+.settings-dialog #dialog #header #text,
+.settings-dialog #dialog #header .pcui-label,
+#progress-container #dialog #header {
+    color: var(--dialog-text) !important;
+    font-weight: 800;
+    letter-spacing: 0;
+}
+
+.settings-dialog #dialog #header #icon,
+#export-popup #header #icon {
+    color: var(--dialog-accent) !important;
+}
+
+#popup-text,
+#popup-link-text,
+#export-popup #content,
+#shortcuts-popup #content,
+#about-popup #about-content,
+.settings-dialog #dialog #content,
+#progress-container #content,
+#spinner-container .spinner-message {
+    color: var(--dialog-text) !important;
+    background: transparent !important;
+}
+
+#popup-text {
+    padding: 24px 24px 18px !important;
+    line-height: 1.55;
+}
+
+#popup-text::before {
+    color: var(--dialog-accent) !important;
+}
+
+#popup-text.error::before {
+    color: var(--dialog-danger) !important;
+}
+
+#popup-link-text,
+.shortcut-key,
+.about-dep-row,
+.preferences-shortcut-conflict,
+.preferences-shortcut-list,
+.preferences-shortcut-group-title {
+    color: var(--dialog-text) !important;
+    border: 1px solid var(--dialog-border) !important;
+    background: var(--dialog-control) !important;
+}
+
+#popup-link-text a,
+#about-app-version,
+.about-dep-name,
+.shortcut-header-label,
+.preferences-section-title,
+.preferences-sidebar-icon {
+    color: var(--dialog-accent) !important;
+}
+
+#popup-buttons,
+#export-popup #footer,
+.settings-dialog #dialog #footer {
+    border-top: 1px solid var(--dialog-border) !important;
+    background:
+        linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.07)),
+        var(--dialog-surface-soft) !important;
+}
+
+#popup-buttons {
+    gap: 8px;
+    margin: 0 !important;
+    padding: 12px !important;
+}
+
+#export-popup #footer,
+.settings-dialog #dialog #footer {
+    padding: 10px 12px 12px !important;
+}
+
+#popup .pcui-button,
+#popup .popup-button,
+#export-popup .pcui-button,
+#shortcuts-popup .pcui-button,
+#about-popup .pcui-button,
+.settings-dialog .pcui-button,
+#progress-container .pcui-button,
+#popup-link-copy {
+    min-height: 30px;
+    color: var(--dialog-text) !important;
+    border: 1px solid var(--dialog-border) !important;
+    border-radius: 8px !important;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
+        var(--dialog-control) !important;
+    box-shadow: none !important;
+}
+
+#popup .pcui-button:hover,
+#popup .popup-button:hover,
+#export-popup .pcui-button:hover,
+#shortcuts-popup .pcui-button:hover,
+#about-popup .pcui-button:hover,
+.settings-dialog .pcui-button:hover,
+#progress-container .pcui-button:hover,
+#popup-link-copy:hover {
+    color: var(--dialog-text) !important;
+    border-color: var(--dialog-border-strong) !important;
+    background: var(--dialog-control-hover) !important;
+}
+
+#popup-buttons .popup-button:not(.pcui-hidden):first-child,
+#popup-buttons.yesno .popup-button:nth-child(3),
+#export-popup #footer .pcui-button:last-child,
+.settings-dialog #dialog #footer .pcui-button:last-child,
+#progress-container #cancel-button {
+    color: var(--dialog-accent-ink) !important;
+    border-color: transparent !important;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.06)),
+        var(--dialog-accent) !important;
+}
+
+#popup-buttons .popup-button:not(.pcui-hidden):first-child:hover,
+#popup-buttons.yesno .popup-button:nth-child(3):hover,
+#export-popup #footer .pcui-button:last-child:hover,
+.settings-dialog #dialog #footer .pcui-button:last-child:hover,
+#progress-container #cancel-button:hover {
+    color: var(--dialog-accent-ink) !important;
+    filter: brightness(1.05);
+}
+
+#popup .pcui-button.pcui-disabled,
+#export-popup .pcui-button.pcui-disabled,
+#shortcuts-popup .pcui-button.pcui-disabled,
+#about-popup .pcui-button.pcui-disabled,
+.settings-dialog .pcui-button.pcui-disabled {
+    color: var(--dialog-faint) !important;
+    border-color: var(--dialog-border) !important;
+    background: var(--dialog-control-muted) !important;
+    opacity: 1 !important;
+}
+
+#export-popup .label,
+.settings-dialog .label,
+.settings-dialog .preferences-row-description,
+.settings-dialog .preferences-page-description,
+.shortcut-action,
+.about-dep-revision,
+#progress-container #text,
+#spinner-container .spinner-message {
+    color: var(--dialog-muted) !important;
+}
+
+#about-app-name,
+.about-dep-version,
+.shortcut-action-label,
+.preferences-sidebar-title,
+.preferences-page #text,
+.settings-dialog .pcui-label,
+#spinner-container .spinner-title {
+    color: var(--dialog-text) !important;
+}
+
+#about-logo {
+    border: 1px solid var(--dialog-border);
+    border-radius: 8px !important;
+    box-shadow: 0 12px 28px var(--dialog-shadow) !important;
+}
+
+.about-dep-row,
+.shortcut-entry,
+.preferences-shortcut-row,
+.preferences-nav-item {
+    border-radius: 8px !important;
+}
+
+.about-dep-row:hover,
+.shortcut-entry:hover,
+.preferences-shortcut-row:hover,
+.preferences-nav-item:hover {
+    background: var(--dialog-control-hover) !important;
+}
+
+.preferences-dialog {
+    background: var(--dialog-overlay) !important;
+}
+
+.preferences-dialog #dialog {
+    background: var(--dialog-surface) !important;
+}
+
+.preferences-dialog .preferences-sidebar {
+    color: var(--dialog-text) !important;
+    border-right: 1px solid var(--dialog-border) !important;
+    background:
+        linear-gradient(180deg, var(--dialog-surface-soft), var(--dialog-surface-strong)) !important;
+}
+
+.preferences-dialog .preferences-page,
+.preferences-dialog #content {
+    color: var(--dialog-text) !important;
+    background: var(--dialog-surface) !important;
+}
+
+.preferences-dialog .preferences-section {
+    border-color: var(--dialog-border) !important;
+}
+
+.preferences-dialog .preferences-nav-item.active {
+    color: var(--dialog-accent-ink) !important;
+    border-color: transparent !important;
+    background:
+        linear-gradient(90deg, var(--dialog-accent), var(--dialog-accent-2)) !important;
+    box-shadow: none !important;
+}
+
+.preferences-dialog .preferences-nav-item.active::before {
+    color: currentColor !important;
+}
+
+.preferences-shortcut-row.recording,
+.preferences-shortcut-row.conflict-source,
+.preferences-shortcut-row.conflict-target,
+.preferences-shortcut-conflict.active {
+    border-color: var(--dialog-danger) !important;
+    background: color-mix(in srgb, var(--dialog-danger) 13%, var(--dialog-control)) !important;
+}
+
+#popup .pcui-text-input,
+#popup input,
+#export-popup .pcui-select-input,
+#export-popup .pcui-text-input,
+#export-popup .pcui-text-area-input,
+#export-popup .pcui-numeric-input,
+#export-popup .pcui-vector-input,
+#export-popup .pcui-slider,
+#export-popup .pcui-color-picker,
+.settings-dialog .pcui-boolean-input,
+#export-popup .pcui-boolean-input,
+.settings-dialog .pcui-select-input,
+.settings-dialog .pcui-text-input,
+.settings-dialog .pcui-text-area-input,
+.settings-dialog .pcui-numeric-input,
+.settings-dialog .pcui-vector-input,
+.settings-dialog .pcui-slider,
+.settings-dialog .pcui-color-picker,
+.settings-dialog input,
+.settings-dialog textarea,
+.settings-dialog .shortcut-binding-button {
+    color: var(--dialog-text) !important;
+    border-color: var(--dialog-border) !important;
+    border-radius: 8px !important;
+    background: var(--dialog-control) !important;
+}
+
+#export-popup .pcui-select-input:hover,
+#export-popup .pcui-text-input:hover,
+#export-popup .pcui-numeric-input:hover,
+#export-popup .pcui-vector-input:hover,
+.settings-dialog .pcui-select-input:hover,
+.settings-dialog .pcui-text-input:hover,
+.settings-dialog .pcui-numeric-input:hover,
+.settings-dialog .pcui-vector-input:hover,
+.settings-dialog .shortcut-binding-button:hover {
+    border-color: var(--dialog-border-strong) !important;
+    background: var(--dialog-control-hover) !important;
+}
+
+#export-popup .pcui-select-input:focus-within,
+#export-popup .pcui-text-input:focus-within,
+#export-popup .pcui-numeric-input:focus-within,
+#export-popup .pcui-vector-input:focus-within,
+.settings-dialog .pcui-select-input:focus-within,
+.settings-dialog .pcui-text-input:focus-within,
+.settings-dialog .pcui-numeric-input:focus-within,
+.settings-dialog .pcui-vector-input:focus-within,
+.settings-dialog .shortcut-binding-button:focus-visible {
+    border-color: var(--dialog-accent) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--dialog-accent) 24%, transparent) !important;
+}
+
+#export-popup .pcui-select-input-value,
+#export-popup .pcui-select-input-icon,
+#export-popup .pcui-text-input input,
+#export-popup .pcui-numeric-input input,
+#export-popup textarea,
+.settings-dialog .pcui-select-input-value,
+.settings-dialog .pcui-select-input-icon,
+.settings-dialog .pcui-text-input input,
+.settings-dialog .pcui-numeric-input input,
+.settings-dialog textarea {
+    color: var(--dialog-text) !important;
+    -webkit-text-fill-color: var(--dialog-text) !important;
+}
+
+#export-popup .pcui-disabled,
+.settings-dialog .pcui-disabled {
+    color: var(--dialog-faint) !important;
+    -webkit-text-fill-color: var(--dialog-faint) !important;
+    opacity: 1 !important;
+}
+
+#export-popup .pcui-disabled input,
+.settings-dialog .pcui-disabled input,
+#export-popup .pcui-disabled .pcui-select-input-value,
+.settings-dialog .pcui-disabled .pcui-select-input-value {
+    color: var(--dialog-faint) !important;
+    -webkit-text-fill-color: var(--dialog-faint) !important;
+}
+
+#export-popup .pcui-slider-bar,
+.settings-dialog .pcui-slider-bar {
+    border-color: var(--dialog-border) !important;
+    background: var(--dialog-control-muted) !important;
+}
+
+#export-popup .pcui-slider-handle,
+.settings-dialog .pcui-slider-handle {
+    border-color: var(--dialog-accent) !important;
+    background: var(--dialog-surface) !important;
+}
+
+#export-popup .pcui-boolean-input-toggle,
+.settings-dialog .pcui-boolean-input-toggle {
+    border-color: var(--dialog-border) !important;
+    background: var(--dialog-control-muted) !important;
+}
+
+#export-popup .pcui-boolean-input-toggle::after,
+.settings-dialog .pcui-boolean-input-toggle::after {
+    background: var(--dialog-faint) !important;
+}
+
+#export-popup .pcui-boolean-input-ticked,
+.settings-dialog .pcui-boolean-input-ticked {
+    border-color: var(--dialog-accent) !important;
+    background: var(--dialog-accent) !important;
+}
+
+#export-popup .pcui-boolean-input-ticked::after,
+.settings-dialog .pcui-boolean-input-ticked::after {
+    background: var(--dialog-accent-ink) !important;
+}
+
+body .pcui-select-input-list {
+    color: var(--dialog-text) !important;
+    border: 1px solid var(--dialog-border) !important;
+    border-radius: 8px !important;
+    background: var(--dialog-surface) !important;
+    box-shadow: 0 18px 42px var(--dialog-shadow) !important;
+}
+
+body .pcui-select-input-list .pcui-label,
+body .pcui-select-input-list .pcui-select-input-container-value {
+    color: var(--dialog-text) !important;
+}
+
+body .pcui-select-input-list .pcui-select-input-container-value:hover,
+body .pcui-select-input-list .pcui-label:hover {
+    color: var(--dialog-text) !important;
+    background: var(--dialog-control-hover) !important;
+}
+
+body .pcui-select-input-list .pcui-selected {
+    color: var(--dialog-accent-ink) !important;
+    background: var(--dialog-accent) !important;
+}
+
+body.app-theme-light .pcui-button,
+body.app-theme-light .pcui-select-input,
+body.app-theme-light .pcui-text-input,
+body.app-theme-light .pcui-text-area-input,
+body.app-theme-light .pcui-numeric-input,
+body.app-theme-light .pcui-vector-input,
+body.app-theme-light .pcui-slider,
+body.app-theme-light .pcui-color-picker,
+body.app-theme-light input,
+body.app-theme-light textarea {
+    color: #18212E;
+    border-color: #B9C4D2;
+    background-color: #FFFFFF;
+}
+
+body.app-theme-light .pcui-label,
+body.app-theme-light .pcui-select-input-value,
+body.app-theme-light .pcui-select-input-icon,
+body.app-theme-light .pcui-text-input input,
+body.app-theme-light .pcui-numeric-input input,
+body.app-theme-light textarea {
+    color: #18212E;
+    -webkit-text-fill-color: #18212E;
+}
+
+/* Desktop client dialog skin. This layer intentionally sits last. */
+body {
+    --client-dialog-overlay: rgba(7, 10, 14, 0.56);
+    --client-dialog-window: #20242B;
+    --client-dialog-window-2: #252A32;
+    --client-dialog-pane: #171B21;
+    --client-dialog-pane-2: #1D2229;
+    --client-dialog-control: #12161C;
+    --client-dialog-control-hover: #2C333D;
+    --client-dialog-control-active: #343C48;
+    --client-dialog-control-disabled: #1B2027;
+    --client-dialog-text: #F4F7FA;
+    --client-dialog-muted: #AAB4C0;
+    --client-dialog-faint: #727D89;
+    --client-dialog-border: rgba(142, 155, 171, 0.22);
+    --client-dialog-border-strong: rgba(142, 155, 171, 0.42);
+    --client-dialog-accent: #4EA1FF;
+    --client-dialog-accent-hover: #75B7FF;
+    --client-dialog-accent-2: #50D1AA;
+    --client-dialog-accent-ink: #06111E;
+    --client-dialog-danger: #FF6A6A;
+    --client-dialog-warning: #F2B84B;
+    --client-dialog-shadow: rgba(0, 0, 0, 0.48);
+    --client-dialog-focus: rgba(78, 161, 255, 0.34);
+}
+
+body.app-theme-light {
+    --client-dialog-overlay: rgba(30, 39, 52, 0.30);
+    --client-dialog-window: #F7F9FC;
+    --client-dialog-window-2: #FFFFFF;
+    --client-dialog-pane: #EEF2F6;
+    --client-dialog-pane-2: #F8FAFC;
+    --client-dialog-control: #FFFFFF;
+    --client-dialog-control-hover: #E9F2FE;
+    --client-dialog-control-active: #D9EAFD;
+    --client-dialog-control-disabled: #EDF1F5;
+    --client-dialog-text: #17202B;
+    --client-dialog-muted: #536172;
+    --client-dialog-faint: #8A96A4;
+    --client-dialog-border: rgba(69, 84, 105, 0.20);
+    --client-dialog-border-strong: rgba(53, 110, 190, 0.38);
+    --client-dialog-accent: #256FD8;
+    --client-dialog-accent-hover: #1C5FBF;
+    --client-dialog-accent-2: #0E9F83;
+    --client-dialog-accent-ink: #FFFFFF;
+    --client-dialog-danger: #C94444;
+    --client-dialog-warning: #A36A00;
+    --client-dialog-shadow: rgba(39, 54, 75, 0.22);
+    --client-dialog-focus: rgba(37, 111, 216, 0.24);
+}
+
+#popup,
+#export-popup,
+#shortcuts-popup,
+#about-popup,
+.settings-dialog,
+#progress-container,
+#spinner-container {
+    background:
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.06), transparent 38%),
+        var(--client-dialog-overlay) !important;
+    backdrop-filter: blur(12px) saturate(0.96);
+}
+
+#popup-dialog,
+#export-popup > #dialog,
+#shortcuts-popup > #dialog,
+#about-popup #about-dialog,
+.settings-dialog > #dialog,
+#progress-container #dialog,
+#spinner-container .spinner-panel {
+    color: var(--client-dialog-text) !important;
+    border: 1px solid var(--client-dialog-border) !important;
+    border-radius: 7px !important;
+    background:
+        linear-gradient(180deg, var(--client-dialog-window-2), var(--client-dialog-window)) !important;
+    box-shadow:
+        0 32px 76px var(--client-dialog-shadow),
+        0 1px 0 rgba(255, 255, 255, 0.08) inset !important;
+    filter: none !important;
+}
+
+#popup-dialog::before,
+#export-popup > #dialog::before,
+#shortcuts-popup > #dialog::before,
+#about-popup #about-dialog::before,
+.settings-dialog > #dialog::before,
+#progress-container #dialog::before,
+#spinner-container .spinner-panel::before {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--client-dialog-accent), var(--client-dialog-accent-2), transparent);
+    opacity: 0.82;
+}
+
+#popup-dialog::after,
+#export-popup > #dialog::after,
+#shortcuts-popup > #dialog::after,
+#about-popup #about-dialog::after,
+.settings-dialog > #dialog::after,
+#progress-container #dialog::after {
+    display: none;
+}
+
+#popup-header,
+#export-popup #header,
+#shortcuts-popup #header,
+#about-popup #about-header,
+.settings-dialog #dialog #header,
+#progress-container #dialog #header {
+    min-height: 42px !important;
+    padding: 0 14px !important;
+    border-bottom: 1px solid var(--client-dialog-border) !important;
+    background: var(--client-dialog-pane) !important;
+    color: var(--client-dialog-text) !important;
+}
+
+#popup-header,
+#export-popup #header,
+#shortcuts-popup #header,
+#about-popup #about-header,
+.settings-dialog #dialog #header #text,
+.settings-dialog #dialog #header .pcui-label,
+#progress-container #dialog #header {
+    color: var(--client-dialog-text) !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+}
+
+.settings-dialog #dialog #header #icon,
+#export-popup #header #icon {
+    color: var(--client-dialog-accent) !important;
+}
+
+#popup-text,
+#popup-link-text,
+#export-popup #content,
+#shortcuts-popup #content,
+#about-popup #about-content,
+.settings-dialog #dialog #content,
+#progress-container #content,
+#spinner-container .spinner-message {
+    color: var(--client-dialog-text) !important;
+    background: var(--client-dialog-window) !important;
+}
+
+#popup-text {
+    padding: 22px 24px 18px !important;
+    line-height: 1.56 !important;
+}
+
+#popup-link-text,
+.shortcut-key,
+.about-dep-row,
+.preferences-shortcut-conflict,
+.preferences-shortcut-list,
+.preferences-shortcut-group-title {
+    color: var(--client-dialog-text) !important;
+    border: 1px solid var(--client-dialog-border) !important;
+    background: var(--client-dialog-control) !important;
+}
+
+#popup-link-text a,
+#about-app-version,
+.about-dep-name,
+.shortcut-header-label,
+.preferences-section-title,
+.preferences-sidebar-icon {
+    color: var(--client-dialog-accent) !important;
+}
+
+#popup-text::before {
+    color: var(--client-dialog-accent) !important;
+}
+
+#popup-text.error::before,
+.preferences-shortcut-row.conflict-source .shortcut-binding-button,
+.preferences-shortcut-conflict.active {
+    color: var(--client-dialog-danger) !important;
+}
+
+#popup-buttons,
+#export-popup #footer,
+.settings-dialog #dialog #footer {
+    border-top: 1px solid var(--client-dialog-border) !important;
+    background: var(--client-dialog-pane) !important;
+}
+
+#popup-buttons {
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 12px !important;
+}
+
+#export-popup #footer,
+.settings-dialog #dialog #footer {
+    padding: 10px 12px 12px !important;
+}
+
+#popup .pcui-button,
+#popup .popup-button,
+#export-popup .pcui-button,
+#shortcuts-popup .pcui-button,
+#about-popup .pcui-button,
+.settings-dialog .pcui-button,
+#progress-container .pcui-button,
+#popup-link-copy,
+.settings-dialog .shortcut-binding-button {
+    min-height: 30px !important;
+    color: var(--client-dialog-text) !important;
+    border: 1px solid var(--client-dialog-border) !important;
+    border-radius: 6px !important;
+    background: var(--client-dialog-control) !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+#popup .pcui-button:hover,
+#popup .popup-button:hover,
+#export-popup .pcui-button:hover,
+#shortcuts-popup .pcui-button:hover,
+#about-popup .pcui-button:hover,
+.settings-dialog .pcui-button:hover,
+#progress-container .pcui-button:hover,
+#popup-link-copy:hover,
+.settings-dialog .shortcut-binding-button:hover {
+    color: var(--client-dialog-text) !important;
+    border-color: var(--client-dialog-border-strong) !important;
+    background: var(--client-dialog-control-hover) !important;
+}
+
+#popup-buttons .popup-button:not(.pcui-hidden):first-child,
+#popup-buttons.yesno .popup-button:nth-child(3),
+#export-popup #footer .pcui-button:last-child,
+.settings-dialog #dialog #footer .pcui-button:last-child {
+    color: var(--client-dialog-accent-ink) !important;
+    border-color: color-mix(in srgb, var(--client-dialog-accent) 80%, black) !important;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.05)),
+        var(--client-dialog-accent) !important;
+}
+
+#progress-container #cancel-button {
+    color: var(--client-dialog-text) !important;
+    border-color: var(--client-dialog-border) !important;
+    background: var(--client-dialog-control) !important;
+}
+
+#popup-buttons .popup-button:not(.pcui-hidden):first-child:hover,
+#popup-buttons.yesno .popup-button:nth-child(3):hover,
+#export-popup #footer .pcui-button:last-child:hover,
+.settings-dialog #dialog #footer .pcui-button:last-child:hover {
+    color: var(--client-dialog-accent-ink) !important;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.02)),
+        var(--client-dialog-accent-hover) !important;
+    filter: none !important;
+}
+
+#popup .pcui-button.pcui-disabled,
+#export-popup .pcui-button.pcui-disabled,
+#shortcuts-popup .pcui-button.pcui-disabled,
+#about-popup .pcui-button.pcui-disabled,
+.settings-dialog .pcui-button.pcui-disabled,
+.settings-dialog .pcui-disabled,
+#export-popup .pcui-disabled {
+    color: var(--client-dialog-faint) !important;
+    border-color: var(--client-dialog-border) !important;
+    background: var(--client-dialog-control-disabled) !important;
+    opacity: 1 !important;
+}
+
+#export-popup .label,
+.settings-dialog .label,
+.settings-dialog .preferences-row-description,
+.settings-dialog .preferences-page-description,
+.shortcut-action,
+.about-dep-revision,
+#progress-container #text,
+#spinner-container .spinner-message {
+    color: var(--client-dialog-muted) !important;
+}
+
+#about-app-name,
+.about-dep-version,
+.shortcut-action-label,
+.preferences-sidebar-title,
+.preferences-page #text,
+.settings-dialog .pcui-label,
+#spinner-container .spinner-title {
+    color: var(--client-dialog-text) !important;
+}
+
+#about-logo {
+    border: 1px solid var(--client-dialog-border) !important;
+    border-radius: 7px !important;
+    background: var(--client-dialog-pane) !important;
+    box-shadow: 0 14px 28px var(--client-dialog-shadow) !important;
+}
+
+.about-dep-row,
+.shortcut-entry,
+.preferences-shortcut-row,
+.preferences-nav-item {
+    border-radius: 6px !important;
+}
+
+.about-dep-row:hover,
+.shortcut-entry:hover,
+.preferences-shortcut-row:hover,
+.preferences-nav-item:hover {
+    background: var(--client-dialog-control-hover) !important;
+}
+
+.preferences-dialog {
+    background: var(--client-dialog-pane) !important;
+}
+
+.preferences-dialog #dialog {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: var(--client-dialog-window) !important;
+    box-shadow: none !important;
+}
+
+.preferences-dialog .preferences-sidebar {
+    color: var(--client-dialog-text) !important;
+    border-right: 1px solid var(--client-dialog-border) !important;
+    background: var(--client-dialog-pane) !important;
+}
+
+.preferences-dialog .preferences-page,
+.preferences-dialog #content {
+    color: var(--client-dialog-text) !important;
+    background: var(--client-dialog-window) !important;
+}
+
+.preferences-dialog .preferences-page #header {
+    min-height: 68px !important;
+    padding: 10px 34px !important;
+    background: var(--client-dialog-window) !important;
+}
+
+.preferences-dialog .preferences-section,
+.preferences-dialog .row {
+    border-color: var(--client-dialog-border) !important;
+}
+
+.preferences-dialog .preferences-nav-item {
+    height: 36px !important;
+    color: var(--client-dialog-muted) !important;
+    background: transparent !important;
+}
+
+.preferences-dialog .preferences-nav-item.active {
+    color: var(--client-dialog-text) !important;
+    border-color: var(--client-dialog-border-strong) !important;
+    background: var(--client-dialog-control-hover) !important;
+    box-shadow: inset 3px 0 0 var(--client-dialog-accent) !important;
+}
+
+.preferences-dialog .preferences-nav-item.active::before {
+    color: var(--client-dialog-accent) !important;
+}
+
+.preferences-shortcut-row.recording,
+.preferences-shortcut-row.conflict-source,
+.preferences-shortcut-row.conflict-target,
+.preferences-shortcut-conflict.active {
+    border-color: var(--client-dialog-danger) !important;
+    background: color-mix(in srgb, var(--client-dialog-danger) 13%, var(--client-dialog-control)) !important;
+}
+
+.preferences-shortcut-group-title {
+    color: var(--client-dialog-muted) !important;
+    border-color: var(--client-dialog-border) !important;
+    background: var(--client-dialog-pane) !important;
+    text-transform: none !important;
+}
+
+#popup .pcui-text-input,
+#popup input,
+#export-popup .pcui-select-input,
+#export-popup .pcui-text-input,
+#export-popup .pcui-text-area-input,
+#export-popup .pcui-numeric-input,
+#export-popup .pcui-vector-input,
+#export-popup .pcui-slider,
+#export-popup .pcui-color-picker,
+.settings-dialog .pcui-select-input,
+.settings-dialog .pcui-text-input,
+.settings-dialog .pcui-text-area-input,
+.settings-dialog .pcui-numeric-input,
+.settings-dialog .pcui-vector-input,
+.settings-dialog .pcui-slider,
+.settings-dialog .pcui-color-picker,
+.settings-dialog input,
+.settings-dialog textarea {
+    color: var(--client-dialog-text) !important;
+    border-color: var(--client-dialog-border) !important;
+    border-radius: 6px !important;
+    background: var(--client-dialog-control) !important;
+    box-shadow: none !important;
+}
+
+#export-popup .pcui-select-input:hover,
+#export-popup .pcui-text-input:hover,
+#export-popup .pcui-text-area-input:hover,
+#export-popup .pcui-numeric-input:hover,
+#export-popup .pcui-vector-input:hover,
+#export-popup .pcui-slider:hover,
+#export-popup .pcui-color-picker:hover,
+.settings-dialog .pcui-boolean-input:hover,
+#export-popup .pcui-boolean-input:hover,
+.settings-dialog .pcui-select-input:hover,
+.settings-dialog .pcui-text-input:hover,
+.settings-dialog .pcui-text-area-input:hover,
+.settings-dialog .pcui-numeric-input:hover,
+.settings-dialog .pcui-vector-input:hover,
+.settings-dialog .pcui-slider:hover,
+.settings-dialog .pcui-color-picker:hover {
+    border-color: var(--client-dialog-border-strong) !important;
+    background: var(--client-dialog-control-hover) !important;
+}
+
+#export-popup .pcui-select-input:focus-within,
+#export-popup .pcui-text-input:focus-within,
+#export-popup .pcui-text-area-input:focus-within,
+#export-popup .pcui-numeric-input:focus-within,
+#export-popup .pcui-vector-input:focus-within,
+.settings-dialog .pcui-select-input:focus-within,
+.settings-dialog .pcui-text-input:focus-within,
+.settings-dialog .pcui-text-area-input:focus-within,
+.settings-dialog .pcui-numeric-input:focus-within,
+.settings-dialog .pcui-vector-input:focus-within,
+.settings-dialog .shortcut-binding-button:focus-visible {
+    border-color: var(--client-dialog-accent) !important;
+    box-shadow: 0 0 0 2px var(--client-dialog-focus) !important;
+}
+
+#export-popup .pcui-select-input-value,
+#export-popup .pcui-select-input-icon,
+#export-popup .pcui-text-input input,
+#export-popup .pcui-numeric-input input,
+#export-popup textarea,
+.settings-dialog .pcui-select-input-value,
+.settings-dialog .pcui-select-input-icon,
+.settings-dialog .pcui-text-input input,
+.settings-dialog .pcui-numeric-input input,
+.settings-dialog textarea {
+    color: var(--client-dialog-text) !important;
+    -webkit-text-fill-color: var(--client-dialog-text) !important;
+}
+
+#export-popup .pcui-disabled input,
+.settings-dialog .pcui-disabled input,
+#export-popup .pcui-disabled .pcui-select-input-value,
+.settings-dialog .pcui-disabled .pcui-select-input-value {
+    color: var(--client-dialog-faint) !important;
+    -webkit-text-fill-color: var(--client-dialog-faint) !important;
+}
+
+#export-popup .pcui-slider-bar,
+.settings-dialog .pcui-slider-bar {
+    border-color: var(--client-dialog-border) !important;
+    background: var(--client-dialog-pane) !important;
+}
+
+#export-popup .pcui-slider-handle,
+.settings-dialog .pcui-slider-handle {
+    border-color: var(--client-dialog-accent) !important;
+    background: var(--client-dialog-window-2) !important;
+    box-shadow: 0 0 0 2px var(--client-dialog-focus) !important;
+}
+
+#export-popup .pcui-boolean-input-toggle,
+.settings-dialog .pcui-boolean-input-toggle,
+#export-popup .pcui-boolean-input,
+.settings-dialog .pcui-boolean-input {
+    border-color: var(--client-dialog-border-strong) !important;
+    border-radius: 4px !important;
+    background: var(--client-dialog-control) !important;
+    box-shadow: 0 0 0 1px var(--client-dialog-border) inset !important;
+}
+
+#export-popup .pcui-boolean-input-toggle::after,
+.settings-dialog .pcui-boolean-input-toggle::after {
+    background: var(--client-dialog-faint) !important;
+}
+
+#export-popup .pcui-boolean-input-ticked,
+.settings-dialog .pcui-boolean-input-ticked,
+#export-popup .pcui-boolean-input.pcui-boolean-input-ticked,
+.settings-dialog .pcui-boolean-input.pcui-boolean-input-ticked {
+    border-color: var(--client-dialog-accent) !important;
+    background: var(--client-dialog-accent) !important;
+    box-shadow: 0 0 0 1px var(--client-dialog-accent) inset !important;
+}
+
+#export-popup .pcui-boolean-input-ticked::after,
+.settings-dialog .pcui-boolean-input-ticked::after {
+    background: var(--client-dialog-accent-ink) !important;
+}
+
+body .pcui-select-input-list {
+    color: var(--client-dialog-text) !important;
+    border: 1px solid var(--client-dialog-border) !important;
+    border-radius: 6px !important;
+    background: var(--client-dialog-window-2) !important;
+    box-shadow: 0 18px 42px var(--client-dialog-shadow) !important;
+}
+
+body .pcui-select-input-list .pcui-label,
+body .pcui-select-input-list .pcui-select-input-container-value {
+    color: var(--client-dialog-text) !important;
+}
+
+body .pcui-select-input-list .pcui-select-input-container-value:hover,
+body .pcui-select-input-list .pcui-label:hover {
+    color: var(--client-dialog-text) !important;
+    background: var(--client-dialog-control-hover) !important;
+}
+
+body .pcui-select-input-list .pcui-selected {
+    color: var(--client-dialog-accent-ink) !important;
+    background: var(--client-dialog-accent) !important;
+}
+
+body.app-theme-light .pcui-button,
+body.app-theme-light .pcui-select-input,
+body.app-theme-light .pcui-text-input,
+body.app-theme-light .pcui-text-area-input,
+body.app-theme-light .pcui-numeric-input,
+body.app-theme-light .pcui-vector-input,
+body.app-theme-light .pcui-slider,
+body.app-theme-light .pcui-color-picker,
+body.app-theme-light input,
+body.app-theme-light textarea {
+    color: var(--client-dialog-text) !important;
+    border-color: var(--client-dialog-border) !important;
+    background-color: var(--client-dialog-control) !important;
+}
+
+body.app-theme-light .pcui-label,
+body.app-theme-light .pcui-select-input-value,
+body.app-theme-light .pcui-select-input-icon,
+body.app-theme-light .pcui-text-input input,
+body.app-theme-light .pcui-numeric-input input,
+body.app-theme-light textarea {
+    color: var(--client-dialog-text) !important;
+    -webkit-text-fill-color: var(--client-dialog-text) !important;
+}
+
+/* Dialog alignment pass. Kept after both skin layers so light theme uses one layout model. */
+body {
+    --client-dialog-form-control-height: 28px;
+    --client-dialog-form-gap: 0px;
+}
+
+#export-popup #content .row:not(.pcui-hidden),
+.settings-dialog:not(.preferences-dialog) #dialog #content .row:not(.pcui-hidden) {
+    display: grid !important;
+    grid-template-columns: 144px minmax(0, 1fr);
+    column-gap: var(--client-dialog-form-gap) !important;
+    align-items: center !important;
+    min-height: 36px !important;
+    height: auto !important;
+    padding: 4px 0 !important;
+    line-height: normal !important;
+}
+
+.settings-dialog:not(.preferences-dialog) #dialog #content .row:not(.pcui-hidden) {
+    grid-template-columns: 140px minmax(0, 1fr);
+}
+
+#export-popup #content .row > .label,
+.settings-dialog:not(.preferences-dialog) #dialog #content .row > .label {
+    grid-column: 1;
+    align-self: center !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 20px !important;
+    white-space: nowrap;
+}
+
+#export-popup #content .row > .pcui-element:not(.label),
+.settings-dialog:not(.preferences-dialog) #dialog #content .row > .pcui-element:not(.label),
+.settings-dialog:not(.preferences-dialog) #dialog #content .row > .preferences-font-controls {
+    grid-column: 2;
+    justify-self: stretch !important;
+    align-self: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    flex: initial !important;
+}
+
+#export-popup .pcui-select-input,
+#export-popup .pcui-text-input,
+#export-popup .pcui-numeric-input,
+#export-popup .pcui-color-picker,
+#export-popup .pcui-slider,
+.settings-dialog .pcui-select-input,
+.settings-dialog .pcui-text-input,
+.settings-dialog .pcui-numeric-input,
+.settings-dialog .pcui-color-picker,
+.settings-dialog .pcui-slider,
+.settings-dialog .shortcut-binding-button {
+    min-height: var(--client-dialog-form-control-height) !important;
+    height: var(--client-dialog-form-control-height) !important;
+    line-height: calc(var(--client-dialog-form-control-height) - 2px) !important;
+    margin: 0 !important;
+}
+
+#export-popup .pcui-text-area-input,
+.settings-dialog .pcui-text-area-input {
+    min-height: 72px !important;
+    margin: 0 !important;
+}
+
+#export-popup .pcui-vector-input,
+.settings-dialog .pcui-vector-input {
+    min-height: var(--client-dialog-form-control-height) !important;
+    height: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+}
+
+#export-popup .pcui-vector-input > .pcui-numeric-input,
+.settings-dialog .pcui-vector-input > .pcui-numeric-input {
+    flex: 1 1 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+}
+
+#export-popup .pcui-select-input-value,
+#export-popup .pcui-select-input-icon,
+#export-popup .pcui-text-input input,
+#export-popup .pcui-numeric-input input,
+.settings-dialog .pcui-select-input-value,
+.settings-dialog .pcui-select-input-icon,
+.settings-dialog .pcui-text-input input,
+.settings-dialog .pcui-numeric-input input {
+    min-height: calc(var(--client-dialog-form-control-height) - 2px) !important;
+    height: calc(var(--client-dialog-form-control-height) - 2px) !important;
+    line-height: calc(var(--client-dialog-form-control-height) - 2px) !important;
+}
+
+#export-popup .pcui-boolean-input,
+.settings-dialog .pcui-boolean-input,
+#export-popup .pcui-boolean-input-toggle,
+.settings-dialog .pcui-boolean-input-toggle {
+    justify-self: start !important;
+    align-self: center !important;
+    width: 16px !important;
+    min-width: 16px !important;
+    height: 16px !important;
+    min-height: 16px !important;
+    margin: 0 !important;
+    flex: 0 0 16px !important;
+    line-height: 16px !important;
+}
+
+#export-popup #content .row > .pcui-boolean-input,
+#export-popup #content .row > .pcui-boolean-input-toggle,
+.settings-dialog:not(.preferences-dialog) #dialog #content .row > .pcui-boolean-input,
+.settings-dialog:not(.preferences-dialog) #dialog #content .row > .pcui-boolean-input-toggle {
+    justify-self: start !important;
+    width: 16px !important;
+    min-width: 16px !important;
+    max-width: 16px !important;
+    height: 16px !important;
+    min-height: 16px !important;
+    margin: 0 !important;
+}
+
+#popup .pcui-button,
+#popup .popup-button,
+#export-popup .pcui-button,
+#shortcuts-popup .pcui-button,
+#about-popup .pcui-button,
+.settings-dialog .pcui-button,
+#progress-container .pcui-button,
+#popup-link-copy {
+    height: 30px !important;
+    min-height: 30px !important;
+    margin: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 28px !important;
+}
+
+.preferences-dialog .row > .pcui-element:not(.preferences-row-copy),
+.preferences-dialog .row > .preferences-font-controls {
+    justify-self: stretch !important;
+    align-self: center !important;
+    width: min(360px, 100%) !important;
+    margin: 0 !important;
+}
+
+.preferences-dialog .preferences-font-controls {
+    min-height: var(--client-dialog-form-control-height) !important;
+    height: var(--client-dialog-form-control-height) !important;
+    align-items: center !important;
+}
+
+.preferences-dialog .preferences-font-controls > .pcui-element {
+    margin: 0 !important;
+}
+
+.preferences-dialog .preferences-row-copy {
+    align-self: center !important;
+}
+
+/* Light theme app shell pass: panels, rails, icon buttons and persistent tools. */
+body.app-theme-light {
+    --light-shell-bg: #DCE2EA;
+    --light-surface: #F7F9FC;
+    --light-surface-raised: #FFFFFF;
+    --light-surface-soft: #EEF3F8;
+    --light-surface-hover: #E8F1FE;
+    --light-surface-active: #D9E8FF;
+    --light-border: #C5CFDA;
+    --light-border-strong: #AAB8C9;
+    --light-text: #17202B;
+    --light-muted: #536172;
+    --light-faint: #8A96A4;
+    --light-accent: #256FD8;
+    --light-accent-hover: #1C5FBF;
+    --light-accent-ink: #FFFFFF;
+    --light-danger: #C94444;
+    --light-shadow: rgba(39, 54, 75, 0.16);
+
+    color: var(--light-text);
+    background-color: var(--light-shell-bg);
+}
+
+body.app-theme-light #editor-container,
+body.app-theme-light #main-container,
+body.app-theme-light #canvas-container {
+    background-color: var(--light-shell-bg) !important;
+}
+
+body.app-theme-light #desktop-titlebar,
+body.app-theme-light #desktop-titlebar-window-controls,
+body.app-theme-light #menu,
+body.app-theme-light #menu-bar,
+body.app-theme-light #bottom-toolbar,
+body.app-theme-light #right-toolbar,
+body.app-theme-light #status-bar,
+body.app-theme-light #data-panel,
+body.app-theme-light #timeline-panel,
+body.app-theme-light #timeline-panel > #controls-wrap {
+    color: var(--light-text) !important;
+    border-color: var(--light-border) !important;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(238, 243, 248, 0.96)),
+        var(--light-surface-soft) !important;
+    box-shadow: none !important;
+}
+
+body.app-theme-light .panel,
+body.app-theme-light .menu-panel,
+body.app-theme-light #data-controls-container,
+body.app-theme-light #data-controls,
+body.app-theme-light #data-list-box,
+body.app-theme-light #histogram-info-row,
+body.app-theme-light .mesh-chart-card,
+body.app-theme-light .mesh-details-row {
+    color: var(--light-text) !important;
+    border-color: var(--light-border) !important;
+    background: var(--light-surface) !important;
+    box-shadow: none !important;
+}
+
+body.app-theme-light .panel > .panel-header,
+body.app-theme-light #mesh-panel > .panel-header,
+body.app-theme-light #transform-panel > .panel-header,
+body.app-theme-light .preferences-dialog .preferences-sidebar,
+body.app-theme-light .preferences-dialog .preferences-page #header {
+    color: var(--light-text) !important;
+    border-color: var(--light-border) !important;
+    background: var(--light-surface-soft) !important;
+}
+
+body.app-theme-light .panel-header-label,
+body.app-theme-light .panel .pcui-label,
+body.app-theme-light .view-panel-row-label,
+body.app-theme-light .color-panel-row-label,
+body.app-theme-light .mesh-panel-row-label,
+body.app-theme-light .viewer-panel-toggle-label,
+body.app-theme-light .data-panel-toggle-label,
+body.app-theme-light .status-bar-stat-value,
+body.app-theme-light .status-bar-file-name,
+body.app-theme-light .mesh-details-value,
+body.app-theme-light .mesh-chart-value,
+body.app-theme-light .shortcut-action-label {
+    color: var(--light-text) !important;
+}
+
+body.app-theme-light .panel-header-icon,
+body.app-theme-light .data-list-section,
+body.app-theme-light .mesh-panel-section,
+body.app-theme-light .mesh-chart-title,
+body.app-theme-light .mesh-panel-row-value,
+body.app-theme-light .mesh-panel-texture-name,
+body.app-theme-light .preferences-section-title {
+    color: var(--light-accent) !important;
+}
+
+body.app-theme-light .viewer-panel-section-title,
+body.app-theme-light .status-bar-stat-label,
+body.app-theme-light .mesh-details-label,
+body.app-theme-light .mesh-chart-label,
+body.app-theme-light .mesh-panel-texture-path,
+body.app-theme-light .mesh-panel-texture-size,
+body.app-theme-light .histogram-stats-label,
+body.app-theme-light #histogram-info-row,
+body.app-theme-light .status-bar-save-state.saved {
+    color: var(--light-muted) !important;
+}
+
+body.app-theme-light .panel-header-button,
+body.app-theme-light .titlebar-action,
+body.app-theme-light .desktop-titlebar-window-button,
+body.app-theme-light .bottom-toolbar-button,
+body.app-theme-light .bottom-toolbar-tool,
+body.app-theme-light .bottom-toolbar-toggle,
+body.app-theme-light .right-toolbar-button,
+body.app-theme-light .right-toolbar-tool,
+body.app-theme-light .right-toolbar-toggle,
+body.app-theme-light .status-bar-toggle,
+body.app-theme-light #timeline-panel #button-controls > .button,
+body.app-theme-light #mode-toggle {
+    color: var(--light-muted) !important;
+    border-color: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+body.app-theme-light .panel-header-button svg,
+body.app-theme-light .titlebar-action svg,
+body.app-theme-light .desktop-titlebar-window-button svg,
+body.app-theme-light .bottom-toolbar-button svg,
+body.app-theme-light .bottom-toolbar-tool svg,
+body.app-theme-light .bottom-toolbar-toggle svg,
+body.app-theme-light .right-toolbar-button svg,
+body.app-theme-light .right-toolbar-tool svg,
+body.app-theme-light .right-toolbar-toggle svg,
+body.app-theme-light .viewer-panel-section svg,
+body.app-theme-light .pcui-button svg {
+    color: currentColor !important;
+    fill: currentColor;
+    stroke: currentColor;
+}
+
+body.app-theme-light .panel-header-button::before,
+body.app-theme-light .bottom-toolbar-button::before,
+body.app-theme-light .bottom-toolbar-tool::before,
+body.app-theme-light .bottom-toolbar-toggle::before,
+body.app-theme-light .right-toolbar-button::before,
+body.app-theme-light .right-toolbar-tool::before,
+body.app-theme-light .right-toolbar-toggle::before,
+body.app-theme-light .status-bar-toggle::before,
+body.app-theme-light #timeline-panel #button-controls > .button::before {
+    color: currentColor !important;
+}
+
+body.app-theme-light .panel-header-button:hover,
+body.app-theme-light .titlebar-action:hover,
+body.app-theme-light .desktop-titlebar-window-button:hover,
+body.app-theme-light .bottom-toolbar-button:hover:not(.pcui-disabled),
+body.app-theme-light .bottom-toolbar-tool:hover:not(.pcui-disabled),
+body.app-theme-light .bottom-toolbar-toggle:hover:not(.pcui-disabled),
+body.app-theme-light .right-toolbar-button:hover:not(.pcui-disabled),
+body.app-theme-light .right-toolbar-tool:hover:not(.pcui-disabled),
+body.app-theme-light .right-toolbar-toggle:hover:not(.pcui-disabled),
+body.app-theme-light .status-bar-toggle:hover,
+body.app-theme-light #timeline-panel #button-controls > .button:hover,
+body.app-theme-light #mode-toggle:hover {
+    color: var(--light-text) !important;
+    border-color: var(--light-border-strong) !important;
+    background-color: var(--light-surface-hover) !important;
+    box-shadow: none !important;
+}
+
+body.app-theme-light .panel-header-button.active,
+body.app-theme-light .panel-header-button.active:hover,
+body.app-theme-light .bottom-toolbar-tool.active,
+body.app-theme-light .bottom-toolbar-toggle.active,
+body.app-theme-light .right-toolbar-tool.active,
+body.app-theme-light .right-toolbar-toggle.active,
+body.app-theme-light .status-bar-toggle.active,
+body.app-theme-light .viewer-panel-mode-button.active,
+body.app-theme-light .mesh-panel-view-mode-button.active,
+body.app-theme-light #coord-space-toggle.active {
+    color: var(--light-accent-ink) !important;
+    border-color: var(--light-accent) !important;
+    background: var(--light-accent) !important;
+    box-shadow: none !important;
+}
+
+body.app-theme-light .panel-header-button.active svg,
+body.app-theme-light .bottom-toolbar-tool.active svg,
+body.app-theme-light .bottom-toolbar-toggle.active svg,
+body.app-theme-light .right-toolbar-tool.active svg,
+body.app-theme-light .right-toolbar-toggle.active svg,
+body.app-theme-light .viewer-panel-mode-button.active svg,
+body.app-theme-light .mesh-panel-view-mode-button.active svg {
+    color: var(--light-accent-ink) !important;
+}
+
+body.app-theme-light .pcui-disabled,
+body.app-theme-light .pcui-disabled:hover,
+body.app-theme-light .disabled,
+body.app-theme-light .disabled:hover,
+body.app-theme-light .bottom-toolbar-button.pcui-disabled,
+body.app-theme-light .bottom-toolbar-tool.disabled,
+body.app-theme-light .right-toolbar-button.pcui-disabled,
+body.app-theme-light .right-toolbar-tool.disabled {
+    color: var(--light-faint) !important;
+    border-color: transparent !important;
+    background-color: transparent !important;
+    opacity: 1 !important;
+    filter: none !important;
+    cursor: default !important;
+}
+
+body.app-theme-light .pcui-disabled svg,
+body.app-theme-light .disabled svg,
+body.app-theme-light .bottom-toolbar-undo-redo-icon {
+    color: var(--light-faint) !important;
+    opacity: 0.58;
+}
+
+body.app-theme-light .pcui-button,
+body.app-theme-light .viewer-panel-button,
+body.app-theme-light .viewer-panel-preset-button,
+body.app-theme-light .viewer-panel-mode-button,
+body.app-theme-light .mesh-panel-view-mode-button,
+body.app-theme-light .mesh-panel-texture-button,
+body.app-theme-light .shortcut-binding-button,
+body.app-theme-light .reset-action-button {
+    color: var(--light-text) !important;
+    border-color: var(--light-border) !important;
+    background: var(--light-surface-raised) !important;
+    box-shadow: 0 1px 1px var(--light-shadow) !important;
+}
+
+body.app-theme-light .pcui-button:hover:not(.pcui-disabled),
+body.app-theme-light .viewer-panel-button:hover,
+body.app-theme-light .viewer-panel-preset-button:hover,
+body.app-theme-light .viewer-panel-mode-button:hover,
+body.app-theme-light .mesh-panel-view-mode-button:hover,
+body.app-theme-light .mesh-panel-texture-button:hover,
+body.app-theme-light .shortcut-binding-button:hover,
+body.app-theme-light .reset-action-button:hover {
+    color: var(--light-accent-hover) !important;
+    border-color: var(--light-accent) !important;
+    background: var(--light-surface-hover) !important;
+}
+
+body.app-theme-light .pcui-select-input,
+body.app-theme-light .pcui-text-input,
+body.app-theme-light .pcui-text-area-input,
+body.app-theme-light .pcui-numeric-input,
+body.app-theme-light .pcui-vector-input,
+body.app-theme-light .pcui-color-picker,
+body.app-theme-light .pcui-slider,
+body.app-theme-light input,
+body.app-theme-light textarea {
+    color: var(--light-text) !important;
+    border-color: var(--light-border) !important;
+    background-color: var(--light-surface-raised) !important;
+}
+
+body.app-theme-light .pcui-select-input-value,
+body.app-theme-light .pcui-select-input-icon,
+body.app-theme-light .pcui-text-input input,
+body.app-theme-light .pcui-numeric-input input,
+body.app-theme-light textarea {
+    color: var(--light-text) !important;
+    -webkit-text-fill-color: var(--light-text) !important;
+}
+
+body.app-theme-light .pcui-slider-bar,
+body.app-theme-light .mesh-chart-track {
+    border-color: var(--light-border) !important;
+    background-color: #D8E0EA !important;
+}
+
+body.app-theme-light .pcui-slider-handle {
+    border-color: var(--light-accent) !important;
+    background-color: var(--light-surface-raised) !important;
+}
+
+body.app-theme-light .pcui-boolean-input,
+body.app-theme-light .pcui-boolean-input-toggle,
+body.app-theme-light .viewer-panel-toggle,
+body.app-theme-light .view-panel-row-toggle,
+body.app-theme-light .mesh-panel-row-toggle,
+body.app-theme-light .data-panel-toggle {
+    border-color: var(--light-border-strong) !important;
+    background-color: #D8E0EA !important;
+}
+
+body.app-theme-light .pcui-boolean-input::after,
+body.app-theme-light .pcui-boolean-input-toggle::after,
+body.app-theme-light .viewer-panel-toggle::after,
+body.app-theme-light .view-panel-row-toggle::after,
+body.app-theme-light .mesh-panel-row-toggle::after,
+body.app-theme-light .data-panel-toggle::after {
+    background-color: var(--light-muted) !important;
+}
+
+body.app-theme-light .pcui-boolean-input-ticked,
+body.app-theme-light .pcui-boolean-input-toggle.pcui-boolean-input-ticked,
+body.app-theme-light .viewer-panel-toggle.pcui-boolean-input-ticked,
+body.app-theme-light .view-panel-row-toggle.pcui-boolean-input-ticked,
+body.app-theme-light .mesh-panel-row-toggle.pcui-boolean-input-ticked,
+body.app-theme-light .data-panel-toggle.pcui-boolean-input-ticked {
+    border-color: var(--light-accent) !important;
+    background-color: var(--light-accent) !important;
+}
+
+body.app-theme-light .pcui-boolean-input-ticked::after,
+body.app-theme-light .pcui-boolean-input-toggle.pcui-boolean-input-ticked::after,
+body.app-theme-light .viewer-panel-toggle.pcui-boolean-input-ticked::after,
+body.app-theme-light .view-panel-row-toggle.pcui-boolean-input-ticked::after,
+body.app-theme-light .mesh-panel-row-toggle.pcui-boolean-input-ticked::after,
+body.app-theme-light .data-panel-toggle.pcui-boolean-input-ticked::after {
+    background-color: var(--light-accent-ink) !important;
+}
+
+body.app-theme-light .menu-row,
+body.app-theme-light .data-list-item,
+body.app-theme-light .preferences-nav-item,
+body.app-theme-light .preferences-shortcut-row {
+    color: var(--light-muted) !important;
+}
+
+body.app-theme-light .menu-row:hover:not(.pcui-disabled),
+body.app-theme-light .data-list-item:hover,
+body.app-theme-light .data-list-item.active,
+body.app-theme-light .preferences-nav-item:hover,
+body.app-theme-light .preferences-shortcut-row:hover {
+    color: var(--light-text) !important;
+    background-color: var(--light-surface-hover) !important;
+}
+
+body.app-theme-light .data-list-item.active,
+body.app-theme-light .preferences-nav-item.active {
+    color: var(--light-accent) !important;
+    border-color: var(--light-accent) !important;
+}
+
+body.app-theme-light .bottom-toolbar-separator,
+body.app-theme-light #right-toolbar > .right-toolbar-separator,
+body.app-theme-light .viewer-panel-separator,
+body.app-theme-light .status-bar-file-state,
+body.app-theme-light .mesh-panel-section-group,
+body.app-theme-light .mesh-panel-texture-block,
+body.app-theme-light .titlebar-action-separator {
+    border-color: var(--light-border) !important;
+    background-color: var(--light-border) !important;
+}
+
+body.app-theme-light .mesh-panel-light-direction-pad,
+body.app-theme-light .mesh-panel-texture-preview,
+body.app-theme-light #histogram-stats-overlay {
+    color: var(--light-text) !important;
+    border-color: var(--light-border) !important;
+    background: var(--light-surface-raised) !important;
+}
+
+body.app-theme-light #histogram-cursor,
+body.app-theme-light .histogram-info-cursor {
+    color: var(--light-text) !important;
+    background-color: var(--light-surface-raised) !important;
+}
+
+body.app-theme-light .histogram-info-anchor,
+body.app-theme-light .mesh-chart-fill {
+    color: var(--light-accent) !important;
+}
+
+body.app-theme-light #highlight-rect {
+    fill: rgba(37, 111, 216, 0.16) !important;
+    stroke: var(--light-accent) !important;
+}
+
+body.app-theme-light .desktop-titlebar-window-button.close:hover {
+    color: #FFFFFF !important;
+    background-color: var(--light-danger) !important;
+}
+
+/* Final light icon-button correction: keep chrome tools as icon buttons, not white text buttons. */
+body.app-theme-light .panel-header-button:not(.active):not(.pcui-disabled),
+body.app-theme-light .titlebar-action:not(.active):not(.pcui-disabled),
+body.app-theme-light .desktop-titlebar-window-button:not(.active):not(.pcui-disabled),
+body.app-theme-light #bottom-toolbar .bottom-toolbar-button:not(.active):not(.pcui-disabled),
+body.app-theme-light #bottom-toolbar .bottom-toolbar-tool:not(.active):not(.disabled):not(.pcui-disabled),
+body.app-theme-light #bottom-toolbar .bottom-toolbar-toggle:not(.active):not(.pcui-disabled),
+body.app-theme-light #right-toolbar > .right-toolbar-button:not(.active):not(.pcui-disabled),
+body.app-theme-light #right-toolbar > .right-toolbar-tool:not(.active):not(.disabled):not(.pcui-disabled),
+body.app-theme-light #right-toolbar > .right-toolbar-toggle:not(.active):not(.pcui-disabled),
+body.app-theme-light .status-bar-toggle:not(.active):not(.pcui-disabled),
+body.app-theme-light #timeline-panel #button-controls > .button:not(.active):not(.pcui-disabled),
+body.app-theme-light #mode-toggle:not(.active):not(.disabled) {
+    color: var(--light-muted) !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+body.app-theme-light .panel-header-button:not(.active):not(.pcui-disabled):hover,
+body.app-theme-light .titlebar-action:not(.active):not(.pcui-disabled):hover,
+body.app-theme-light .desktop-titlebar-window-button:not(.active):not(.pcui-disabled):hover,
+body.app-theme-light #bottom-toolbar .bottom-toolbar-button:not(.active):not(.pcui-disabled):hover,
+body.app-theme-light #bottom-toolbar .bottom-toolbar-tool:not(.active):not(.disabled):not(.pcui-disabled):hover,
+body.app-theme-light #bottom-toolbar .bottom-toolbar-toggle:not(.active):not(.pcui-disabled):hover,
+body.app-theme-light #right-toolbar > .right-toolbar-button:not(.active):not(.pcui-disabled):hover,
+body.app-theme-light #right-toolbar > .right-toolbar-tool:not(.active):not(.disabled):not(.pcui-disabled):hover,
+body.app-theme-light #right-toolbar > .right-toolbar-toggle:not(.active):not(.pcui-disabled):hover,
+body.app-theme-light .status-bar-toggle:not(.active):not(.pcui-disabled):hover,
+body.app-theme-light #timeline-panel #button-controls > .button:not(.active):not(.pcui-disabled):hover,
+body.app-theme-light #mode-toggle:not(.active):not(.disabled):hover {
+    color: var(--light-text) !important;
+    border-color: transparent !important;
+    background: var(--light-surface-hover) !important;
+    box-shadow: none !important;
+}
+
+body.app-theme-light .panel-header-button.active,
+body.app-theme-light .bottom-toolbar-tool.active,
+body.app-theme-light .bottom-toolbar-toggle.active,
+body.app-theme-light #right-toolbar > .right-toolbar-tool.active,
+body.app-theme-light #right-toolbar > .right-toolbar-toggle.active,
+body.app-theme-light .status-bar-toggle.active,
+body.app-theme-light .viewer-panel-mode-button.active,
+body.app-theme-light .mesh-panel-view-mode-button.active {
+    color: var(--light-accent-ink) !important;
+    border-color: var(--light-accent) !important;
+    background: var(--light-accent) !important;
+    box-shadow: none !important;
+}
+
+body.app-theme-light .pcui-button.pcui-disabled,
+body.app-theme-light .pcui-button.pcui-disabled:hover,
+body.app-theme-light .panel-header-button.pcui-disabled,
+body.app-theme-light #bottom-toolbar .pcui-disabled,
+body.app-theme-light #right-toolbar .pcui-disabled,
+body.app-theme-light .bottom-toolbar-tool.disabled,
+body.app-theme-light .right-toolbar-tool.disabled,
+body.app-theme-light #mode-toggle.disabled {
+    color: var(--light-faint) !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+body.app-theme-light .panel-header-button svg,
+body.app-theme-light .titlebar-action svg,
+body.app-theme-light .desktop-titlebar-window-button svg,
+body.app-theme-light #bottom-toolbar svg,
+body.app-theme-light #right-toolbar svg,
+body.app-theme-light #mode-toggle svg {
+    color: currentColor !important;
+    fill: currentColor !important;
+    stroke: currentColor !important;
+}
+
+body.app-theme-light .panel-header-icon,
+body.app-theme-light .panel .panel-header-icon.pcui-label,
+body.app-theme-light #scene-panel .panel-header-icon.pcui-label,
+body.app-theme-light .panel-header-icon svg,
+body.app-theme-light .preferences-sidebar-icon {
+    color: var(--light-accent) !important;
+}
+
+body.app-theme-light .panel-header-icon svg,
+body.app-theme-light .panel-header-icon svg * {
+    fill: currentColor !important;
+    stroke: currentColor !important;
+}
+
+body.app-theme-light .mesh-panel-light-direction-handle {
+    border-color: var(--light-accent) !important;
+    background-color: var(--light-accent) !important;
+    box-shadow: 0 0 0 2px var(--light-surface-raised) !important;
+}
+
+body.app-theme-light #timeline-panel .time-label.cursor,
+body.app-theme-light #timeline-panel .time-label.key {
+    color: var(--light-accent) !important;
+    background-color: rgba(37, 111, 216, 0.16) !important;
+    border-color: var(--light-accent) !important;
+}
+
+body.app-theme-light .spinner-progress,
+body.app-theme-light #spinner-container #bar,
+body.app-theme-light #progress-container #bar {
+    border-color: rgba(37, 111, 216, 0.22) !important;
+    background-color: rgba(37, 111, 216, 0.18) !important;
+}
+
+/* Light contrast cleanup: clear inherited dark gradients from legacy component shells. */
+body.app-theme-light {
+    --light-surface-inset: #E7EDF5;
+    --light-control-disabled: #EAF0F6;
+}
+
+body.app-theme-light,
+body.app-theme-light #editor-container,
+body.app-theme-light #main-container {
+    color: var(--light-text) !important;
+    background: var(--light-shell-bg) !important;
+}
+
+body.app-theme-light #canvas-container {
+    color: var(--light-text) !important;
+    background:
+        linear-gradient(90deg, transparent 0, transparent calc(100% - var(--desktop-right-dock-width)), rgba(220, 226, 234, 0.82) calc(100% - var(--desktop-right-dock-width))),
+        var(--light-shell-bg) !important;
+}
+
+body.app-theme-light #canvas-container::after {
+    border-color: var(--light-border) !important;
+    background: rgba(247, 249, 252, 0.94) !important;
+}
+
+body.app-theme-light #sep-container,
+body.app-theme-light #timeline-panel > #ticks,
+body.app-theme-light .select-toolbar,
+body.app-theme-light #color-panel > .color-panel-control-row,
+body.app-theme-light #color-panel > .color-panel-actions,
+body.app-theme-light #view-panel > .view-panel-actions,
+body.app-theme-light #mesh-panel > .mesh-panel-actions,
+body.app-theme-light .viewer-panel-section,
+body.app-theme-light .viewer-panel-advanced-row,
+body.app-theme-light .viewer-panel-separator,
+body.app-theme-light .mesh-panel-texture-block,
+body.app-theme-light .mesh-details-row,
+body.app-theme-light .mesh-chart-card,
+body.app-theme-light #data-list-box,
+body.app-theme-light #histogram-info-row {
+    color: var(--light-text) !important;
+    border-color: var(--light-border) !important;
+    background: var(--light-surface-raised) !important;
+    box-shadow: none !important;
+}
+
+body.app-theme-light #timeline-panel > #ticks,
+body.app-theme-light .select-toolbar,
+body.app-theme-light #color-panel > .color-panel-control-row,
+body.app-theme-light #color-panel > .color-panel-actions,
+body.app-theme-light #view-panel > .view-panel-actions,
+body.app-theme-light #mesh-panel > .mesh-panel-actions {
+    background: var(--light-surface-soft) !important;
+}
+
+body.app-theme-light #timeline-panel .time-label {
+    color: var(--light-muted) !important;
+}
+
+body.app-theme-light #timeline-panel .time-label.cursor {
+    color: var(--light-accent) !important;
+    background: rgba(37, 111, 216, 0.14) !important;
+}
+
+body.app-theme-light #timeline-panel .time-label.key {
+    color: var(--light-accent-ink) !important;
+    background: var(--light-accent) !important;
+}
+
+body.app-theme-light .workspace-action,
+body.app-theme-light .welcome-recent-row,
+body.app-theme-light .empty-state-panel {
+    color: var(--light-text) !important;
+    border-color: var(--light-border) !important;
+    background: var(--light-surface-raised) !important;
+    box-shadow: 0 10px 24px var(--light-shadow) !important;
+}
+
+body.app-theme-light .workspace-action svg {
+    color: var(--light-accent) !important;
+}
+
+body.app-theme-light .workspace-action:hover,
+body.app-theme-light .workspace-action:focus-visible,
+body.app-theme-light .welcome-recent-row:hover,
+body.app-theme-light .welcome-recent-row:focus-visible {
+    color: var(--light-text) !important;
+    border-color: var(--light-accent) !important;
+    background: var(--light-surface-hover) !important;
+}
+
+body.app-theme-light .workspace-action.primary {
+    color: var(--light-accent-ink) !important;
+    border-color: var(--light-accent) !important;
+    background: var(--light-accent) !important;
+}
+
+body.app-theme-light .workspace-action.primary svg {
+    color: currentColor !important;
+}
+
+body.app-theme-light .empty-state-close {
+    color: var(--light-muted) !important;
+    border-color: var(--light-border) !important;
+    background: var(--light-surface-raised) !important;
+    box-shadow: none !important;
+}
+
+body.app-theme-light.scene-panel-collapsed #scene-panel > .panel-header:first-child > .panel-collapse-button,
+body.app-theme-light.right-panel-collapsed #view-panel > .panel-header > .panel-collapse-button,
+body.app-theme-light.right-panel-collapsed #color-panel > .panel-header > .panel-collapse-button,
+body.app-theme-light.right-panel-collapsed #viewer-panel > .panel-header > .panel-collapse-button,
+body.app-theme-light.right-panel-collapsed #mesh-panel > .panel-header > .panel-collapse-button {
+    color: var(--light-muted) !important;
+    border-color: var(--light-border) !important;
+    background: var(--light-surface-raised) !important;
+    box-shadow: none !important;
+}
+
+body.app-theme-light .empty-state-close:hover,
+body.app-theme-light.scene-panel-collapsed #scene-panel > .panel-header:first-child > .panel-collapse-button:hover,
+body.app-theme-light.right-panel-collapsed #view-panel > .panel-header > .panel-collapse-button:hover,
+body.app-theme-light.right-panel-collapsed #color-panel > .panel-header > .panel-collapse-button:hover,
+body.app-theme-light.right-panel-collapsed #viewer-panel > .panel-header > .panel-collapse-button:hover,
+body.app-theme-light.right-panel-collapsed #mesh-panel > .panel-header > .panel-collapse-button:hover {
+    color: var(--light-text) !important;
+    border-color: var(--light-accent) !important;
+    background: var(--light-surface-hover) !important;
+}
+
+body.app-theme-light #cursor-label {
+    color: var(--light-text) !important;
+    text-shadow: none !important;
+    border-color: var(--light-border) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    box-shadow: 0 8px 18px var(--light-shadow) !important;
+}
+
+body.app-theme-light #cursor-label:hover {
+    color: var(--light-accent-hover) !important;
+    border-color: var(--light-accent) !important;
+    background: var(--light-surface-hover) !important;
+}
+
+body.app-theme-light .pcui-input-element:disabled,
+body.app-theme-light input:disabled,
+body.app-theme-light .pcui-input-element.pcui-disabled,
+body.app-theme-light .pcui-numeric-input.pcui-input-element.pcui-disabled,
+body.app-theme-light .pcui-numeric-input.pcui-disabled,
+body.app-theme-light .pcui-text-input.pcui-disabled,
+body.app-theme-light .pcui-text-area-input.pcui-disabled,
+body.app-theme-light #mesh-panel .pcui-disabled .pcui-input-element,
+body.app-theme-light #mesh-panel .pcui-disabled input,
+body.app-theme-light #mesh-panel .pcui-input-element:disabled,
+body.app-theme-light #mesh-panel input:disabled,
+body.app-theme-light .pcui-disabled .pcui-select-input-value,
+body.app-theme-light .pcui-disabled .pcui-input-element {
+    color: var(--light-faint) !important;
+    -webkit-text-fill-color: var(--light-faint) !important;
+    border-color: var(--light-border) !important;
+    background: var(--light-control-disabled) !important;
+    background-color: var(--light-control-disabled) !important;
+    filter: none !important;
+    opacity: 1 !important;
+}
+
+body.app-theme-light #mesh-panel .pcui-disabled,
+body.app-theme-light #mesh-panel .pcui-disabled:hover,
+body.app-theme-light #mesh-panel .pcui-disabled:focus,
+body.app-theme-light .menu-row.pcui-disabled,
+body.app-theme-light .menu-row.pcui-disabled > .menu-row-text,
+body.app-theme-light .menu-row.pcui-disabled > .menu-row-postscript,
+body.app-theme-light .menu-row.pcui-disabled > .menu-row-icon,
+body.app-theme-light .menu-row.pcui-disabled svg {
+    color: var(--light-faint) !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    filter: none !important;
+    opacity: 1 !important;
+}
+
+body.app-theme-light .menu-row > .pcui-boolean-input,
+body.app-theme-light .menu-row > .pcui-boolean-input-toggle,
+body.app-theme-light .view-panel-row-toggle,
+body.app-theme-light .viewer-panel-toggle,
+body.app-theme-light .mesh-panel-row-toggle,
+body.app-theme-light .data-panel-toggle {
+    border-color: var(--light-border-strong) !important;
+    background: #D8E0EA !important;
+}
+
+body.app-theme-light .menu-row > .pcui-boolean-input.pcui-boolean-input-ticked,
+body.app-theme-light .menu-row > .pcui-boolean-input-toggle.pcui-boolean-input-ticked,
+body.app-theme-light .view-panel-row-toggle.pcui-boolean-input-ticked,
+body.app-theme-light .viewer-panel-toggle.pcui-boolean-input-ticked,
+body.app-theme-light .mesh-panel-row-toggle.pcui-boolean-input-ticked,
+body.app-theme-light .data-panel-toggle.pcui-boolean-input-ticked {
+    border-color: var(--light-accent) !important;
+    background: var(--light-accent) !important;
+}
+
+body.app-theme-light .splat-list .splat-item .splat-item-text,
+body.app-theme-light .splat-list .splat-item .splat-item-action,
+body.app-theme-light .splat-list .splat-item .splat-item-visible {
+    color: var(--light-muted) !important;
+}
+
+body.app-theme-light .splat-list .splat-item:hover:not(.selected).visible,
+body.app-theme-light .splat-list .splat-item .splat-item-action:hover {
+    color: var(--light-text) !important;
+    background: var(--light-surface-hover) !important;
+}
+
+body.app-theme-light .splat-list .splat-item.selected {
+    background: rgba(37, 111, 216, 0.14) !important;
+    box-shadow: inset 0 0 0 1px rgba(37, 111, 216, 0.26) !important;
+}
+
+body.app-theme-light .splat-list .splat-item.selected .splat-item-text {
+    color: var(--light-accent) !important;
+}
+
+body.app-theme-light .mesh-panel-light-direction-pad {
+    background:
+        linear-gradient(to right, rgba(83, 97, 114, 0.16) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(83, 97, 114, 0.16) 1px, transparent 1px),
+        radial-gradient(circle at 50% 50%, rgba(37, 111, 216, 0.16), transparent 58%),
+        var(--light-surface-raised) !important;
+    background-size: 25%, 25%, 100%, 100% !important;
+}
+
+body.app-theme-light .mesh-panel-texture-preview > div {
+    color: var(--light-muted) !important;
+}
+
+body.app-theme-light:not(.right-panel-collapsed) #color-panel,
+body.app-theme-light:not(.right-panel-collapsed) #viewer-panel,
+body.app-theme-light:not(.right-panel-collapsed) #mesh-panel,
+body.app-theme-light:not(.right-panel-collapsed) #view-panel,
+body.app-theme-light:not(.right-panel-collapsed) #color-panel > .panel-header,
+body.app-theme-light:not(.right-panel-collapsed) #viewer-panel > .panel-header,
+body.app-theme-light:not(.right-panel-collapsed) #mesh-panel > .panel-header,
+body.app-theme-light:not(.right-panel-collapsed) #view-panel > .panel-header,
+body.app-theme-light #color-panel > .color-panel-row,
+body.app-theme-light #color-panel > .color-panel-control-row,
+body.app-theme-light #color-panel > .color-panel-actions,
+body.app-theme-light #viewer-panel > .viewer-panel-section,
+body.app-theme-light #viewer-panel .viewer-panel-advanced-row,
+body.app-theme-light #mesh-panel > .mesh-panel-section-group,
+body.app-theme-light #mesh-panel > .mesh-panel-actions,
+body.app-theme-light #mesh-panel .mesh-panel-row,
+body.app-theme-light #mesh-panel .mesh-panel-texture-block,
+body.app-theme-light #view-panel > .view-panel-row,
+body.app-theme-light #view-panel > .view-panel-actions {
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
 }

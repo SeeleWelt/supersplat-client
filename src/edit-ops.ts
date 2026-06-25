@@ -445,11 +445,11 @@ class MultiOp {
 }
 
 class AddSplatOp {
-    name: 'addSplat';
+    name = 'addElement';
     scene: Scene;
-    splat: Splat;
+    splat: Element;
 
-    constructor(scene: Scene, splat: Splat) {
+    constructor(scene: Scene, splat: Element) {
         this.scene = scene;
         this.splat = splat;
     }
@@ -464,6 +464,33 @@ class AddSplatOp {
 
     destroy() {
         this.splat.destroy();
+    }
+}
+
+class RemoveElementOp {
+    name = 'removeElement';
+    scene: Scene;
+    element: Element;
+
+    constructor(scene: Scene, element: Element) {
+        this.scene = scene;
+        this.element = element;
+    }
+
+    do() {
+        this.scene.remove(this.element);
+    }
+
+    async undo() {
+        await this.scene.add(this.element);
+    }
+
+    destroy() {
+        if (this.element?.scene !== this.scene) {
+            this.element?.destroy();
+        }
+        this.scene = null;
+        this.element = null;
     }
 }
 
@@ -508,5 +535,6 @@ export {
     AnimTrackEditOp,
     MultiOp,
     AddSplatOp,
+    RemoveElementOp,
     SplatRenameOp
 };

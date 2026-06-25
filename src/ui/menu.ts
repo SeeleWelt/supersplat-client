@@ -235,7 +235,7 @@ class Menu extends Container {
             text: localize('menu.select.delete'),
             icon: createSvg(selectDelete),
             extra: shortcutManager.formatShortcut('select.delete'),
-            isEnabled: () => events.invoke('selection.splats'),
+            isEnabled: () => events.invoke('selection.canDelete'),
             onSelect: () => events.fire('select.delete')
         }, {
             text: localize('menu.select.reset'),
@@ -245,7 +245,8 @@ class Menu extends Container {
         }, {
             text: localize('menu.select.duplicate'),
             icon: createSvg(selectDuplicate),
-            isEnabled: () => events.invoke('selection.splats'),
+            extra: shortcutManager.formatShortcut('select.duplicate'),
+            isEnabled: () => events.invoke('selection.canDuplicate'),
             onSelect: () => events.fire('select.duplicate')
         }, {
             text: localize('menu.select.separate'),
@@ -400,7 +401,7 @@ class Menu extends Container {
                 text: localize('menu.select.delete'),
                 icon: createSvg(selectDelete),
                 extra: shortcutManager.formatShortcut('select.delete'),
-                isEnabled: () => events.invoke('selection.splats'),
+                isEnabled: () => events.invoke('selection.canDelete'),
                 onSelect: () => events.fire('select.delete')
             }, {
                 text: localize('menu.select.reset'),
@@ -409,7 +410,8 @@ class Menu extends Container {
             }, {
                 text: localize('menu.select.duplicate'),
                 icon: createSvg(selectDuplicate),
-                isEnabled: () => events.invoke('selection.splats'),
+                extra: shortcutManager.formatShortcut('select.duplicate'),
+                isEnabled: () => events.invoke('selection.canDuplicate'),
                 onSelect: () => events.fire('select.duplicate')
             }, {
                 text: localize('menu.select.separate'),

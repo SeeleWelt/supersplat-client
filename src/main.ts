@@ -16,6 +16,7 @@ import { Scene } from './scene';
 import { getSceneConfig } from './scene-config';
 import { registerSelectionEvents } from './selection';
 import { ShortcutManager } from './shortcut-manager';
+import { getTauriInvoke } from './tauri';
 import { registerTimelineEvents } from './timeline';
 import { BoxSelection } from './tools/box-selection';
 import { BrushSelection } from './tools/brush-selection';
@@ -251,7 +252,7 @@ const main = async () => {
     toolManager.register('scale', new ScaleTool(events, scene));
     toolManager.register('measure', new MeasureTool(events, scene, editorUI.toolsContainer.dom, editorUI.canvasContainer));
 
-    const boundDimensionsOverlay = new BoundDimensionsOverlay(events, scene, editorUI.canvasContainer);
+    new BoundDimensionsOverlay(events, scene, editorUI.canvasContainer);
 
     editorUI.toolsContainer.dom.appendChild(maskCanvas);
 
@@ -264,7 +265,7 @@ const main = async () => {
     registerRenderEvents(scene, events);
     initFileHandler(scene, events, editorUI.appContainer.dom);
 
-    const tauriInvoke = (window as any).__TAURI_INTERNALS__?.invoke;
+    const tauriInvoke = getTauriInvoke();
     if (tauriInvoke) {
         const importNativeDroppedPaths = async (paths: string[]) => {
             if (!Array.isArray(paths) || paths.length === 0) {

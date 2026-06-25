@@ -32,7 +32,7 @@ import { Element, ElementType } from './element';
 import { ModelElement } from './model-element';
 import { Picker } from './picker';
 import { Serializer } from './serializer';
-import { vertexShader, fragmentShader } from './shaders/blit-shader';
+import { vertexShader as finalVertexShader, fragmentShader as finalFragmentShader } from './shaders/final-blit-shader';
 import { Splat } from './splat';
 import { TweenValue } from './tween-value';
 import { ShaderQuad, SimpleRenderPass } from './utils/simple-render-pass';
@@ -43,6 +43,7 @@ const cameraPosition = new Vec3();
 const ray = new Ray();
 const vec = new Vec3();
 const vecb = new Vec3();
+const transparentClr = new Color(0, 0, 0, 0);
 const va = new Vec3();
 const m = new Mat4();
 const v4 = new Vec4();
@@ -314,10 +315,12 @@ class Camera extends Element {
         this.splatPass = new RenderPassForward(device, composition, app.scene, renderer);
         this.gizmoPass = new RenderPassForward(device, composition, app.scene, renderer);
         this.finalPass = new SimpleRenderPass(device,
-            new ShaderQuad(device, vertexShader, fragmentShader, 'final-blit'), {
+            new ShaderQuad(device, finalVertexShader, finalFragmentShader, 'final-blit'), {
                 vars: () => {
+                    const bgClr = scene.events.functions.has('bgClr') ? scene.events.invoke('bgClr') : transparentClr;
                     return {
-                        srcTexture: this.mainTarget.colorBuffer
+                        srcTexture: this.mainTarget.colorBuffer,
+                        bgClr: [bgClr.r, bgClr.g, bgClr.b, bgClr.a]
                     };
                 }
             });
@@ -414,8 +417,7 @@ class Camera extends Element {
         }
     }
 
-    setBackgroundColor(color: Color) {
-        this.clearPass?.setClearColor(color);
+    setBackgroundColor(_color: Color) {
         this.scene.forceRender = true;
     }
 
@@ -529,9 +531,7 @@ class Camera extends Element {
 
             // clear all targets
             this.clearPass.init(this.splatTarget);
-            this.clearPass.setClearColor(
-                scene.events.functions.has('bgClr') ? scene.events.invoke('bgClr') : new Color(0, 0, 0, 0)
-            );
+            this.clearPass.setClearColor(transparentClr);
             this.clearPass.setClearDepth(1);
             this.clearPass.setClearStencil(0);
 
@@ -760,8 +760,19 @@ class Camera extends Element {
         if (result) {
             const { scene } = this;
 
-            this.setFocalPoint(result.position);
-            this.setDistance(result.distance / this.sceneRadius * this.fovFactor);
+            if (result.model) {
+                const bound = result.model.selectedVertexWorldBound ?? result.model.worldBound;
+                if (bound) {
+                    this.focus({
+                        focalPoint: bound.center,
+                        radius: bound.halfExtents.length(),
+                        speed: 1
+                    });
+                }
+            } else {
+                this.setFocalPoint(result.position);
+                this.setDistance(result.distance / this.sceneRadius * this.fovFactor);
+            }
             scene.events.fire('camera.focalPointPicked', {
                 camera: this,
                 element: result.element,

@@ -31,6 +31,11 @@
             </div>
             <div id="desktop-titlebar-drag" data-tauri-drag-region></div>
             <div id="desktop-titlebar-window-controls">
+                <button id="desktop-titlebar-settings" class="desktop-titlebar-window-button settings" type="button" title="Settings" aria-label="Settings">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M19.4 13.5a7.8 7.8 0 0 0 .1-1.5 7.8 7.8 0 0 0-.1-1.5l2-1.5-2-3.4-2.4 1a7.4 7.4 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.6A7.4 7.4 0 0 0 7 6.6l-2.4-1-2 3.4 2 1.5a7.8 7.8 0 0 0-.1 1.5 7.8 7.8 0 0 0 .1 1.5l-2 1.5 2 3.4 2.4-1a7.4 7.4 0 0 0 2.6 1.5l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.5ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z"/>
+                    </svg>
+                </button>
                 <button id="desktop-titlebar-minimize" class="desktop-titlebar-window-button minimize" type="button" title="Minimize" aria-label="Minimize"></button>
                 <button id="desktop-titlebar-maximize" class="desktop-titlebar-window-button maximize" type="button" title="Maximize" aria-label="Maximize"></button>
                 <button id="desktop-titlebar-close" class="desktop-titlebar-window-button close" type="button" title="Close" aria-label="Close"></button>
@@ -40,7 +45,8 @@
         <script>
             (() => {
                 const invoke = (command) => {
-                    const tauriInvoke = window.__TAURI_INTERNALS__?.invoke;
+                    const tauri = window.__TAURI__;
+                    const tauriInvoke = tauri?.core?.invoke ?? tauri?.invoke ?? window.__TAURI_INTERNALS__?.invoke;
                     if (!tauriInvoke) {
                         return Promise.resolve();
                     }
@@ -57,6 +63,8 @@
 
                 document.getElementById('desktop-titlebar-minimize')
                     ?.addEventListener('click', () => invoke('window_minimize'));
+                document.getElementById('desktop-titlebar-settings')
+                    ?.addEventListener('click', () => window.dispatchEvent(new Event('desktop-settings-request')));
                 document.getElementById('desktop-titlebar-maximize')
                     ?.addEventListener('click', toggleMaximize);
                 document.getElementById('desktop-titlebar-close')

@@ -9,6 +9,7 @@ import {
 import { Element } from '../element';
 import { Events } from '../events';
 import { MeshViewportMode, ModelElement } from '../model-element';
+import type { ModelElementMaterialState } from '../model-element';
 import { localize } from './localization';
 import { Tooltips } from './tooltips';
 
@@ -54,8 +55,14 @@ type TextureSlotView = {
 };
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-const BLENDER_DEFAULT_BASE_COLOR = 0.8;
+const BLENDER_DEFAULT_BASE_COLOR = 1;
 const BLENDER_DEFAULT_ROUGHNESS = 0.5;
+const roughnessFromMaterialState = (state: ModelElementMaterialState) => (
+    state.glossInvert ? state.gloss : 1 - state.gloss
+);
+const glossFromRoughness = (roughness: number, state: ModelElementMaterialState | null | undefined) => (
+    state?.glossInvert ? roughness : 1 - roughness
+);
 
 class MeshPanel extends Container {
     constructor(events: Events, tooltips: Tooltips, args = {}) {
@@ -226,8 +233,8 @@ class MeshPanel extends Container {
         const diffuseTextureView = createTextureSlotView('diffuse', localize('panel.mesh.texture.diffuse-map'));
         const normalTextureView = createTextureSlotView('normal', localize('panel.mesh.texture.normal-map'));
 
-        const ambient = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 2, precision: 2, value: 0.8 });
-        const keyIntensity = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 3, precision: 2, value: 0.85 });
+        const ambient = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 2, precision: 2, value: 0 });
+        const keyIntensity = new SliderInput({ class: 'mesh-panel-row-slider', min: 0, max: 3, precision: 2, value: 0.75 });
         const keyYaw = new SliderInput({ class: 'mesh-panel-row-slider', min: -180, max: 180, precision: 0, value: -35 });
         const keyPitch = new SliderInput({ class: 'mesh-panel-row-slider', min: -90, max: 90, precision: 0, value: 55 });
         const keyColor = new ColorPicker({
@@ -463,7 +470,7 @@ class MeshPanel extends Container {
                 emissive.value = [state.emissive.r, state.emissive.g, state.emissive.b];
                 opacity.value = state.opacity;
                 metalness.value = state.metalness;
-                roughness.value = 1 - state.gloss;
+                roughness.value = roughnessFromMaterialState(state);
                 emissiveIntensity.value = state.emissiveIntensity;
                 cull.value = `${state.cull}`;
                 vertexSelectionCount.text = `${selected.selectedVertexCount} / ${selected.vertexCount}`;
@@ -484,7 +491,7 @@ class MeshPanel extends Container {
         emissive.on('change', (value: number[]) => apply({ emissive: new Color(value[0], value[1], value[2]) }));
         opacity.on('change', (value: number) => apply({ opacity: value }));
         metalness.on('change', (value: number) => apply({ metalness: value }));
-        roughness.on('change', (value: number) => apply({ gloss: 1 - value }));
+        roughness.on('change', (value: number) => apply({ gloss: glossFromRoughness(value, selected?.materialState) }));
         emissiveIntensity.on('change', (value: number) => apply({ emissiveIntensity: value }));
         cull.on('change', (value: string) => apply({ cull: parseInt(value, 10) }));
         viewportModeButtons.forEach((button, mode) => {
@@ -519,7 +526,7 @@ class MeshPanel extends Container {
         const saveTexture = async (slot: TextureSlot) => {
             if (!selected) return;
 
-            events.fire('startSpinner');
+            events.fire('startSpinner', localize('busy.saving-texture'));
             try {
                 const texturePng = await selected.createTexturePng(slot);
                 if (!texturePng) {
@@ -566,7 +573,7 @@ class MeshPanel extends Container {
         texturePicker.addEventListener('change', async () => {
             const file = texturePicker.files?.[0];
             if (!selected || !file) return;
-            events.fire('startSpinner');
+            events.fire('startSpinner', localize('busy.updating-texture'));
             try {
                 await selected.setTexture(textureSlot, file);
             } finally {
@@ -576,8 +583,8 @@ class MeshPanel extends Container {
 
         const updateLightingUI = () => {
             const lighting = events.functions.has('mesh.lighting') ? events.invoke('mesh.lighting') : {
-                ambientIntensity: 0.8,
-                keyIntensity: 0.85,
+                ambientIntensity: 0,
+                keyIntensity: 0.75,
                 keyYaw: -35,
                 keyPitch: 55,
                 keyColor: new Color(1, 1, 1)
@@ -608,23 +615,11 @@ class MeshPanel extends Container {
 
         reset.on('click', () => {
             if (selected) {
-                selected.applyMaterialState({
-                    diffuse: new Color(BLENDER_DEFAULT_BASE_COLOR, BLENDER_DEFAULT_BASE_COLOR, BLENDER_DEFAULT_BASE_COLOR),
-                    opacity: 1,
-                    metalness: 0,
-                    gloss: 1 - BLENDER_DEFAULT_ROUGHNESS,
-                    emissive: new Color(0, 0, 0),
-                    emissiveIntensity: 0,
-                    useLighting: true,
-                    cull: CULLFACE_NONE
-                });
-                selected.applyViewportMode('rendered');
-                selected.resetTexture('diffuse');
-                selected.resetTexture('normal');
+                selected.resetMaterialState();
             }
             events.fire('mesh.setLighting', {
-                ambientIntensity: 0.8,
-                keyIntensity: 0.85,
+                ambientIntensity: 0,
+                keyIntensity: 0.75,
                 keyYaw: -35,
                 keyPitch: 55,
                 keyColor: new Color(1, 1, 1)
@@ -673,14 +668,13 @@ class MeshPanel extends Container {
             if (selected) {
                 events.fire('colorPanel.setVisible', false);
                 events.fire('viewerPanel.setVisible', false);
-                events.fire('viewPanel.setVisible', false);
                 setVisible(true);
             } else {
                 setVisible(false);
             }
         });
 
-        ['colorPanel.visible', 'viewerPanel.visible', 'viewPanel.visible'].forEach((name) => {
+        ['colorPanel.visible', 'viewerPanel.visible'].forEach((name) => {
             events.on(name, (visible: boolean) => {
                 if (visible) {
                     setVisible(false);

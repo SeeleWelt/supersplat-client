@@ -81,12 +81,6 @@ class RightToolbar extends Container {
             icon: 'E220'
         });
 
-        const options = new Button({
-            id: 'right-toolbar-options',
-            class: 'right-toolbar-toggle',
-            icon: 'E283'
-        });
-
         const centersDom = createSvg(centersSvg);
         const ringsDom = createSvg(ringsSvg);
         ringsDom.style.display = 'none';
@@ -113,7 +107,6 @@ class RightToolbar extends Container {
         this.append(viewerPanel);
         this.append(colorPanel);
         this.append(meshPanel);
-        this.append(options);
 
         // Helper to compose localized tooltip text with shortcut
         const shortcutManager: ShortcutManager = events.invoke('shortcutManager');
@@ -137,7 +130,6 @@ class RightToolbar extends Container {
         tooltips.register(viewerPanel, tooltip('tooltip.right-toolbar.viewer'), 'left');
         tooltips.register(colorPanel, tooltip('tooltip.right-toolbar.colors'), 'left');
         tooltips.register(meshPanel, tooltip('tooltip.right-toolbar.mesh'), 'left');
-        tooltips.register(options, tooltip('tooltip.right-toolbar.view-options'), 'left');
 
         // add event handlers
 
@@ -153,7 +145,6 @@ class RightToolbar extends Container {
         viewerPanel.on('click', () => events.fire('viewerPanel.toggleVisible'));
         colorPanel.on('click', () => events.fire('colorPanel.toggleVisible'));
         meshPanel.on('click', () => events.fire('meshPanel.toggleVisible'));
-        options.on('click', () => events.fire('viewPanel.toggleVisible'));
 
         events.on('camera.mode', (mode: string) => {
             ringsModeToggle.class[mode === 'rings' ? 'add' : 'remove']('active');
@@ -180,10 +171,6 @@ class RightToolbar extends Container {
 
         events.on('meshPanel.visible', (visible: boolean) => {
             meshPanel.class[visible ? 'add' : 'remove']('active');
-        });
-
-        events.on('viewPanel.visible', (visible: boolean) => {
-            options.class[visible ? 'add' : 'remove']('active');
         });
 
         events.on('selection.changed', (selection: SceneElement) => {

@@ -462,7 +462,7 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
         fileSelector.setAttribute('accept', '.ply,.splat,meta.json,.json,.webp,.sog,.lcc,.bin,.txt,.ksplat,.spz,.glb,.gltf,.obj,.stl,.fbx,.dae,.3ds,.blend,.usdz,.usd,.usda,.usdc,.abc,.png,.jpg,.jpeg,.ktx2,.basis');
         fileSelector.setAttribute('multiple', 'true');
 
-        fileSelector.onchange = () => {
+        fileSelector.onchange = async () => {
             const files = [];
             for (let i = 0; i < fileSelector.files.length; i++) {
                 const file = fileSelector.files[i];
@@ -471,7 +471,11 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
                     contents: file
                 });
             }
-            importFiles(files, false, false);
+            const result = await importFiles(files, false, false);
+            if (result !== false) {
+                events.fire('scene.filesDropped');
+                events.fire('scene.importedFiles', files);
+            }
             fileSelector.value = '';
         };
         document.body.append(fileSelector);
@@ -479,15 +483,17 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
 
     // create the file drag & drop handler
     CreateDropHandler(dropTarget.ownerDocument, async (entries, shift) => {
-        const result = await importFiles(entries.map((e) => {
+        const files = entries.map((e) => {
             return {
                 filename: e.filename,
                 contents: e.file,
                 handle: e.handle
             };
-        }));
+        });
+        const result = await importFiles(files);
         if (result !== false) {
             events.fire('scene.filesDropped');
+            events.fire('scene.importedFiles', files);
         }
     });
 
@@ -548,11 +554,16 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
             for (let i = 0; i < handles.length; i++) {
                 files.push({
                     filename: handles[i].name,
-                    contents: await handles[i].getFile()
+                    contents: await handles[i].getFile(),
+                    handle: handles[i]
                 });
             }
 
-            return await importFiles(files, false, false);
+            const result = await importFiles(files, false, false);
+            if (result !== false) {
+                events.fire('scene.importedFiles', files);
+            }
+            return result;
 
         } catch (error) {
             if (error.name !== 'AbortError') {
@@ -636,7 +647,7 @@ const initFileHandler = (scene: Scene, events: Events, dropTarget: HTMLElement) 
         const useSpinner = fileType !== 'sog' && fileType !== 'htmlViewer' && fileType !== 'packageViewer';
 
         if (useSpinner) {
-            events.fire('startSpinner');
+            events.fire('startSpinner', localize('busy.exporting-scene'));
         }
 
         try {

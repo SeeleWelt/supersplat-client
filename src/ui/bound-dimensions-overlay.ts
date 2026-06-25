@@ -1,9 +1,9 @@
 import { Container } from '@playcanvas/pcui';
 import { Vec3 } from 'playcanvas';
 
+import { ElementType } from '../element';
 import { Events } from '../events';
 import { Scene } from '../scene';
-import { Splat } from '../splat';
 
 const corners = Array.from({ length: 8 }, () => new Vec3());
 const screenCorners = Array.from({ length: 8 }, () => new Vec3());
@@ -60,10 +60,13 @@ class BoundDimensionsOverlay {
         }
 
         events.on('prerender', () => {
-            const selection = events.invoke('selection') as Splat;
+            const selection = events.invoke('selection') as any;
+            const supportsDimensions = selection?.type === ElementType.splat || selection?.type === ElementType.model;
 
-            if (!selection ||
+            if (!supportsDimensions ||
                 !selection.visible ||
+                !selection.localBound ||
+                !selection.entity ||
                 !events.invoke('camera.boundDimensions')) {
                 svg.classList.add('hidden');
                 return;

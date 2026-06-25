@@ -14,13 +14,26 @@
     "license": "MIT",
     "main": "index.js",
     "scripts": {
-        "build": "rollup -c",
-        "watch": "rollup -c -w",
+        "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 rollup -c",
+        "build:viewer": "cross-env NODE_OPTIONS=--max-old-space-size=8192 rollup -c rollup.viewer.config.mjs",
+        "build:all": "npm run build && npm run build:viewer",
+        "build:all:parallel": "concurrently --kill-others -n editor,viewer \"npm run build\" \"npm run build:viewer\"",
+        "generate:viewer-video": "node scripts/generate-viewer-brand-video.mjs",
+        "watch": "cross-env NODE_OPTIONS=--max-old-space-size=8192 rollup -c -w",
+        "watch:viewer": "cross-env NODE_OPTIONS=--max-old-space-size=8192 rollup -c rollup.viewer.config.mjs -w",
         "serve": "serve dist -C -l 1420",
+        "serve:viewer": "serve dist-viewer -C -l 1430",
         "develop": "cross-env BUILD_TYPE=debug concurrently --kill-others \"npm run watch\" \"npm run serve\"",
+        "develop:viewer": "cross-env BUILD_TYPE=debug concurrently --kill-others \"npm run watch:viewer\" \"npm run serve:viewer\"",
         "develop:auto-launch": "concurrently --kill-others \"xdg-open 'http://localhost:1420/'\" \"npm run watch\" \"npm run serve\"",
         "lint": "eslint src",
-        "tauri": "tauri"
+        "tauri": "tauri",
+        "tauri:editor:dev": "tauri dev",
+        "tauri:editor:build": "tauri build",
+        "tauri:viewer": "tauri dev --config src-tauri/tauri.viewer.conf.json",
+        "tauri:viewer:dev": "tauri dev --config src-tauri/tauri.viewer.conf.json",
+        "tauri:viewer:build": "tauri build --config src-tauri/tauri.viewer.conf.json",
+        "tauri:build:all": "npm run tauri:editor:build && npm run tauri:viewer:build"
     },
     "engines": {
         "node": ">=20.19.0"

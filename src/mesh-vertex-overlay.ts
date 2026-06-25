@@ -5,9 +5,6 @@ import {
     Mesh,
     MeshInstance,
     PRIMITIVE_LINES,
-    PRIMITIVE_POINTS,
-    PRIMITIVE_TRIANGLES,
-    RENDERSTYLE_POINTS,
     SEMANTIC_COLOR,
     SEMANTIC_POSITION,
     ShaderMaterial
@@ -17,7 +14,6 @@ import { Element, ElementType } from './element';
 import { ModelElement } from './model-element';
 
 const blenderSelectedColor = [1.0, 0.48, 0.0, 1.0];
-const blenderUnselectedColor = [0.04, 0.04, 0.04, 0.45];
 
 const createOverlayMesh = (device: any, positions: number[], colors: number[], primitiveType: number) => {
     const mesh = new Mesh(device);
@@ -28,11 +24,51 @@ const createOverlayMesh = (device: any, positions: number[], colors: number[], p
     return mesh;
 };
 
+const createEdgeMaterial = (uniqueName: string) => {
+    const material = new ShaderMaterial({
+        uniqueName,
+        attributes: {
+            vertex_position: SEMANTIC_POSITION,
+            vertex_color: SEMANTIC_COLOR
+        },
+        vertexGLSL: /* glsl */ `
+            attribute vec3 vertex_position;
+            attribute vec4 vertex_color;
+
+            uniform mat4 matrix_model;
+            uniform mat4 matrix_viewProjection;
+
+            varying vec4 vColor;
+
+            void main(void) {
+                vColor = vertex_color;
+                gl_Position = matrix_viewProjection * matrix_model * vec4(vertex_position, 1.0);
+            }
+        `,
+        fragmentGLSL: /* glsl */ `
+            precision highp float;
+
+            uniform vec4 tintClr;
+
+            varying vec4 vColor;
+
+            void main(void) {
+                gl_FragColor = vec4(tintClr.rgb, tintClr.a * vColor.a);
+            }
+        `
+    });
+
+    material.blendType = BLEND_NORMAL;
+    material.depthWrite = false;
+    material.depthTest = true;
+    material.cull = CULLFACE_NONE;
+    material.update();
+    return material;
+};
+
 class MeshVertexOverlay extends Element {
     entity: Entity;
-    pointMaterial: ShaderMaterial;
-    faceMaterial: ShaderMaterial;
-    edgeMaterial: ShaderMaterial;
+    selectedEdgeMaterial: ShaderMaterial;
     meshes: Mesh[] = [];
     meshInstances: MeshInstance[] = [];
     model: ModelElement | null = null;
@@ -45,133 +81,7 @@ class MeshVertexOverlay extends Element {
     add() {
         const { scene } = this;
 
-        this.pointMaterial = new ShaderMaterial({
-            uniqueName: 'meshVertexOverlayMaterial',
-            attributes: {
-                vertex_position: SEMANTIC_POSITION,
-                vertex_color: SEMANTIC_COLOR
-            },
-            vertexGLSL: /* glsl */ `
-                attribute vec3 vertex_position;
-                attribute vec4 vertex_color;
-
-                uniform mat4 matrix_model;
-                uniform mat4 matrix_viewProjection;
-                uniform float pointScale;
-
-                varying vec4 vColor;
-                varying float vSelected;
-
-                void main(void) {
-                    vColor = vertex_color;
-                    vSelected = vertex_color.a > 0.9 ? 1.0 : 0.0;
-                    gl_Position = matrix_viewProjection * matrix_model * vec4(vertex_position, 1.0);
-                    gl_PointSize = 4.0 * pointScale;
-                }
-            `,
-            fragmentGLSL: /* glsl */ `
-                precision highp float;
-
-                uniform vec4 selectedClr;
-                uniform vec4 unselectedClr;
-
-                varying vec4 vColor;
-                varying float vSelected;
-
-                void main(void) {
-                    vec2 delta = gl_PointCoord - vec2(0.5);
-                    float radius = dot(delta, delta);
-                    if (radius > 0.25) {
-                        discard;
-                    }
-
-                    float soft = smoothstep(0.25, 0.09, radius);
-                    vec4 clr = vSelected > 0.5 ? selectedClr : unselectedClr;
-                    gl_FragColor = vec4(clr.rgb, min(clr.a, 0.45) * vColor.a * soft);
-                }
-            `
-        });
-        this.pointMaterial.blendType = BLEND_NORMAL;
-        this.pointMaterial.depthWrite = false;
-        this.pointMaterial.depthTest = false;
-        this.pointMaterial.cull = CULLFACE_NONE;
-        this.pointMaterial.update();
-
-        this.faceMaterial = new ShaderMaterial({
-            uniqueName: 'meshVertexFaceOverlayMaterial',
-            attributes: {
-                vertex_position: SEMANTIC_POSITION,
-                vertex_color: SEMANTIC_COLOR
-            },
-            vertexGLSL: /* glsl */ `
-                attribute vec3 vertex_position;
-                attribute vec4 vertex_color;
-
-                uniform mat4 matrix_model;
-                uniform mat4 matrix_viewProjection;
-
-                varying vec4 vColor;
-
-                void main(void) {
-                    vColor = vertex_color;
-                    gl_Position = matrix_viewProjection * matrix_model * vec4(vertex_position, 1.0);
-                }
-            `,
-            fragmentGLSL: /* glsl */ `
-                precision highp float;
-
-                uniform vec4 selectedClr;
-
-                varying vec4 vColor;
-
-                void main(void) {
-                    gl_FragColor = vec4(selectedClr.rgb, vColor.a * 0.22);
-                }
-            `
-        });
-        this.faceMaterial.blendType = BLEND_NORMAL;
-        this.faceMaterial.depthWrite = false;
-        this.faceMaterial.depthTest = true;
-        this.faceMaterial.cull = CULLFACE_NONE;
-        this.faceMaterial.update();
-
-        this.edgeMaterial = new ShaderMaterial({
-            uniqueName: 'meshVertexEdgeOverlayMaterial',
-            attributes: {
-                vertex_position: SEMANTIC_POSITION,
-                vertex_color: SEMANTIC_COLOR
-            },
-            vertexGLSL: /* glsl */ `
-                attribute vec3 vertex_position;
-                attribute vec4 vertex_color;
-
-                uniform mat4 matrix_model;
-                uniform mat4 matrix_viewProjection;
-
-                varying vec4 vColor;
-
-                void main(void) {
-                    vColor = vertex_color;
-                    gl_Position = matrix_viewProjection * matrix_model * vec4(vertex_position, 1.0);
-                }
-            `,
-            fragmentGLSL: /* glsl */ `
-                precision highp float;
-
-                uniform vec4 selectedClr;
-
-                varying vec4 vColor;
-
-                void main(void) {
-                    gl_FragColor = vec4(selectedClr.rgb, vColor.a);
-                }
-            `
-        });
-        this.edgeMaterial.blendType = BLEND_NORMAL;
-        this.edgeMaterial.depthWrite = false;
-        this.edgeMaterial.depthTest = false;
-        this.edgeMaterial.cull = CULLFACE_NONE;
-        this.edgeMaterial.update();
+        this.selectedEdgeMaterial = createEdgeMaterial('meshVertexSelectedEdgeOverlayMaterial');
 
         this.entity = new Entity('meshVertexOverlay');
         this.entity.addComponent('render', {
@@ -219,9 +129,7 @@ class MeshVertexOverlay extends Element {
         this.model?.setVertexSelectionPreviewVisible(false);
         this.entity?.remove();
         this.meshes.forEach(mesh => mesh.destroy());
-        this.pointMaterial?.destroy();
-        this.faceMaterial?.destroy();
-        this.edgeMaterial?.destroy();
+        this.selectedEdgeMaterial?.destroy();
         this.entity?.destroy();
     }
 
@@ -239,39 +147,18 @@ class MeshVertexOverlay extends Element {
             return;
         }
 
-        const selectedVertexCount = this.model.selectedVertexCount;
-        const vertexData = this.model.getVertexOverlayData(selectedVertexCount === 0);
-        if (!vertexData.positions.length) {
-            this.setMeshInstances([]);
-            return;
-        }
+        if (this.model.selectedVertexCount > 0) {
+            const wireData = this.model.getWireOverlayData(true, 1, 1);
 
-        if (selectedVertexCount > 0) {
-            const faceData = this.model.getSelectedFaceOverlayData();
-            if (faceData.trianglePositions.length && this.model.viewportMode !== 'wireframe') {
+            if (wireData.edgePositions.length) {
                 const mesh = createOverlayMesh(
                     this.scene.graphicsDevice,
-                    faceData.trianglePositions,
-                    faceData.triangleColors,
-                    PRIMITIVE_TRIANGLES
-                );
-
-                const meshInstance = new MeshInstance(mesh, this.faceMaterial);
-                meshInstance.cull = false;
-                meshInstance.drawBucket = 128;
-                this.meshes.push(mesh);
-                this.meshInstances.push(meshInstance);
-            }
-
-            if (faceData.edgePositions.length && this.model.viewportMode !== 'wireframe') {
-                const mesh = createOverlayMesh(
-                    this.scene.graphicsDevice,
-                    faceData.edgePositions,
-                    faceData.edgeColors,
+                    wireData.edgePositions,
+                    wireData.edgeColors,
                     PRIMITIVE_LINES
                 );
 
-                const meshInstance = new MeshInstance(mesh, this.edgeMaterial);
+                const meshInstance = new MeshInstance(mesh, this.selectedEdgeMaterial);
                 meshInstance.cull = false;
                 meshInstance.drawBucket = 129;
                 this.meshes.push(mesh);
@@ -279,31 +166,11 @@ class MeshVertexOverlay extends Element {
             }
         }
 
-        if (vertexData.positions.length) {
-            const mesh = createOverlayMesh(
-                this.scene.graphicsDevice,
-                vertexData.positions,
-                vertexData.colors,
-                PRIMITIVE_POINTS
-            );
-
-            const meshInstance = new MeshInstance(mesh, this.pointMaterial);
-            meshInstance.renderStyle = RENDERSTYLE_POINTS;
-            meshInstance.cull = false;
-            meshInstance.drawBucket = 130;
-            this.meshes.push(mesh);
-            this.meshInstances.push(meshInstance);
-        }
-
         this.setMeshInstances(this.meshInstances);
     }
 
     private updateMaterialParameters() {
-        this.pointMaterial.setParameter('pointScale', window.devicePixelRatio);
-        this.pointMaterial.setParameter('selectedClr', blenderSelectedColor);
-        this.pointMaterial.setParameter('unselectedClr', blenderUnselectedColor);
-        this.faceMaterial.setParameter('selectedClr', blenderSelectedColor);
-        this.edgeMaterial.setParameter('selectedClr', blenderSelectedColor);
+        this.selectedEdgeMaterial.setParameter('tintClr', blenderSelectedColor);
     }
 
     onPreRender() {

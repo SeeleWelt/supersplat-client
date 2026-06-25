@@ -18,6 +18,12 @@ type SourceFile = {
 
 const directModelExtensions = ['.glb', '.gltf', '.obj', '.stl'];
 const conversionOnlyModelExtensions = ['.fbx', '.dae', '.3ds', '.blend', '.usdz', '.usd', '.usda', '.usdc', '.abc'];
+const gsplatPlyRequiredProperties = [
+    'x', 'y', 'z',
+    'scale_0', 'scale_1', 'scale_2',
+    'rot_0', 'rot_1', 'rot_2', 'rot_3',
+    'f_dc_0', 'f_dc_1', 'f_dc_2', 'opacity'
+];
 
 const readAllBytes = async (filename: string, fileSystem: ReadFileSystem) => {
     const source = await fileSystem.createSource(filename);
@@ -65,6 +71,53 @@ const displayNameForSource = (filename: string, sourceFiles?: SourceFile[]) => {
     return displayNameForFile(sourceFiles?.[0]?.filename ?? filename);
 };
 
+const getPlyHeader = (bytes: Uint8Array) => {
+    const marker = new TextEncoder().encode('end_header');
+    for (let i = 0; i <= bytes.length - marker.length; i++) {
+        let match = true;
+        for (let j = 0; j < marker.length; j++) {
+            if (bytes[i + j] !== marker[j]) {
+                match = false;
+                break;
+            }
+        }
+
+        if (match) {
+            let end = i + marker.length;
+            while (end < bytes.length && bytes[end] !== 10) {
+                end++;
+            }
+            return new TextDecoder().decode(bytes.subarray(0, end < bytes.length ? end + 1 : end));
+        }
+    }
+
+    throw new Error('Invalid PLY file: missing end_header');
+};
+
+const inspectPlyHeader = (bytes: Uint8Array) => {
+    const properties = new Set<string>();
+    let currentElement = '';
+    let hasFaceElement = false;
+
+    getPlyHeader(bytes).split(/\r?\n/).forEach((line) => {
+        const parts = line.trim().toLowerCase().split(/\s+/);
+        if (parts[0] === 'element') {
+            currentElement = parts[1] ?? '';
+            hasFaceElement ||= currentElement === 'face';
+        } else if (parts[0] === 'property' && currentElement === 'vertex') {
+            properties.add(parts[parts.length - 1]);
+        }
+    });
+
+    return { hasFaceElement, properties };
+};
+
+const shouldLoadPlyAsMesh = (bytes: Uint8Array) => {
+    const { hasFaceElement, properties } = inspectPlyHeader(bytes);
+    const hasGaussianProperties = gsplatPlyRequiredProperties.every(property => properties.has(property));
+    return hasFaceElement || !hasGaussianProperties;
+};
+
 // handles loading gsplat assets using splat-transform
 class AssetLoader {
     app: AppBase;
@@ -83,7 +136,7 @@ class AssetLoader {
         sourceFiles?: SourceFile[]
     ) {
         if (!animationFrame) {
-            this.events.fire('startSpinner');
+            this.events.fire('startSpinner', localize('busy.loading-model'));
         }
 
         try {
@@ -95,6 +148,13 @@ class AssetLoader {
 
             if (endsWithAny(lowerFilename, directModelExtensions)) {
                 return await this.loadModel(filename, fileSystem, sourceFiles, displayName);
+            }
+
+            if (lowerFilename.endsWith('.ply') && !lowerFilename.endsWith('.compressed.ply')) {
+                const bytes = await readAllBytes(filename, fileSystem);
+                if (shouldLoadPlyAsMesh(bytes)) {
+                    return new ModelElement(filename, parsePlyModel(bytes), displayName, sourceFiles);
+                }
             }
 
             try {
@@ -113,7 +173,7 @@ class AssetLoader {
                 }
 
                 const data = parsePlyModel(await readAllBytes(filename, fileSystem));
-                return new ModelElement(filename, data, displayName);
+                return new ModelElement(filename, data, displayName, sourceFiles);
             }
         } finally {
             if (!animationFrame) {
@@ -126,11 +186,11 @@ class AssetLoader {
         const lowerFilename = filename.toLowerCase();
 
         if (lowerFilename.endsWith('.obj')) {
-            return new ModelElement(filename, parseObjModel(await readText(filename, fileSystem)), displayName);
+            return new ModelElement(filename, parseObjModel(await readText(filename, fileSystem)), displayName, sourceFiles);
         }
 
         if (lowerFilename.endsWith('.stl')) {
-            return new ModelElement(filename, parseStlModel(await readAllBytes(filename, fileSystem)), displayName);
+            return new ModelElement(filename, parseStlModel(await readAllBytes(filename, fileSystem)), displayName, sourceFiles);
         }
 
         return await this.loadContainerModel(filename, fileSystem, sourceFiles, displayName);
@@ -191,7 +251,7 @@ class AssetLoader {
                 receiveShadows: false
             });
             entity.name = displayName;
-            return new ModelElement(filename, entity, displayName);
+            return new ModelElement(filename, entity, displayName, sourceFiles);
         } finally {
             createdUrls.forEach(objectUrl => URL.revokeObjectURL(objectUrl));
         }

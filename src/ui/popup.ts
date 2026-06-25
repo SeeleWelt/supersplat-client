@@ -53,9 +53,14 @@ class Popup extends Container {
         linkRow.append(linkText);
         linkRow.append(linkCopy);
 
-        const okButton = new Button({
+        const closeButton = new Button({
             class: 'popup-button',
-            text: localize('popup.ok')
+            text: localize('popup.close')
+        });
+
+        const continueButton = new Button({
+            class: 'popup-button',
+            text: localize('popup.continue')
         });
 
         const cancelButton = new Button({
@@ -77,8 +82,9 @@ class Popup extends Container {
             id: 'popup-buttons'
         });
 
-        buttons.append(okButton);
+        buttons.append(closeButton);
         buttons.append(cancelButton);
+        buttons.append(continueButton);
         buttons.append(yesButton);
         buttons.append(noButton);
 
@@ -89,15 +95,20 @@ class Popup extends Container {
 
         this.append(dialog);
 
-        let okFn: () => void;
+        let closeFn: () => void;
+        let continueFn: () => void;
         let cancelFn: () => void;
         let yesFn: () => void;
         let noFn: () => void;
         let containerFn: () => void;
         let copyFn: () => void;
 
-        okButton.on('click', () => {
-            okFn();
+        closeButton.on('click', () => {
+            closeFn();
+        });
+
+        continueButton.on('click', () => {
+            continueFn();
         });
 
         cancelButton.on('click', () => {
@@ -125,13 +136,14 @@ class Popup extends Container {
         });
 
         this.show = (options: ShowOptions) => {
-            okButton.text = localize('popup.ok');
+            closeButton.text = localize('popup.close');
+            continueButton.text = localize('popup.continue');
             cancelButton.text = localize('popup.cancel');
             yesButton.text = localize('popup.yes');
             noButton.text = localize('popup.no');
             buttons.dom.classList.toggle('savecancel', options.type === 'savecancel');
             if (options.type === 'savecancel') {
-                okButton.text = localize('doc.close-save');
+                closeButton.text = localize('doc.close-save');
                 noButton.text = localize('doc.close-discard');
             }
 
@@ -145,10 +157,16 @@ class Popup extends Container {
             });
 
             // configure based on message type
-            okButton.hidden = type === 'yesno';
-            cancelButton.hidden = type !== 'okcancel' && type !== 'savecancel';
-            yesButton.hidden = type !== 'yesno';
-            noButton.hidden = type !== 'yesno' && type !== 'savecancel';
+            const showButton = (button: Button, visible: boolean) => {
+                button.hidden = !visible;
+                button.dom.style.display = visible ? '' : 'none';
+            };
+
+            showButton(closeButton, type === 'error' || type === 'info' || type === 'savecancel');
+            showButton(continueButton, type === 'okcancel');
+            showButton(cancelButton, type === 'okcancel' || type === 'savecancel');
+            showButton(yesButton, type === 'yesno');
+            showButton(noButton, type === 'yesno' || type === 'savecancel');
             this.hidden = false;
 
             linkRow.hidden = link === undefined;
@@ -161,10 +179,16 @@ class Popup extends Container {
             this.dom.focus();
 
             return new Promise<{action: string, value?: string}>((resolve) => {
-                okFn = () => {
+                closeFn = () => {
                     this.hide();
                     resolve({
                         action: type === 'savecancel' ? 'save' : 'ok'
+                    });
+                };
+                continueFn = () => {
+                    this.hide();
+                    resolve({
+                        action: 'ok'
                     });
                 };
                 cancelFn = () => {
@@ -181,7 +205,7 @@ class Popup extends Container {
                 };
                 containerFn = () => {
                     if (type === 'info' && link === undefined) {
-                        cancelFn();
+                        closeFn();
                     }
                 };
                 copyFn = () => {

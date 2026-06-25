@@ -1,0 +1,23 @@
+{
+  "productName": "Ningjing Viewer",
+  "identifier": "com.opcmate.ningjing.viewer",
+  "build": {
+    "frontendDist": "../dist-viewer",
+    "devUrl": "http://localhost:1430",
+    "beforeDevCommand": "npm run develop:viewer",
+    "beforeBuildCommand": "npm run build:viewer"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Ningjing Viewer",
+        "width": 1200,
+        "height": 820,
+        "decorations": true,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ]
+  }
+}

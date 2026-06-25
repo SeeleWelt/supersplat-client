@@ -3,6 +3,7 @@ import { Mat4, path, Vec3 } from 'playcanvas';
 
 import { ElementType } from '../element';
 import { Events } from '../events';
+import { getTauriInvoke } from '../tauri';
 import { AboutPopup } from './about-popup';
 import logo from './app-logo.png';
 import { BottomToolbar } from './bottom-toolbar';
@@ -30,7 +31,6 @@ import { Tooltips } from './tooltips';
 import { TransformPanel } from './transform-panel';
 import { VideoSettingsDialog } from './video-settings-dialog';
 import { ViewCube } from './view-cube';
-import { ViewPanel } from './view-panel';
 import { ViewerPanel } from './viewer-panel';
 import { WelcomeScreen } from './welcome-screen';
 
@@ -129,7 +129,6 @@ class EditorUI {
         const scenePanel = new ScenePanel(events, tooltips);
         const transformPanel = new TransformPanel(events, tooltips);
         const viewerPanel = new ViewerPanel(events, tooltips);
-        const viewPanel = new ViewPanel(events, tooltips);
         const colorPanel = new ColorPanel(events, tooltips);
         const meshPanel = new MeshPanel(events, tooltips);
         const bottomToolbar = new BottomToolbar(events, tooltips);
@@ -196,7 +195,6 @@ class EditorUI {
         canvasContainer.append(scenePanel);
         canvasContainer.append(transformPanel);
         canvasContainer.append(viewerPanel);
-        canvasContainer.append(viewPanel);
         canvasContainer.append(colorPanel);
         canvasContainer.append(meshPanel);
         canvasContainer.append(bottomToolbar);
@@ -221,7 +219,6 @@ class EditorUI {
         const statusBar = new StatusBar(events, tooltips);
 
         timelinePanel.hidden = true;
-        events.fire('viewer.setAdvancedMode', preferences.startupMode === 'editor');
 
         mainContainer.append(canvasContainer);
         mainContainer.append(timelinePanel);
@@ -524,13 +521,18 @@ class EditorUI {
             void preferencesDialog.loadLocalFonts();
         });
 
+        window.addEventListener('desktop-settings-request', () => {
+            preferencesDialog.hidden = false;
+            void preferencesDialog.loadLocalFonts();
+        });
+
         events.function('showPopup', (options: ShowOptions) => {
             return this.popup.show(options);
         });
 
         let closePromptActive = false;
         const closeDesktopWindow = async () => {
-            const tauriInvoke = (window as any).__TAURI_INTERNALS__?.invoke;
+            const tauriInvoke = getTauriInvoke();
             if (tauriInvoke) {
                 await tauriInvoke('window_close');
             } else {
@@ -549,6 +551,12 @@ class EditorUI {
             }
 
             closePromptActive = true;
+            const restorePreferencesDialog = !preferencesDialog.hidden;
+            if (restorePreferencesDialog) {
+                preferencesDialog.hidden = true;
+            }
+
+            let closingWindow = false;
             try {
                 const result = await events.invoke('showPopup', {
                     type: 'savecancel',
@@ -559,12 +567,18 @@ class EditorUI {
                 if (result.action === 'save') {
                     const saved = await events.invoke('doc.save');
                     if (saved && !events.invoke('scene.dirty')) {
+                        closingWindow = true;
                         await closeDesktopWindow();
                     }
                 } else if (result.action === 'discard') {
+                    closingWindow = true;
                     await closeDesktopWindow();
                 }
             } finally {
+                if (restorePreferencesDialog && !closingWindow) {
+                    preferencesDialog.hidden = false;
+                    void preferencesDialog.loadLocalFonts();
+                }
                 closePromptActive = false;
             }
         };
@@ -581,11 +595,27 @@ class EditorUI {
         topContainer.append(spinner);
 
         let spinnerCount = 0;
+        let spinnerMessage = '';
+        let busyCount = 0;
 
-        events.on('startSpinner', () => {
+        const setAppBusy = (busy: boolean) => {
+            busyCount = Math.max(0, busyCount + (busy ? 1 : -1));
+            document.body.classList.toggle('app-busy', busyCount > 0);
+        };
+
+        events.on('startSpinner', (message?: string) => {
+            if (message) {
+                spinnerMessage = message;
+            } else if (spinnerCount === 0) {
+                spinnerMessage = localize('busy.default');
+            }
+
+            spinner.setMessage(spinnerMessage);
             spinnerCount++;
             if (spinnerCount === 1) {
                 spinner.hidden = false;
+                setAppBusy(true);
+                spinner.dom.focus();
             }
         });
 
@@ -593,6 +623,9 @@ class EditorUI {
             spinnerCount = Math.max(0, spinnerCount - 1);
             if (spinnerCount === 0) {
                 spinner.hidden = true;
+                spinnerMessage = '';
+                spinner.setMessage();
+                setAppBusy(false);
             }
         });
 
@@ -604,11 +637,13 @@ class EditorUI {
 
         events.on('progressStart', (header: string, cancellable?: boolean) => {
             progress.hidden = false;
+            setAppBusy(true);
             progress.setHeader(header);
             progress.setText('');
             progress.setProgress(0);
             progress.showCancelButton(!!cancellable);
             progress.onCancel = cancellable ? () => events.fire('progressCancel') : null;
+            progress.dom.focus();
         });
 
         events.on('progressUpdate', (options: { text?: string, progress?: number }) => {
@@ -622,6 +657,7 @@ class EditorUI {
 
         events.on('progressEnd', () => {
             progress.hidden = true;
+            setAppBusy(false);
             progress.showCancelButton(false);
             progress.onCancel = null;
         });

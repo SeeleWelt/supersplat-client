@@ -132,7 +132,7 @@ const registerRenderEvents = (scene: Scene, events: Events) => {
     });
 
     events.function('render.image', async (imageSettings: ImageSettings, fileStream?: FileSystemWritableFileStream) => {
-        events.fire('startSpinner');
+        events.fire('startSpinner', localize('busy.rendering-image'));
 
         try {
             const { width, height, transparentBg, showDebug } = imageSettings;

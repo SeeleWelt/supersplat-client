@@ -42,6 +42,7 @@ const defaultShortcuts: Record<string, ShortcutBinding> = {
     'select.none': { keys: ['a'], ctrl: 'required', shift: 'required', capture: true },
     'select.invert': { keys: ['i'], ctrl: 'required', shift: 'required', capture: true },
     'select.delete': { keys: ['Delete', 'Backspace'] },
+    'select.duplicate': { keys: ['d'], ctrl: 'required', shift: 'required', capture: true },
 
     // Tools
     'tool.move': { keys: ['1'] },

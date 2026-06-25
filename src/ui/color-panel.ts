@@ -448,12 +448,6 @@ class ColorPanel extends Container {
             }
         });
 
-        events.on('viewPanel.visible', (visible: boolean) => {
-            if (visible) {
-                setVisible(false);
-            }
-        });
-
         events.on('viewerPanel.visible', (visible: boolean) => {
             if (visible) {
                 setVisible(false);

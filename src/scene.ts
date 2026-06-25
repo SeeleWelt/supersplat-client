@@ -109,8 +109,8 @@ class Scene {
     meshRimLight: Entity;
     meshEnvironmentAtlas: Texture | null = null;
     meshLighting = {
-        ambientIntensity: 0.8,
-        keyIntensity: 0.85,
+        ambientIntensity: 0,
+        keyIntensity: 0.75,
         keyYaw: -35,
         keyPitch: 55,
         keyColor: new Color(1, 1, 1)

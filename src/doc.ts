@@ -1,7 +1,9 @@
 import { ZipFileSystem, ZipReadFileSystem } from '@playcanvas/splat-transform';
 
+import { ElementType } from './element';
 import { Events } from './events';
 import { BrowserFileSystem, BlobReadSource } from './io';
+import { ModelElement } from './model-element';
 import { recentFiles } from './recent-files';
 import { Scene } from './scene';
 import { Splat } from './splat';
@@ -15,6 +17,25 @@ type FilePickerAcceptType = unknown;
 const PROJECT_EXTENSION = '.metop';
 const LEGACY_PROJECT_EXTENSION = '.ssproj';
 const PROJECT_FILENAME = `scene${PROJECT_EXTENSION}`;
+
+const sanitizeZipName = (filename: string) => filename.replace(/\\/g, '/').split('/').pop() || 'model';
+
+const readZipBlob = async (zipFs: ZipReadFileSystem, filename: string) => {
+    const source = await zipFs.createSource(filename);
+    try {
+        const data = await source.read().readAll();
+        const buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+        return new Blob([buffer]);
+    } finally {
+        source.close();
+    }
+};
+
+const writeZipBlob = async (zipFs: ZipFileSystem, filename: string, blob: Blob) => {
+    const writer = await zipFs.createWriter(filename);
+    await writer.write(new Uint8Array(await blob.arrayBuffer()));
+    await writer.close();
+};
 
 const SuperFileType: FilePickerAcceptType[] = [{
     description: 'Metop scene',
@@ -64,22 +85,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
     // this file handle is updated as the current document is loaded and saved
     let documentFileHandle: FileSystemFileHandle = null;
 
-    // show the user a reset confirmation popup
-    const getResetConfirmation = async () => {
-        const result = await events.invoke('showPopup', {
-            type: 'yesno',
-            header: localize('doc.reset'),
-            message: localize(events.invoke('scene.dirty') ? 'doc.unsaved-message' : 'doc.reset-message')
-        });
-
-        if (result.action !== 'yes') {
-            return false;
-        }
-
-        return true;
-    };
-
-    const getNewSceneConfirmation = async () => {
+    const getUnsavedSceneConfirmation = async (messageKey: string) => {
         if (!events.invoke('scene.dirty')) {
             return true;
         }
@@ -87,7 +93,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
         const result = await events.invoke('showPopup', {
             type: 'savecancel',
             header: localize('doc.new-unsaved-title'),
-            message: localize('doc.new-unsaved-message')
+            message: localize(messageKey)
         });
 
         if (result.action === 'save') {
@@ -96,6 +102,14 @@ const registerDocEvents = (scene: Scene, events: Events) => {
         }
 
         return result.action === 'discard';
+    };
+
+    const getNewSceneConfirmation = () => {
+        return getUnsavedSceneConfirmation('doc.new-unsaved-message');
+    };
+
+    const getOpenSceneConfirmation = () => {
+        return getUnsavedSceneConfirmation('doc.open-unsaved-message');
     };
 
     // reset the scene
@@ -108,7 +122,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
 
     // load the document from the given file
     const loadDocument = async (file: File) => {
-        events.fire('startSpinner');
+        events.fire('startSpinner', localize('busy.opening-scene'));
 
         // Create streaming ZIP reader from the file
         const blobSource = new BlobReadSource(file);
@@ -125,7 +139,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
             const document = JSON.parse(new TextDecoder().decode(docData));
 
             // run through each splat and load it
-            for (let i = 0; i < document.splats.length; ++i) {
+            for (let i = 0; i < (document.splats ?? []).length; ++i) {
                 const filename = `splat_${i}.ply`;
                 const splatSettings = document.splats[i];
 
@@ -136,6 +150,23 @@ const registerDocEvents = (scene: Scene, events: Events) => {
                 await scene.add(splat);
 
                 splat.docDeserialize(splatSettings);
+            }
+
+            // run through each regular mesh model and load it
+            for (let i = 0; i < (document.models ?? []).length; ++i) {
+                const modelSettings = document.models[i];
+                const files = await Promise.all(modelSettings.files.map(async (file: any) => {
+                    return {
+                        filename: file.filename,
+                        contents: await readZipBlob(zipFs, file.zipPath)
+                    };
+                }));
+                const mainFile = modelSettings.files[modelSettings.mainFileIndex ?? 0];
+                const model = await scene.assetLoader.load(mainFile.zipPath, zipFs, false, false, files) as ModelElement;
+
+                await scene.add(model);
+
+                model.docDeserialize(modelSettings);
             }
 
             // FIXME: trigger scene bound calc in a better way
@@ -174,10 +205,11 @@ const registerDocEvents = (scene: Scene, events: Events) => {
     };
 
     const saveDocument = async (options: { stream?: FileSystemWritableFileStream, filename?: string }) => {
-        events.fire('startSpinner');
+        events.fire('startSpinner', localize('busy.saving-scene'));
 
         try {
             const splats = events.invoke('scene.allSplats') as Splat[];
+            const models = scene.getElementsByType(ElementType.model) as ModelElement[];
 
             const document = {
                 version: 0,
@@ -185,7 +217,15 @@ const registerDocEvents = (scene: Scene, events: Events) => {
                 view: events.invoke('docSerialize.view'),
                 poseSets: events.invoke('docSerialize.poseSets'),
                 timeline: events.invoke('docSerialize.timeline'),
-                splats: splats.map(s => s.docSerialize())
+                splats: splats.map(s => s.docSerialize()),
+                models: models.map((model, modelIndex) => ({
+                    ...model.docSerialize(),
+                    mainFileIndex: 0,
+                    files: model.sourceFiles.map((file, fileIndex) => ({
+                        filename: file.filename,
+                        zipPath: `model_${modelIndex}/source_${fileIndex}_${sanitizeZipName(file.filename)}`
+                    }))
+                }))
             };
 
             const serializeSettings = {
@@ -210,6 +250,18 @@ const registerDocEvents = (scene: Scene, events: Events) => {
             // Write each splat as PLY
             for (let i = 0; i < splats.length; ++i) {
                 await serializePly([splats[i]], serializeSettings, zipFs, `splat_${i}.ply`);
+            }
+
+            // Write regular mesh model source files
+            for (let i = 0; i < models.length; ++i) {
+                const model = models[i];
+                for (let j = 0; j < model.sourceFiles.length; ++j) {
+                    const sourceFile = model.sourceFiles[j];
+                    if (!sourceFile.contents) {
+                        throw new Error(`Model '${model.name}' has no saved source data for '${sourceFile.filename}'`);
+                    }
+                    await writeZipBlob(zipFs, document.models[i].files[j].zipPath, sourceFile.contents);
+                }
             }
 
             // Close zip (also closes underlying browser writer)
@@ -242,7 +294,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
     // (which would result in more seamless user experience), but this is not yet supported in
     // other browsers.
     events.function('doc.load', async (file: File, handle?: FileSystemFileHandle) => {
-        if (!events.invoke('scene.empty') && !await getResetConfirmation()) {
+        if (!await getOpenSceneConfirmation()) {
             return false;
         }
 
@@ -262,7 +314,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
     });
 
     events.function('doc.open', async () => {
-        if (!events.invoke('scene.empty') && !await getResetConfirmation()) {
+        if (!await getOpenSceneConfirmation()) {
             return false;
         }
 
@@ -316,7 +368,7 @@ const registerDocEvents = (scene: Scene, events: Events) => {
     });
 
     events.function('doc.openRecent', async (fileHandle: FileSystemFileHandle) => {
-        if (!events.invoke('scene.empty') && !await getResetConfirmation()) {
+        if (!await getOpenSceneConfirmation()) {
             return false;
         }
 

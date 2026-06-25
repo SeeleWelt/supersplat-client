@@ -2,7 +2,7 @@ import { MemoryFileSystem } from '@playcanvas/splat-transform';
 import { Color, Mat4, path, Texture, Vec3, Vec4 } from 'playcanvas';
 
 import { EditHistory } from './edit-history';
-import { SelectAllOp, SelectNoneOp, SelectInvertOp, SelectOp, HideSelectionOp, UnhideAllOp, DeleteSelectionOp, ResetOp, MeshVertexSelectOp, MeshGeometryOp, MultiOp, AddSplatOp } from './edit-ops';
+import { SelectAllOp, SelectNoneOp, SelectInvertOp, SelectOp, HideSelectionOp, UnhideAllOp, DeleteSelectionOp, ResetOp, MeshVertexSelectOp, MeshGeometryOp, MultiOp, AddSplatOp, RemoveElementOp } from './edit-ops';
 import { Element, ElementType } from './element';
 import { Events } from './events';
 import { MappedReadFileSystem } from './io';
@@ -329,6 +329,14 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
 
     events.function('selection.meshVertices', () => {
         return selectedModel()?.selectedVertexCount ?? 0;
+    });
+
+    events.function('selection.canDelete', () => {
+        return !!selectedModel() || selectedSplats().some(splat => splat.numSelected > 0);
+    });
+
+    events.function('selection.canDuplicate', () => {
+        return !!selectedModel() || selectedSplats().length > 0;
     });
 
     const meshTools = new Set(['rectSelection', 'brushSelection', 'lassoSelection', 'polygonSelection', 'move', 'rotate', 'scale']);
@@ -740,10 +748,14 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
         }
 
         const model = selectedModel();
-        if (model?.selectedVertexCount) {
-            const { before, after, deleted } = model.deleteSelectedVerticesFromSnapshot();
-            if (deleted) {
-                events.fire('edit.add', new MeshGeometryOp(model, before, after), true);
+        if (model) {
+            if (model.selectedVertexCount) {
+                const { before, after, deleted } = model.deleteSelectedVerticesFromSnapshot();
+                if (deleted) {
+                    events.fire('edit.add', new MeshGeometryOp(model, before, after), true);
+                }
+            } else {
+                events.fire('edit.add', new RemoveElementOp(scene, model));
             }
             return;
         }
@@ -753,21 +765,24 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
         });
     });
 
-    const performSelectionFunc = async (func: 'duplicate' | 'separate') => {
+    const performSplatSelectionFunc = async (func: 'duplicate' | 'separate') => {
         const splats = selectedSplats();
+        const splat = splats[0];
+
+        if (!splat) {
+            return;
+        }
 
         const memFs = new MemoryFileSystem();
 
         await serializePly(splats, {
             maxSHBands: 3,
-            selected: true
+            selected: splat.numSelected > 0
         }, memFs);
 
         const data = memFs.results.get('output.ply');
 
         if (data) {
-            const splat = splats[0];
-
             // wrap PLY in a blob and load it
             const blob = new Blob([data.buffer as ArrayBuffer], { type: 'application/octet-stream' });
             const filename = `${removeExtension(splat.filename)}.ply`;
@@ -788,11 +803,20 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
 
     // duplicate the current selection
     events.on('select.duplicate', async () => {
-        await performSelectionFunc('duplicate');
+        const model = selectedModel();
+        if (model) {
+            const copy = model.duplicate(model.selectedVertexCount > 0);
+            if (copy) {
+                editHistory.add(new AddSplatOp(scene, copy));
+            }
+            return;
+        }
+
+        await performSplatSelectionFunc('duplicate');
     });
 
     events.on('select.separate', async () => {
-        await performSelectionFunc('separate');
+        await performSplatSelectionFunc('separate');
     });
 
     events.on('scene.reset', () => {

@@ -1,8 +1,9 @@
 @use 'colors.scss' as *;
 
 #transform-panel {
-    top: calc(var(--desktop-titlebar-height) + 48px);
-    left: calc(var(--desktop-rail-width) + 16px);
+    
+    top: calc(var(--desktop-titlebar-height) + 10px);
+    left: calc(var(--desktop-rail-width) + var(--desktop-scene-panel-width) + 10px);
     width: 286px;
     height: auto;
     z-index: 14;

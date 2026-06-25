@@ -516,7 +516,7 @@ class Splat extends Element {
         const { entity } = this;
         switch (mode) {
             case 'center':
-                result.set(entity.getLocalPosition(), entity.getLocalRotation(), entity.getLocalScale());
+                result.set(this.worldBound.center, entity.getLocalRotation(), entity.getLocalScale());
                 break;
             case 'boundCenter': {
                 const bound = selection ? this.selectionBound : this.localBound;

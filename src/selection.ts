@@ -51,7 +51,7 @@ const registerSelectionEvents = (events: Events, scene: Scene) => {
     events.on('scene.elementRemoved', (element: Element) => {
         if (element === selection) {
             const elements = getSelectableElements();
-            setSelection(elements.length === 1 ? null : elements.find(v => v !== element));
+            setSelection(elements[0] ?? null);
         }
     });
 

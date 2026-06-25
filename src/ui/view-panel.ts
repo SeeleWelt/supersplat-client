@@ -7,9 +7,17 @@ import { Splat } from '../splat';
 import { localize, formatTooltipWithShortcut } from './localization';
 import { Tooltips } from './tooltips';
 
+type ViewPanelOptions = {
+    embedded?: boolean;
+};
+
 class ViewPanel extends Container {
-    constructor(events: Events, tooltips: Tooltips, args = {}) {
-        args = {
+    constructor(events: Events, tooltips: Tooltips, args = {}, options: ViewPanelOptions = {}) {
+        const embedded = !!options.embedded;
+        args = embedded ? {
+            ...args,
+            class: 'view-panel-embedded'
+        } : {
             ...args,
             id: 'view-panel',
             class: 'panel',
@@ -25,45 +33,48 @@ class ViewPanel extends Container {
 
         // header
 
-        const header = new Container({
-            class: 'panel-header'
-        });
-
-        const icon = new Label({
-            text: '\uE403',
-            class: 'panel-header-icon'
-        });
-
-        const label = new Label({
-            text: localize('panel.view-options'),
-            class: 'panel-header-label'
-        });
-
         const reset = new Button({
             text: localize('panel.colors.reset'),
             class: ['reset-action-button', 'panel-reset-action']
         });
 
-        const collapseToggle = new Container({
-            class: ['panel-header-button', 'panel-collapse-button', 'panel-collapse-right']
-        });
+        let header: Container = null;
+        if (!embedded) {
+            header = new Container({
+                class: 'panel-header'
+            });
 
-        const updateCollapsedState = () => {
-            const collapsed = document.body.classList.contains('right-panel-collapsed');
-            collapseToggle.class[collapsed ? 'add' : 'remove']('is-collapsed');
-            collapseToggle.dom.title = collapsed ? localize('panel.view-options.expand') : localize('panel.view-options.collapse');
-            collapseToggle.dom.setAttribute('aria-label', collapseToggle.dom.title);
-        };
+            const icon = new Label({
+                text: '\uE403',
+                class: 'panel-header-icon'
+            });
 
-        collapseToggle.on('click', () => {
-            document.body.classList.toggle('right-panel-collapsed');
+            const label = new Label({
+                text: localize('panel.view-options'),
+                class: 'panel-header-label'
+            });
+
+            const collapseToggle = new Container({
+                class: ['panel-header-button', 'panel-collapse-button', 'panel-collapse-right']
+            });
+
+            const updateCollapsedState = () => {
+                const collapsed = document.body.classList.contains('right-panel-collapsed');
+                collapseToggle.class[collapsed ? 'add' : 'remove']('is-collapsed');
+                collapseToggle.dom.title = collapsed ? localize('panel.view-options.expand') : localize('panel.view-options.collapse');
+                collapseToggle.dom.setAttribute('aria-label', collapseToggle.dom.title);
+            };
+
+            collapseToggle.on('click', () => {
+                document.body.classList.toggle('right-panel-collapsed');
+                updateCollapsedState();
+            });
             updateCollapsedState();
-        });
-        updateCollapsedState();
 
-        header.append(icon);
-        header.append(label);
-        header.append(collapseToggle);
+            header.append(icon);
+            header.append(label);
+            header.append(collapseToggle);
+        }
 
         // colors
 
@@ -365,7 +376,9 @@ class ViewPanel extends Container {
         showCameraPosesRow.append(showCameraPosesLabel);
         showCameraPosesRow.append(showCameraPosesToggle);
 
-        this.append(header);
+        if (header) {
+            this.append(header);
+        }
         this.append(clrRow);
         this.append(tonemappingRow);
         this.append(fovRow);
@@ -414,43 +427,44 @@ class ViewPanel extends Container {
         };
 
         // handle panel visibility
+        if (!embedded) {
+            const setVisible = (visible: boolean) => {
+                if (visible === this.hidden) {
+                    this.hidden = !visible;
+                    events.fire('viewPanel.visible', visible);
+                }
+            };
 
-        const setVisible = (visible: boolean) => {
-            if (visible === this.hidden) {
-                this.hidden = !visible;
-                events.fire('viewPanel.visible', visible);
-            }
-        };
+            events.function('viewPanel.visible', () => {
+                return !this.hidden;
+            });
 
-        events.function('viewPanel.visible', () => {
-            return !this.hidden;
-        });
+            events.on('viewPanel.setVisible', (visible: boolean) => {
+                setVisible(visible);
+            });
 
-        events.on('viewPanel.setVisible', (visible: boolean) => {
-            setVisible(visible);
-        });
+            events.on('viewPanel.toggleVisible', () => {
+                setVisible(this.hidden);
+            });
 
-        events.on('viewPanel.toggleVisible', () => {
-            setVisible(this.hidden);
-        });
+            events.on('colorPanel.visible', (visible: boolean) => {
+                if (visible) {
+                    setVisible(false);
+                }
+            });
 
-        events.on('colorPanel.visible', (visible: boolean) => {
-            if (visible) {
-                setVisible(false);
-            }
-        });
+            events.on('viewerPanel.visible', (visible: boolean) => {
+                if (visible) {
+                    setVisible(false);
+                }
+            });
 
-        events.on('viewerPanel.visible', (visible: boolean) => {
-            if (visible) {
-                setVisible(false);
-            }
-        });
-
-        events.on('meshPanel.visible', (visible: boolean) => {
-            if (visible) {
-                setVisible(false);
-            }
-        });
+            events.on('meshPanel.visible', (visible: boolean) => {
+                if (visible) {
+                    setVisible(false);
+                }
+            });
+        }
 
         events.on('selection.changed', updateViewOptionAvailability);
         updateViewOptionAvailability();
@@ -585,7 +599,7 @@ class ViewPanel extends Container {
         });
 
         reset.on('click', () => {
-            events.fire('setBgClr', new Color(0, 0, 0, 1));
+            events.fire('setBgClr', new Color(0.1098, 0.1098, 0.1098, 1));
             events.fire('camera.setTonemapping', 'linear');
             events.fire('camera.setFov', 75);
             events.fire('camera.setFlySpeed', 1);
@@ -596,7 +610,7 @@ class ViewPanel extends Container {
 
             if (splatViewOptionsAvailable) {
                 events.fire('setSelectedClr', new Color(1, 1, 0, 1));
-                events.fire('setUnselectedClr', new Color(0, 0, 1, 0.5));
+                events.fire('setUnselectedClr', new Color(0, 0, 1, 1));
                 events.fire('setLockedClr', new Color(0, 0, 0, 0.05));
                 events.fire('view.setBands', 3);
                 events.fire('camera.setSplatSize', 2);

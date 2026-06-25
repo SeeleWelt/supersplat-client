@@ -7,13 +7,11 @@ import { changeLocale, localize } from './localization';
 
 type AppTheme = 'classic' | 'light' | 'dim' | 'contrast';
 type AppDensity = 'comfortable' | 'compact';
-type StartupMode = 'viewer' | 'editor';
 type AppLocale = 'zh-CN' | 'en';
 
 interface AppPreferences {
     theme: AppTheme;
     density: AppDensity;
-    startupMode: StartupMode;
     locale: AppLocale;
     fontFamily: string;
 }
@@ -31,8 +29,15 @@ interface ShortcutGroup {
 const PREFERENCES_KEY = 'ningjing.preferences';
 const THEMES: AppTheme[] = ['classic', 'light', 'dim', 'contrast'];
 const DENSITIES: AppDensity[] = ['comfortable', 'compact'];
-const STARTUP_MODES: StartupMode[] = ['viewer', 'editor'];
 const LOCALES: AppLocale[] = ['zh-CN', 'en'];
+const SECTION_DESCRIPTIONS = new Map<string, string>([
+    ['popup.preferences.application', 'popup.preferences.application.description'],
+    ['popup.preferences.keyboard', 'popup.preferences.keyboard.description']
+]);
+const SECTION_ICONS = new Map<string, string>([
+    ['popup.preferences.application', '\uE283'],
+    ['popup.preferences.keyboard', '\uE162']
+]);
 
 const FONT_STACKS = {
     system: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -67,7 +72,6 @@ const COMMON_FONT_FAMILIES = [
 const DEFAULT_PREFERENCES: AppPreferences = {
     theme: 'classic',
     density: 'comfortable',
-    startupMode: 'editor',
     locale: 'zh-CN',
     fontFamily: FONT_STACKS.chinese
 };
@@ -115,7 +119,8 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
             { id: 'select.all', localeKey: 'popup.shortcuts.select-all' },
             { id: 'select.none', localeKey: 'popup.shortcuts.deselect-all' },
             { id: 'select.invert', localeKey: 'popup.shortcuts.invert-selection' },
-            { id: 'select.delete', localeKey: 'popup.shortcuts.delete-selected-splats' }
+            { id: 'select.delete', localeKey: 'popup.shortcuts.delete-selected-splats' },
+            { id: 'select.duplicate', localeKey: 'popup.shortcuts.duplicate-selection' }
         ]
     },
     {
@@ -177,6 +182,14 @@ const normalizeStoredFontFamily = (fontFamily: unknown) => {
     return typeof fontFamily === 'string' && fontFamily.trim() ? fontFamily : DEFAULT_PREFERENCES.fontFamily;
 };
 
+const oneOf = <T>(values: readonly T[], value: unknown, fallback: T): T => {
+    return values.includes(value as T) ? value as T : fallback;
+};
+
+const clonePreferences = (preferences: AppPreferences = DEFAULT_PREFERENCES): AppPreferences => {
+    return JSON.parse(JSON.stringify(preferences));
+};
+
 const isFontAvailable = (family: string) => {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -208,7 +221,7 @@ const getLocalFontFamilies = async () => {
     }
 };
 
-const readStoredPreferences = (): Partial<AppPreferences> => {
+const readStoredPreferences = (): any => {
     try {
         return JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
     } catch {
@@ -218,18 +231,13 @@ const readStoredPreferences = (): Partial<AppPreferences> => {
 
 const loadPreferences = (): AppPreferences => {
     const stored = readStoredPreferences();
-    const theme = THEMES.includes(stored.theme as AppTheme) ? stored.theme : DEFAULT_PREFERENCES.theme;
-    const density = DENSITIES.includes(stored.density as AppDensity) ? stored.density : DEFAULT_PREFERENCES.density;
-    const startupMode = STARTUP_MODES.includes(stored.startupMode as StartupMode) ? stored.startupMode : DEFAULT_PREFERENCES.startupMode;
-    const locale = LOCALES.includes(stored.locale as AppLocale) ? stored.locale : DEFAULT_PREFERENCES.locale;
-    const fontFamily = normalizeStoredFontFamily(stored.fontFamily);
+    const appearance = stored.appearance ?? {};
 
     return {
-        theme,
-        density,
-        startupMode,
-        locale,
-        fontFamily
+        theme: oneOf(THEMES, appearance.theme ?? stored.theme, DEFAULT_PREFERENCES.theme),
+        density: oneOf(DENSITIES, appearance.density ?? stored.density, DEFAULT_PREFERENCES.density),
+        locale: oneOf(LOCALES, appearance.locale ?? stored.locale, DEFAULT_PREFERENCES.locale),
+        fontFamily: normalizeStoredFontFamily(appearance.fontFamily ?? stored.fontFamily)
     };
 };
 
@@ -274,7 +282,7 @@ const shortcutFromEvent = (event: KeyboardEvent): ShortcutBinding | null => {
 
 class PreferencesDialog extends Container {
     private preferences: AppPreferences;
-    loadLocalFonts: (showStatus?: boolean) => Promise<void>;
+    loadLocalFonts: () => Promise<void>;
 
     constructor(events: Events, args = {}) {
         args = {
@@ -371,45 +379,114 @@ class PreferencesDialog extends Container {
             id: 'dialog'
         });
 
+        const sidebar = new Container({
+            class: 'preferences-sidebar'
+        });
+
+        const sidebarBrand = new Container({
+            class: 'preferences-sidebar-brand'
+        });
+
+        const sidebarIcon = new Label({
+            class: 'preferences-sidebar-icon',
+            text: '\uE283'
+        });
+
+        const sidebarTitle = new Label({
+            class: 'preferences-sidebar-title',
+            text: localize('popup.preferences.header')
+        });
+
+        sidebarBrand.append(sidebarIcon);
+        sidebarBrand.append(sidebarTitle);
+
+        const sidebarNav = new Container({
+            class: 'preferences-sidebar-nav'
+        });
+
+        sidebar.append(sidebarBrand);
+        sidebar.append(sidebarNav);
+
+        const page = new Container({
+            class: 'preferences-page'
+        });
+
         const header = new Container({
             id: 'header'
         });
-
-        header.append(new Label({
-            id: 'icon',
-            text: '\uE283'
-        }));
 
         const headerText = new Label({
             id: 'text',
             text: localize('popup.preferences.header')
         });
-        header.append(headerText);
+
+        const headerDescription = new Label({
+            class: 'preferences-page-description',
+            text: ''
+        });
+
+        const headerCopy = new Container({
+            class: 'preferences-page-copy'
+        });
+        headerCopy.append(headerText);
+        headerCopy.append(headerDescription);
+        header.append(headerCopy);
+
+        const headerCloseButton = new Button({
+            class: ['button', 'preferences-page-close'],
+            text: localize('popup.preferences.close')
+        });
+        header.append(headerCloseButton);
 
         const content = new Container({
             id: 'content'
         });
 
         const localizedLabels: { label: Label, key: string }[] = [
+            { label: sidebarTitle, key: 'popup.preferences.header' },
             { label: headerText, key: 'popup.preferences.header' }
         ];
-        const localizedButtons: { button: Button, key: string }[] = [];
+        const localizedButtons: { button: Button, key: string }[] = [
+            { button: headerCloseButton, key: 'popup.preferences.close' }
+        ];
+        const navItems: { section: Container, button: Button, titleKey: string, descriptionKey?: string }[] = [];
+        let activeSection: Container | null = null;
+
+        const setActiveSection = (section: Container) => {
+            activeSection = section;
+            navItems.forEach((item) => {
+                item.button.class[item.section === section ? 'add' : 'remove']('active');
+                item.section.class[item.section === section ? 'add' : 'remove']('active');
+                if (item.section === section) {
+                    headerText.text = localize(item.titleKey);
+                    headerDescription.text = item.descriptionKey ? localize(item.descriptionKey) : '';
+                }
+            });
+            content.dom.scrollTop = 0;
+        };
 
         const makeSection = (titleKey: string) => {
             const section = new Container({
                 class: 'preferences-section'
             });
-            const label = new Label({
-                class: 'preferences-section-title',
+            content.append(section);
+
+            const navButton = new Button({
+                class: 'preferences-nav-item',
                 text: localize(titleKey)
             });
-            localizedLabels.push({ label, key: titleKey });
-            section.append(label);
-            content.append(section);
+            navButton.dom.dataset.icon = SECTION_ICONS.get(titleKey) ?? '\uE283';
+            localizedButtons.push({ button: navButton, key: titleKey });
+            navButton.on('click', () => {
+                setActiveSection(section);
+            });
+            sidebarNav.append(navButton);
+            navItems.push({ section, button: navButton, titleKey, descriptionKey: SECTION_DESCRIPTIONS.get(titleKey) });
+
             return section;
         };
 
-        const makeRow = (section: Container, labelKey: string, control: Element) => {
+        const makeRow = (section: Container, labelKey: string, control: Element, descriptionKey?: string) => {
             const row = new Container({
                 class: 'row'
             });
@@ -417,8 +494,22 @@ class PreferencesDialog extends Container {
                 class: 'label',
                 text: localize(labelKey)
             });
+            const copy = new Container({
+                class: 'preferences-row-copy'
+            });
             localizedLabels.push({ label, key: labelKey });
-            row.append(label);
+            copy.append(label);
+
+            if (descriptionKey) {
+                const description = new Label({
+                    class: 'preferences-row-description',
+                    text: localize(descriptionKey)
+                });
+                localizedLabels.push({ label: description, key: descriptionKey });
+                copy.append(description);
+            }
+
+            row.append(copy);
             row.append(control);
             section.append(row);
             return row;
@@ -451,7 +542,7 @@ class PreferencesDialog extends Container {
             return options;
         };
 
-        const appearanceSection = makeSection('popup.preferences.appearance');
+        const applicationSection = makeSection('popup.preferences.application');
 
         const localeSelect = new SelectInput({
             class: 'select',
@@ -462,7 +553,7 @@ class PreferencesDialog extends Container {
             ]
         });
         localeSelect.value = this.preferences.locale;
-        makeRow(appearanceSection, 'popup.preferences.language', localeSelect);
+        makeRow(applicationSection, 'popup.preferences.language', localeSelect, 'popup.preferences.language.description');
 
         const themeSelect = new SelectInput({
             class: 'select',
@@ -475,7 +566,7 @@ class PreferencesDialog extends Container {
             ]
         });
         themeSelect.value = this.preferences.theme;
-        makeRow(appearanceSection, 'popup.preferences.theme', themeSelect);
+        makeRow(applicationSection, 'popup.preferences.theme', themeSelect, 'popup.preferences.theme.description');
 
         const densitySelect = new SelectInput({
             class: 'select',
@@ -486,7 +577,7 @@ class PreferencesDialog extends Container {
             ]
         });
         densitySelect.value = this.preferences.density;
-        makeRow(appearanceSection, 'popup.preferences.density', densitySelect);
+        makeRow(applicationSection, 'popup.preferences.density', densitySelect, 'popup.preferences.density.description');
 
         let addCreatedFontFamily = (value: string) => {};
         let localFontFamilies: string[] = [];
@@ -504,31 +595,11 @@ class PreferencesDialog extends Container {
         });
         fontFamilySelect.value = this.preferences.fontFamily;
 
-        const loadLocalFontsButton = new Button({
-            class: ['button', 'preferences-load-fonts-button'],
-            text: localize('popup.preferences.font.load-local')
-        });
-        localizedButtons.push({ button: loadLocalFontsButton, key: 'popup.preferences.font.load-local' });
-
         const fontControls = new Container({
             class: 'preferences-font-controls'
         });
         fontControls.append(fontFamilySelect);
-        fontControls.append(loadLocalFontsButton);
-        makeRow(appearanceSection, 'popup.preferences.font', fontControls);
-
-        const workspaceSection = makeSection('popup.preferences.workspace');
-
-        const startupSelect = new SelectInput({
-            class: 'select',
-            defaultValue: this.preferences.startupMode,
-            options: [
-                { v: 'viewer', t: localize('popup.preferences.startup.viewer') },
-                { v: 'editor', t: localize('popup.preferences.startup.editor') }
-            ]
-        });
-        startupSelect.value = this.preferences.startupMode;
-        makeRow(workspaceSection, 'popup.preferences.startup-mode', startupSelect);
+        makeRow(applicationSection, 'popup.preferences.font', fontControls, 'popup.preferences.font.description');
 
         const keyboardSection = makeSection('popup.preferences.keyboard');
         keyboardSection.dom.classList.add('preferences-keyboard-section');
@@ -638,15 +709,16 @@ class PreferencesDialog extends Container {
         footer.append(resetButton);
         footer.append(closeButton);
 
-        dialog.append(header);
-        dialog.append(content);
-        dialog.append(footer);
+        page.append(header);
+        page.append(content);
+        page.append(footer);
+        dialog.append(sidebar);
+        dialog.append(page);
         this.append(dialog);
 
         const applyAndSave = () => {
             savePreferences(this.preferences);
             applyPreferences(this.preferences);
-            events.fire('viewer.setAdvancedMode', this.preferences.startupMode === 'editor');
             events.fire('preferences.changed', this.preferences);
         };
 
@@ -667,6 +739,9 @@ class PreferencesDialog extends Container {
             for (const item of localizedButtons) {
                 item.button.text = localize(item.key);
             }
+            const activeItem = navItems.find(item => item.section === activeSection);
+            headerText.text = localize(activeItem?.titleKey ?? 'popup.preferences.header');
+            headerDescription.text = activeItem?.descriptionKey ? localize(activeItem.descriptionKey) : '';
             refreshConflictNotice();
 
             const themeValue = themeSelect.value;
@@ -684,13 +759,6 @@ class PreferencesDialog extends Container {
                 { v: 'compact', t: localize('popup.preferences.density.compact') }
             ];
             densitySelect.value = densityValue;
-
-            const startupValue = startupSelect.value;
-            startupSelect.options = [
-                { v: 'viewer', t: localize('popup.preferences.startup.viewer') },
-                { v: 'editor', t: localize('popup.preferences.startup.editor') }
-            ];
-            startupSelect.value = startupValue;
 
             const fontValue = fontFamilySelect.value;
             fontFamilySelect.options = makeFontOptions(localFontFamilies);
@@ -732,27 +800,18 @@ class PreferencesDialog extends Container {
             applyAndSave();
         });
 
-        startupSelect.on('change', (value: StartupMode) => {
-            this.preferences.startupMode = value;
-            applyAndSave();
-        });
-
         addCreatedFontFamily = (value: string) => {
             const family = value.trim();
             if (!family) return;
             selectFontFamily(fontStackFromFamily(family), family);
         };
 
-        this.loadLocalFonts = async (showStatus = false) => {
+        this.loadLocalFonts = async () => {
             if (localFontsLoading || localFontsLoaded) {
                 return;
             }
 
             localFontsLoading = true;
-            const previousText = loadLocalFontsButton.text;
-            if (showStatus) {
-                loadLocalFontsButton.text = localize('popup.preferences.font.loading-local');
-            }
             const families = await getLocalFontFamilies();
 
             if (families.length > 0) {
@@ -760,17 +819,11 @@ class PreferencesDialog extends Container {
                 const value = fontFamilySelect.value;
                 fontFamilySelect.options = makeFontOptions(localFontFamilies);
                 fontFamilySelect.value = value;
-                loadLocalFontsButton.text = localize('popup.preferences.font.loaded-local');
+                fontControls.class.add('fonts-loaded');
                 localFontsLoaded = true;
-            } else {
-                loadLocalFontsButton.text = showStatus ? localize(window.queryLocalFonts ? 'popup.preferences.font.no-local' : 'popup.preferences.font.unsupported-local') : previousText;
             }
             localFontsLoading = false;
         };
-
-        loadLocalFontsButton.on('click', async () => {
-            await this.loadLocalFonts(true);
-        });
 
         resetShortcutsButton.on('click', () => {
             shortcutManager.resetAll();
@@ -778,20 +831,25 @@ class PreferencesDialog extends Container {
         });
 
         resetButton.on('click', () => {
-            this.preferences = { ...DEFAULT_PREFERENCES };
+            this.preferences = clonePreferences(DEFAULT_PREFERENCES);
             localeSelect.value = this.preferences.locale;
             themeSelect.value = this.preferences.theme;
             densitySelect.value = this.preferences.density;
             fontFamilySelect.value = this.preferences.fontFamily;
-            startupSelect.value = this.preferences.startupMode;
             applyAndSave();
         });
 
         closeButton.on('click', () => {
             this.hidden = true;
         });
+
+        headerCloseButton.on('click', () => {
+            this.hidden = true;
+        });
+
+        setActiveSection(applicationSection);
     }
 }
 
-export { PreferencesDialog, loadPreferences, applyPreferences };
+export { PreferencesDialog, loadPreferences, savePreferences, applyPreferences };
 export type { AppPreferences };
